@@ -38,11 +38,12 @@ export default function LandingPageClient() {
       <div className="w-full max-w-[420px] text-center">
         <div className="mx-auto w-[240px] max-w-full">
           <Image
-            src="/landing-hero-v2.png"
+            src="/landing-hero-v2.png?v=4"
             alt="AIXIT"
             width={512}
             height={512}
             priority
+            unoptimized
             className="h-auto w-full"
           />
         </div>

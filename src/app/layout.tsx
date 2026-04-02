@@ -21,9 +21,9 @@ export const metadata: Metadata = {
   description: "AIXIT — workflow navigation.",
   icons: {
     icon: [
-      { url: "/favicon-v2.png", type: "image/png" },
+      { url: "/favicon-v2.png?v=4", type: "image/png" },
     ],
-    apple: [{ url: "/apple-touch-icon-v2.png", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon-v2.png?v=4", type: "image/png" }],
   },
 };
 
@@ -39,8 +39,8 @@ export default function RootLayout({
     >
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon-v2.png" type="image/png" sizes="64x64" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png" sizes="180x180" />
+        <link rel="icon" href="/favicon-v2.png?v=4" type="image/png" sizes="64x64" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png?v=4" sizes="180x180" />
       </head>
       <body className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 text-zinc-950">
         <AuthProvider>

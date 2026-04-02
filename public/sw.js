@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const CACHE_NAME = `aixit-pwa-${CACHE_VERSION}`;
 
 const OFFLINE_URL = "/offline.html";
@@ -13,6 +13,15 @@ const PRECACHE_URLS = [OFFLINE_URL, MANIFEST_URL, ICON_192, ICON_512];
 function isNavigationRequest(request) {
   // Request.mode === "navigate" is the most reliable for browser navigations.
   return request.mode === "navigate";
+}
+
+/** PNG/JPG/SVG 등과 next/image 최적화 URL은 cache-first 금지 — 배포 후에도 옛 이미지가 남는 문제 방지 */
+function shouldBypassAggressiveCache(url) {
+  const p = url.pathname;
+  if (p.startsWith("/_next/image")) return true;
+  if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(p)) return true;
+  if (p === "/favicon.ico") return true;
+  return false;
 }
 
 self.addEventListener("install", (event) => {
@@ -65,7 +74,22 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // For same-origin GET requests, do cache-first then network, with caching on success.
+  // 이미지·next/image: 항상 네트워크 우선 (SW에 오래된 바이너리가 박히지 않게)
+  if (url.origin === self.location.origin && shouldBypassAggressiveCache(url)) {
+    event.respondWith(
+      (async () => {
+        try {
+          return await fetch(request);
+        } catch {
+          const cache = await caches.open(CACHE_NAME);
+          return (await cache.match(request)) || respondWithOfflineFallback();
+        }
+      })(),
+    );
+    return;
+  }
+
+  // 그 외 same-origin GET: cache-first (오프라인 보조)
   if (url.origin === self.location.origin) {
     event.respondWith(
       (async () => {
@@ -75,15 +99,12 @@ self.addEventListener("fetch", (event) => {
 
         try {
           const response = await fetch(request);
-          // Cache only successful basic GET responses.
           if (response && response.status === 200) {
             const copy = response.clone();
-            // Cache matching uses the request URL as key.
             await cache.put(request, copy);
           }
           return response;
         } catch {
-          // If we can't reach network, return whatever we have in cache.
           return (await cache.match(request)) || respondWithOfflineFallback();
         }
       })(),

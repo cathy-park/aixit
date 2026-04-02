@@ -20,7 +20,7 @@ export function HeroCharacterIllustration({ className }: { className?: string })
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/home-header-character-v2.png"
+        src="/home-header-character-v2.png?v=4"
         alt=""
         draggable={false}
         className="h-full w-full object-contain"

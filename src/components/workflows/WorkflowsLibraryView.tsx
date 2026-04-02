@@ -444,7 +444,9 @@ export function WorkflowsLibraryView() {
                   </div>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {items.map((t) => wrapTemplateDnD(t, renderTemplateCard(t)))}
+                    {items.map((t) => (
+                      <div key={t.templateId}>{renderTemplateCard(t)}</div>
+                    ))}
                   </div>
                 )}
               </div>
