@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
-import type { Tool, ToolCredential } from "@/lib/tools";
+import { isToolEffectivelyActive, type Tool, type ToolCredential } from "@/lib/tools";
 import { CredentialProviderMark } from "@/components/tools/CredentialProviderMarks";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { IosCardToggle } from "@/components/ui/IosCardToggle";
@@ -125,6 +125,8 @@ export function ToolCard({
   onDisconnect,
   pinned,
   onTogglePinned,
+  /** 창고 전용: 스위치 변경 시 `userDisabled` 반영해 저장 */
+  onWarehouseTogglePersist,
   className,
 }: {
   tool: Tool;
@@ -137,17 +139,19 @@ export function ToolCard({
   /** 별 체크 = 상단 고정 */
   pinned?: boolean;
   onTogglePinned?: () => void;
+  onWarehouseTogglePersist?: (next: Tool) => void;
   className?: string;
 }) {
   const [showSecret, setShowSecret] = useState(false);
   const [credentialOpen, setCredentialOpen] = useState(false);
-  const [activeOn, setActiveOn] = useState(tool.active);
+  const effectiveActive = isToolEffectivelyActive(tool);
+  const [activeOn, setActiveOn] = useState(effectiveActive);
   const [credPickId, setCredPickId] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
 
   useEffect(() => {
-    setActiveOn(tool.active);
-  }, [tool.active]);
+    setActiveOn(isToolEffectivelyActive(tool));
+  }, [tool.active, tool.userDisabled, tool.id]);
 
   const displayTags = tagList(tool);
   const hasNote = Boolean(tool.highlightNote);
@@ -172,16 +176,17 @@ export function ToolCard({
   const showWarehouseActions = mode === "warehouse" && (onEdit != null || onDelete != null);
   const showDisconnect = mode === "workflow" && onDisconnect != null;
   const isPicker = mode === "picker";
+  const showWarehouseActivationToggle = mode === "warehouse" && onWarehouseTogglePersist != null;
 
   const cardShell = cn(
     "w-full rounded-[22px] bg-white p-6 text-left shadow-sm ring-1 ring-zinc-200/90 transition-[opacity,filter,saturate]",
     selected && "ring-2 ring-zinc-900 ring-offset-2 ring-offset-zinc-50",
-    !activeOn && "opacity-[0.66] saturate-[0.65] contrast-[0.96]",
+    !effectiveActive && "opacity-[0.72] saturate-[0.55] contrast-[0.95] grayscale-[0.4]",
     className,
   );
 
   const linkButton =
-    !isPicker && tool.href ? (
+    !isPicker && tool.href && effectiveActive ? (
       <Link
         href={tool.href}
         target={tool.href.startsWith("http") ? "_blank" : undefined}
@@ -190,6 +195,13 @@ export function ToolCard({
       >
         바로가기
       </Link>
+    ) : !isPicker && tool.href && !effectiveActive ? (
+      <span
+        className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-full border border-zinc-200 bg-zinc-100 px-6 py-2.5 text-center text-[13px] font-semibold leading-tight text-zinc-400 sm:w-auto"
+        title="비활성 도구는 바로가기를 사용할 수 없어요"
+      >
+        바로가기 불가
+      </span>
     ) : null;
 
   const pickerActivates = isPicker && onSelect;
@@ -228,6 +240,16 @@ export function ToolCard({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{tool.name}</span>
+                {tool.userDisabled ? (
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
+                    창고 비활성화
+                  </span>
+                ) : null}
+                {!effectiveActive && tool.userDisabled !== true && tool.active === false ? (
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200/90 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-amber-900">
+                    미결제·한도
+                  </span>
+                ) : null}
                 {tool.subscriptionLabel ? (
                   <span className="inline-flex shrink-0 items-center rounded-full border border-sky-200/90 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-sky-800">
                     {tool.subscriptionLabel}
@@ -341,13 +363,21 @@ export function ToolCard({
         onKeyDown={isPicker ? (e) => e.stopPropagation() : undefined}
       >
         <div className="flex flex-wrap items-center gap-3">
-          <IosCardToggle
-            on={activeOn}
-            onToggle={() => setActiveOn((v) => !v)}
-            aria-label={activeOn ? "비활성화" : "활성화"}
-          />
+          {showWarehouseActivationToggle ? (
+            <IosCardToggle
+              on={activeOn}
+              onToggle={() => {
+                const turningOff = effectiveActive;
+                const nextUserDisabled = turningOff;
+                const nextTool: Tool = { ...tool, userDisabled: nextUserDisabled };
+                onWarehouseTogglePersist(nextTool);
+                setActiveOn(isToolEffectivelyActive(nextTool));
+              }}
+              aria-label={activeOn ? "비활성화" : "활성화"}
+            />
+          ) : null}
           <div className="flex flex-wrap items-center gap-1.5 text-sm">
-            {activeOn ? (
+            {effectiveActive ? (
               <>
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#2563eb]" aria-hidden />
                 <span className="font-bold text-[#2563eb]">활성화</span>
@@ -365,6 +395,9 @@ export function ToolCard({
                   aria-hidden
                 />
                 <span className="font-bold text-red-600">비활성화</span>
+                {tool.userDisabled ? (
+                  <span className="text-zinc-400">· 창고 설정 유지</span>
+                ) : null}
               </>
             )}
           </div>

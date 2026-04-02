@@ -50,6 +50,11 @@ export type Tool = {
   difficulty: ToolDifficulty;
   recommendedFor: string[];
   active: boolean;
+  /**
+   * 창고에서 사용자가 끈 경우. true이면 `active`(카탈로그/결제)와 무관하게,
+   * 프로젝트에 연결돼 있어도 비활성 UI·기능 차단(우선순위 최상).
+   */
+  userDisabled?: boolean;
   description?: string;
   tags?: string[];
   href?: string;
@@ -78,6 +83,12 @@ export type Tool = {
   /** 로고 영역 배경색 (hex, 예: #10A37F) */
   avatarBackgroundColor?: string;
 };
+
+/** 프로젝트·피커·창고 공통: 실제로 쓸 수 있는 활성 여부 */
+export function isToolEffectivelyActive(tool: Tool): boolean {
+  if (tool.userDisabled === true) return false;
+  return tool.active !== false;
+}
 
 export const tools: Tool[] = [
   {
@@ -343,7 +354,7 @@ function profileFor(taskType: string): TaskProfile {
 }
 
 function scoreTool(tool: Tool, profile: TaskProfile) {
-  if (!tool.active) return -Infinity;
+  if (!isToolEffectivelyActive(tool)) return -Infinity;
   if (profile.maxDifficulty && difficultyRank[tool.difficulty] > difficultyRank[profile.maxDifficulty]) return -Infinity;
   if (profile.exclude?.some((c) => tool.capabilities.includes(c))) return -Infinity;
 
@@ -395,7 +406,7 @@ export function recommendWorkflow(taskType: string): Tool[] {
 
   const prepend = ensure
     .map((id) => tools.find((t) => t.id === id))
-    .filter((t): t is Tool => Boolean(t && t.active));
+    .filter((t): t is Tool => Boolean(t && isToolEffectivelyActive(t)));
 
   const merged: Tool[] = [];
   for (const t of [...prepend, ...ranked]) {

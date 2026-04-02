@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Tool } from "@/lib/tools";
+import { isToolEffectivelyActive, type Tool } from "@/lib/tools";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { useMergedTools } from "@/hooks/useMergedTools";
 import { PillSearchField } from "@/components/ui/PillSearchField";
@@ -42,7 +42,9 @@ export function ToolPickerModal({
     const q = query.trim().toLowerCase();
     const list = tools.filter((t) => toolMatchesQuery(t, q));
     return [...list].sort((a, b) => {
-      if (a.active !== b.active) return a.active ? -1 : 1;
+      const ea = isToolEffectivelyActive(a);
+      const eb = isToolEffectivelyActive(b);
+      if (ea !== eb) return ea ? -1 : 1;
       return a.name.localeCompare(b.name, "ko");
     });
   }, [query, tools]);

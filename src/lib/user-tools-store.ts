@@ -144,6 +144,7 @@ const EDITABLE_KEYS: (keyof Tool)[] = [
   "credentialSecret",
   "highlightNote",
   "active",
+  "userDisabled",
   "subscriptionLabel",
   "tags",
   "cardTags",

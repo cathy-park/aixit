@@ -64,17 +64,27 @@ function parseCalDragPayload(dt: DataTransfer): { kind: CalDragKind; id: string 
   return null;
 }
 
-function monthGridCells(year: number, monthIndex: number): (Date | null)[] {
+/**
+ * 달력 그리드에 보이는 모든 칸을 실제 `Date`로 채움(이전 달 말일·다음 달 초일 포함).
+ * 드롭 시 `getTodayIsoLocal(cell)`로 연·월·일이 정확히 반영됨.
+ */
+function monthGridCellsAllDates(year: number, monthIndex: number): Date[] {
   const first = new Date(year, monthIndex, 1);
   const last = new Date(year, monthIndex + 1, 0);
   const padStart = first.getDay();
   const daysInMonth = last.getDate();
-  const cells: (Date | null)[] = [];
-  for (let i = 0; i < padStart; i++) cells.push(null);
+  const cells: Date[] = [];
+  for (let i = 0; i < padStart; i++) {
+    cells.push(new Date(year, monthIndex, i + 1 - padStart));
+  }
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push(new Date(year, monthIndex, d));
   }
-  while (cells.length % 7 !== 0) cells.push(null);
+  let k = 1;
+  while (cells.length % 7 !== 0) {
+    cells.push(new Date(year, monthIndex, daysInMonth + k));
+    k++;
+  }
   return cells;
 }
 
@@ -148,7 +158,7 @@ export function MonthlyCalendarView() {
   const popupCompletedTodos = dayPopupIso ? (todosByDate[dayPopupIso] ?? []) : [];
   const popupProjects = dayPopupIso ? (projectsByDate[dayPopupIso] ?? []) : [];
 
-  const cells = useMemo(() => monthGridCells(year, monthIndex), [year, monthIndex]);
+  const cells = useMemo(() => monthGridCellsAllDates(year, monthIndex), [year, monthIndex]);
   const todayIso = getTodayIsoLocal();
 
   const goPrev = useCallback(() => {
@@ -312,79 +322,82 @@ export function MonthlyCalendarView() {
             {d}
           </div>
         ))}
-        {cells.map((cell, i) => {
-          const iso = cell ? getTodayIsoLocal(cell) : "";
-          const isToday = Boolean(cell && iso === todayIso);
-          const weekendDow = cell ? cell.getDay() : -1; // 0 일, 6 토
-          const { lines, total } = cell
-            ? cellPreviewLines(iso, plannedByDate, todosByDate, projectsByDate)
-            : { lines: [] as CalCellLine[], total: 0 };
+        {cells.map((cell) => {
+          const iso = getTodayIsoLocal(cell);
+          const inCurrentMonth = cell.getMonth() === monthIndex && cell.getFullYear() === year;
+          const isToday = iso === todayIso;
+          const weekendDow = cell.getDay();
+          const { lines, total } = cellPreviewLines(iso, plannedByDate, todosByDate, projectsByDate);
 
           return (
             <div
-              key={cell ? iso : `empty-${i}`}
+              key={iso}
+              data-cal-date={iso}
               className={cn(
-                "min-h-[5.5rem] bg-white p-1.5 transition-[background-color,box-shadow] duration-150 sm:min-h-[6.5rem] sm:p-2",
-                !cell && "bg-zinc-50/80",
-                cell &&
-                  calDropTargetIso === iso &&
+                "min-h-[5.5rem] p-1.5 transition-[background-color,box-shadow] duration-150 sm:min-h-[6.5rem] sm:p-2",
+                inCurrentMonth ? "bg-white" : "bg-zinc-50/70",
+                calDropTargetIso === iso &&
                   "bg-sky-100/95 shadow-[inset_0_0_0_2px_theme(colors.sky.500)]",
               )}
-              onDragOver={cell ? (e) => onCalDragOver(e, iso) : undefined}
-              onDragLeave={cell ? onCalDragLeave : undefined}
-              onDrop={cell ? (e) => onCalDrop(e, iso) : undefined}
+              onDragOver={(e) => onCalDragOver(e, iso)}
+              onDragLeave={onCalDragLeave}
+              onDrop={(e) => onCalDrop(e, iso)}
             >
-              {cell ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDayPopupIso(iso);
-                    setPlanDraft("");
-                  }}
-                  className="w-full text-left outline-none transition hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-0"
-                  aria-label={`${formatKoreanShortDateWithWeekday(iso)}, 기록 ${total}건`}
-                >
-                  <div
-                    className={cn(
-                      "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold",
-                      isToday
-                        ? "bg-zinc-900 text-white"
+              <button
+                type="button"
+                onClick={() => {
+                  setDayPopupIso(iso);
+                  setPlanDraft("");
+                }}
+                className="w-full text-left outline-none transition hover:bg-zinc-50/80 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-0"
+                aria-label={`${formatKoreanShortDateWithWeekday(iso)}, 기록 ${total}건`}
+              >
+                <div
+                  className={cn(
+                    "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold",
+                    isToday
+                      ? "bg-zinc-900 text-white"
+                      : !inCurrentMonth
+                        ? weekendDow === 0
+                          ? "text-red-400"
+                          : weekendDow === 6
+                            ? "text-blue-400"
+                            : "text-zinc-400"
                         : weekendDow === 0
                           ? "text-red-600"
                           : weekendDow === 6
                             ? "text-blue-600"
                             : "text-zinc-700",
-                    )}
-                  >
-                    {cell.getDate()}
-                  </div>
-                  <ul className="space-y-0.5">
-                    {lines.map((line) => (
-                      <li
-                        key={`${line.kind}-${line.id}`}
-                        draggable
-                        onDragStart={(e) => onCalItemDragStart(e, line.kind, line.id)}
-                        onDragEnd={onCalItemDragEnd}
-                        className={cn(
-                          "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 sm:text-[11px]",
-                          line.kind === "planned"
-                            ? "bg-sky-50 text-sky-950 ring-sky-100"
-                            : line.kind === "todo"
-                              ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
-                              : "bg-indigo-50 text-indigo-900 ring-indigo-100",
-                          "cursor-grab active:cursor-grabbing",
-                        )}
-                        title={`${line.label} — 드래그하여 다른 날로 이동`}
-                      >
-                        {line.label}
-                      </li>
-                    ))}
-                    {total > 3 ? (
-                      <li className="text-[10px] font-semibold text-zinc-400">+{total - 3}</li>
-                    ) : null}
-                  </ul>
-                </button>
-              ) : null}
+                  )}
+                >
+                  {cell.getDate()}
+                </div>
+                <ul className="space-y-0.5">
+                  {lines.map((line) => (
+                    <li
+                      key={`${line.kind}-${line.id}`}
+                      draggable
+                      onDragStart={(e) => onCalItemDragStart(e, line.kind, line.id)}
+                      onDragEnd={onCalItemDragEnd}
+                      className={cn(
+                        "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 sm:text-[11px]",
+                        line.kind === "planned"
+                          ? "bg-sky-50 text-sky-950 ring-sky-100"
+                          : line.kind === "todo"
+                            ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
+                            : "bg-indigo-50 text-indigo-900 ring-indigo-100",
+                        "cursor-grab active:cursor-grabbing",
+                      )}
+                      title={`${line.label} — 드래그하여 다른 날로 이동`}
+                    >
+                      {line.label}
+                    </li>
+                  ))}
+                  {total > 3 ? (
+                    <li className="text-[10px] font-semibold text-zinc-400">+{total - 3}</li>
+                  ) : null}
+                </ul>
+              </button>
             </div>
           );
         })}

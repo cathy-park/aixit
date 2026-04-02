@@ -160,6 +160,10 @@ export function ToolsWarehouseView() {
                 togglePinnedToolId(tool.id);
                 // event listener에서 pinnedToolIds가 갱신됩니다.
               }}
+              onWarehouseTogglePersist={(next) => {
+                persistTool(next);
+                refresh();
+              }}
             />
           ))
         )}
