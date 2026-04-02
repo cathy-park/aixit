@@ -1,11 +1,11 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const CACHE_NAME = `aixit-pwa-${CACHE_VERSION}`;
 
 const OFFLINE_URL = "/offline.html";
-const ICON_192 = "/icon-192.png";
-const ICON_512 = "/icon-512.png";
+const ICON_192 = "/icon-192-v2.png";
+const ICON_512 = "/icon-512-v2.png";
 const MANIFEST_URL = "/manifest.json";
 
 const PRECACHE_URLS = [OFFLINE_URL, MANIFEST_URL, ICON_192, ICON_512];

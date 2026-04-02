@@ -38,7 +38,7 @@ export default function LandingPageClient() {
       <div className="w-full max-w-[420px] text-center">
         <div className="mx-auto w-[240px] max-w-full">
           <Image
-            src="/landing-hero.png"
+            src="/landing-hero-v2.png"
             alt="AIXIT"
             width={512}
             height={512}
