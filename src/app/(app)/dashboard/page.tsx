@@ -1,5 +1,11 @@
-import { redirect } from "next/navigation";
+import { HomeTodayDashboard } from "@/components/home/HomeTodayDashboard";
+import { GuestModeNotice } from "@/components/landing/GuestModeNotice";
 
 export default function DashboardLegacyPage() {
-  redirect("/projects");
+  return (
+    <>
+      <GuestModeNotice />
+      <HomeTodayDashboard />
+    </>
+  );
 }

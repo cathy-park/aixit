@@ -5,13 +5,12 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/components/ui/cn";
 
 const NAV = [
-  { href: "/", label: "홈", match: (p: string) => p === "/" },
+  { href: "/dashboard", label: "홈", match: (p: string) => p === "/dashboard" },
   {
     href: "/projects",
     label: "프로젝트",
     match: (p: string) =>
       p === "/projects" ||
-      p === "/dashboard" ||
       p.startsWith("/workspace") ||
       p.startsWith("/recommendation"),
   },
@@ -31,7 +30,7 @@ export function PrimarySidebar() {
 
   return (
     <aside className="flex h-full min-h-0 w-[220px] shrink-0 flex-col overflow-y-auto border-r border-zinc-200 bg-white px-3 py-6">
-      <Link href="/" className="px-3 text-lg font-semibold tracking-tight text-zinc-950">
+      <Link href="/dashboard" className="px-3 text-lg font-semibold tracking-tight text-zinc-950">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/sidebar-logo.png"

@@ -24,7 +24,7 @@ export function JittoHelperPanel({
           작업 다시 고르기
         </Link>
         <Link
-          href="/projects"
+          href="/dashboard"
           className="rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-zinc-800"
         >
           대시보드로
