@@ -132,7 +132,7 @@ export function ToolsWarehouseView() {
           </button>
         }
       />
-      <AppMainColumn>
+      <AppMainColumn className="pb-20">
       <div className="mt-0">
         <PillSearchField
           value={search}
