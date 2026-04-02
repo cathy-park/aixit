@@ -87,7 +87,7 @@ function CardHeaderWithAccountBadge({
   const provider = tool.credentialProvider ?? "email";
 
   return (
-    <span className="relative inline-block shrink-0 align-middle">
+    <div className="relative h-12 w-12 shrink-0">
       <CardHeaderIcon tool={tool} />
       {hasCreds ? (
         <button
@@ -97,14 +97,14 @@ function CardHeaderWithAccountBadge({
             e.stopPropagation();
             onAccountClick();
           }}
-          className="absolute bottom-0 right-0 z-10 focus-visible:rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          className="absolute -bottom-0.5 -right-0.5 z-10 focus-visible:rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           title="계정 정보"
           aria-label="계정 정보 보기"
         >
           <CredentialProviderMark id={provider} size="xs" />
         </button>
       ) : null}
-    </span>
+    </div>
   );
 }
 
