@@ -38,8 +38,6 @@ export function WorkflowTemplateCard({
         <div className="flex items-start gap-3">
           <Link
             href={`/workflow/${encodeURIComponent(t.slug)}`}
-            draggable={false}
-            onDragStart={(e) => e.preventDefault()}
             className="min-w-0 flex-1 rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
           >
             <div className="flex flex-wrap items-center gap-2 gap-y-1">
