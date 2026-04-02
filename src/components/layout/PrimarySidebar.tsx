@@ -36,7 +36,7 @@ export function PrimarySidebar() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo2.png?v=6"
+          src="/logo2.png?v=7"
           alt="AIXIT"
           className="h-auto max-h-8 w-full max-w-full bg-transparent object-contain object-left"
           draggable={false}
