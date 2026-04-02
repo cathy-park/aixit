@@ -36,7 +36,7 @@ export default function LandingPageClient() {
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-white px-6 py-12 text-zinc-900">
       <div className="w-full max-w-[420px] text-center">
-        <div className="mx-auto w-full max-w-[min(100%,320px)] bg-transparent p-0">
+        <div className="mx-auto w-full max-w-[min(100%,288px)] bg-transparent p-0">
           <Image
             src="/landing-intro-aixit.png?v=3"
             alt="AIXIT"
