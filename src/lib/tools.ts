@@ -30,6 +30,18 @@ export type CredentialProviderId =
   | "ddokdi"
   | "x";
 
+export type ToolCredential = {
+  /** tool 내부에서의 식별자 */
+  id: string;
+  provider: CredentialProviderId;
+  /** 이메일/아이디 */
+  loginId?: string;
+  /** 비밀번호/API key 등 */
+  secret?: string;
+  /** 사용자가 알아보기 쉬운 별칭 (예: 회사계정, 개인계정) */
+  label?: string;
+};
+
 export type Tool = {
   id: string;
   name: string;
@@ -46,7 +58,11 @@ export type Tool = {
   subscriptionLabel?: string;
   /** 노란 강조 노트 */
   highlightNote?: string;
-  /** 계정 정보 (카드 본문 mock) */
+  /** 계정 목록 (여러 개 가능) */
+  credentials?: ToolCredential[];
+  /** 대표(활성) 계정 */
+  activeCredentialId?: string;
+  /** (레거시) 계정 정보 (단일) */
   credentialId?: string;
   credentialSecret?: string;
   /** 설정 시 카드에는 해당 로고만, 탭하면 아이디·비밀번호 팝업 */

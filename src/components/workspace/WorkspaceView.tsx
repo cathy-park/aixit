@@ -500,7 +500,7 @@ export function WorkspaceView() {
               <select
                 value={wf.status ?? "진행중"}
                 onChange={(e) => setWorkflowStatus(e.target.value as (typeof WORKFLOW_STATUS_OPTIONS)[number])}
-                className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+                className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
               >
                 {WORKFLOW_STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>

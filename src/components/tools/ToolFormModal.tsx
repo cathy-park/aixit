@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ImageImportBlock } from "@/components/ui/ImageImportBlock";
-import type { CredentialProviderId, Tool, ToolCardTagVariant } from "@/lib/tools";
+import type { CredentialProviderId, Tool, ToolCardTagVariant, ToolCredential } from "@/lib/tools";
 import { tools as seedTools } from "@/lib/tools";
 import { cn } from "@/components/ui/cn";
 import { makeUserToolId } from "@/lib/user-tools-store";
@@ -42,6 +42,30 @@ function inputClass() {
   );
 }
 
+function makeCredId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `cred_${Date.now().toString(16)}_${Math.random().toString(16).slice(2)}`;
+}
+
+function legacyToCredentials(t: Tool | null): { list: ToolCredential[]; activeId?: string } {
+  if (!t) return { list: [] };
+  if (t.credentials?.length) return { list: t.credentials, activeId: t.activeCredentialId };
+  const hasLegacy = Boolean(t.credentialId || t.credentialSecret || t.credentialProvider);
+  if (!hasLegacy) return { list: [] };
+  const id = makeCredId();
+  return {
+    list: [
+      {
+        id,
+        provider: t.credentialProvider ?? "email",
+        loginId: t.credentialId,
+        secret: t.credentialSecret,
+      },
+    ],
+    activeId: id,
+  };
+}
+
 export function ToolFormModal({
   open,
   mode,
@@ -62,6 +86,9 @@ export function ToolFormModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [href, setHref] = useState("");
+  const [credentials, setCredentials] = useState<ToolCredential[]>([]);
+  const [activeCredentialId, setActiveCredentialId] = useState<string | undefined>(undefined);
+  const [credLabel, setCredLabel] = useState("");
   const [credentialId, setCredentialId] = useState("");
   const [credentialSecret, setCredentialSecret] = useState("");
   const [memo, setMemo] = useState("");
@@ -79,11 +106,13 @@ export function ToolFormModal({
       setName(initial.name);
       setDescription(initial.description ?? "");
       setHref(initial.href ?? "");
-      setCredentialId(initial.credentialId ?? "");
-      setCredentialSecret(
-        initial.credentialSecret && !/^•+$/.test(initial.credentialSecret) ? initial.credentialSecret : "",
-      );
-      setCredentialProvider(initial.credentialProvider ?? "email");
+      const legacy = legacyToCredentials(initial);
+      setCredentials(legacy.list);
+      setActiveCredentialId(legacy.activeId ?? legacy.list[0]?.id);
+      setCredLabel("");
+      setCredentialId("");
+      setCredentialSecret("");
+      setCredentialProvider("email");
       setMemo(initial.highlightNote ?? "");
       setTags([...new Set(tagsFromTool(initial))]);
       setTagInput("");
@@ -96,6 +125,9 @@ export function ToolFormModal({
       setName("");
       setDescription("");
       setHref("");
+      setCredentials([]);
+      setActiveCredentialId(undefined);
+      setCredLabel("");
       setCredentialId("");
       setCredentialSecret("");
       setCredentialProvider("email");
@@ -119,6 +151,33 @@ export function ToolFormModal({
 
   const removeTag = (t: string) => setTags((prev) => prev.filter((x) => x !== t));
 
+  const addCredential = () => {
+    const loginTrim = credentialId.trim();
+    const secretTrim = credentialSecret.trim();
+    const labelTrim = credLabel.trim();
+    const hasData = Boolean(loginTrim || secretTrim);
+    if (!hasData) return;
+    const id = makeCredId();
+    const item: ToolCredential = {
+      id,
+      provider: credentialProvider,
+      loginId: loginTrim || undefined,
+      secret: secretTrim || undefined,
+      label: labelTrim || undefined,
+    };
+    setCredentials((prev) => [item, ...prev]);
+    setActiveCredentialId((cur) => cur ?? id);
+    setCredLabel("");
+    setCredentialId("");
+    setCredentialSecret("");
+    setCredentialProvider("email");
+  };
+
+  const removeCredential = (id: string) => {
+    setCredentials((prev) => prev.filter((c) => c.id !== id));
+    setActiveCredentialId((cur) => (cur === id ? undefined : cur));
+  };
+
   const submit = () => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
@@ -130,12 +189,9 @@ export function ToolFormModal({
     }));
 
     const logoText = trimmedName.slice(0, 3);
-    const secretTrim = credentialSecret.trim();
-    const resolvedSecret =
-      secretTrim ||
-      (mode === "edit" && initial?.credentialSecret ? initial.credentialSecret : undefined);
-    const idTrim = credentialId.trim();
-    const hasCredData = Boolean(idTrim || secretTrim || (mode === "edit" && initial?.credentialSecret));
+    const activeCred =
+      (activeCredentialId ? credentials.find((c) => c.id === activeCredentialId) : undefined) ?? credentials[0];
+    const hasCredData = Boolean(activeCred?.loginId || activeCred?.secret);
 
     const basePartial: Partial<Tool> = {
       name: trimmedName,
@@ -143,9 +199,12 @@ export function ToolFormModal({
       href: href.trim() || undefined,
       logoText,
       logoImageUrl: logoImageUrl.trim() || undefined,
-      credentialId: idTrim || undefined,
-      credentialSecret: resolvedSecret,
-      credentialProvider: hasCredData ? credentialProvider : undefined,
+      credentials: credentials.length ? credentials : undefined,
+      activeCredentialId: activeCredentialId ?? (credentials[0]?.id || undefined),
+      // 레거시 필드: 카드/기존 UI 호환용으로 대표 계정을 미러링
+      credentialId: hasCredData ? activeCred?.loginId : undefined,
+      credentialSecret: hasCredData ? activeCred?.secret : undefined,
+      credentialProvider: hasCredData ? activeCred?.provider : undefined,
       highlightNote: memo.trim() || undefined,
       active,
       subscriptionLabel,
@@ -229,44 +288,104 @@ export function ToolFormModal({
               <input value={href} onChange={(e) => setHref(e.target.value)} className={inputClass()} placeholder="https://…" />
             </label>
 
-            <div>
-              <div className="text-xs font-bold text-zinc-800">계정 종류</div>
-              <p className="mt-1 text-xs text-zinc-500">
-                카드에는 선택한 종류 아이콘이 겹쳐 보이고, 탭하면 아이디·비밀번호를 확인할 수 있어요.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {CREDENTIAL_PROVIDER_LIST.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setCredentialProvider(p.id)}
-                    title={p.label}
-                    className={cn(
-                      "rounded-2xl p-1.5 ring-2 transition",
-                      credentialProvider === p.id ? "ring-blue-500" : "ring-transparent hover:ring-zinc-200",
-                    )}
-                  >
-                    <CredentialProviderMark id={p.id} size="sm" />
-                  </button>
-                ))}
+            <div className="rounded-3xl bg-zinc-50 p-4 ring-1 ring-zinc-200/70">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div className="text-xs font-bold text-zinc-800">계정</div>
+                <div className="text-[11px] font-semibold text-zinc-500">여러 개 추가 가능</div>
+              </div>
+
+              {credentials.length > 0 ? (
+                <div className="mt-3 space-y-2">
+                  {credentials.map((c) => {
+                    const selected = (activeCredentialId ?? credentials[0]?.id) === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        className={cn(
+                          "flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 ring-1",
+                          selected ? "ring-blue-200" : "ring-zinc-200",
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setActiveCredentialId(c.id)}
+                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        >
+                          <CredentialProviderMark id={c.provider} size="sm" />
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-zinc-900">
+                              {c.label?.trim() ? c.label : c.loginId?.trim() ? c.loginId : "계정"}
+                            </div>
+                            <div className="truncate text-xs text-zinc-500">
+                              {c.loginId?.trim() ? c.loginId : "아이디 없음"} · {c.secret?.trim() ? "비밀값 있음" : "비밀값 없음"}
+                              {selected ? " · 대표" : ""}
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeCredential(c.id)}
+                          className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-3 text-sm text-zinc-500">아직 추가된 계정이 없어요.</div>
+              )}
+
+              <div className="mt-4 border-t border-zinc-200/70 pt-4">
+                <div className="text-xs font-bold text-zinc-800">새 계정 추가</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {CREDENTIAL_PROVIDER_LIST.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setCredentialProvider(p.id)}
+                      title={p.label}
+                      className={cn(
+                        "rounded-2xl p-1.5 ring-2 transition",
+                        credentialProvider === p.id ? "ring-blue-500" : "ring-transparent hover:ring-zinc-200",
+                      )}
+                    >
+                      <CredentialProviderMark id={p.id} size="sm" />
+                    </button>
+                  ))}
+                </div>
+
+                <label className="mt-3 block">
+                  <span className="text-xs font-bold text-zinc-800">별칭(선택)</span>
+                  <input value={credLabel} onChange={(e) => setCredLabel(e.target.value)} className={inputClass()} placeholder="예: 개인 / 회사" />
+                </label>
+
+                <label className="mt-3 block">
+                  <span className="text-xs font-bold text-zinc-800">아이디/이메일</span>
+                  <input value={credentialId} onChange={(e) => setCredentialId(e.target.value)} className={inputClass()} />
+                </label>
+
+                <label className="mt-3 block">
+                  <span className="text-xs font-bold text-zinc-800">비밀번호/API 키</span>
+                  <input
+                    value={credentialSecret}
+                    onChange={(e) => setCredentialSecret(e.target.value)}
+                    type="password"
+                    autoComplete="new-password"
+                    className={inputClass()}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={addCredential}
+                  className="mt-3 w-full rounded-2xl bg-white py-3 text-sm font-bold text-zinc-900 ring-1 ring-zinc-200 hover:bg-zinc-50"
+                >
+                  계정 추가
+                </button>
               </div>
             </div>
-
-            <label className="block">
-              <span className="text-xs font-bold text-zinc-800">아이디/이메일</span>
-              <input value={credentialId} onChange={(e) => setCredentialId(e.target.value)} className={inputClass()} />
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-bold text-zinc-800">비밀번호/API 키</span>
-              <input
-                value={credentialSecret}
-                onChange={(e) => setCredentialSecret(e.target.value)}
-                type="password"
-                autoComplete="new-password"
-                className={inputClass()}
-              />
-            </label>
 
             <label className="block">
               <span className="text-xs font-bold text-zinc-800">메모</span>

@@ -90,9 +90,13 @@ export function ToolPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full bg-zinc-50 px-3 py-1.5 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-200 hover:bg-white"
+            aria-label="닫기"
+            title="닫기"
+            className="rounded-full bg-zinc-50 p-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-200 hover:bg-white"
           >
-            닫기
+            <span aria-hidden className="text-xl leading-none">
+              ×
+            </span>
           </button>
         </div>
 
@@ -106,7 +110,7 @@ export function ToolPickerModal({
           <WarehouseKeywordsRow keywords={pickerKeywords} onKeywordClick={(d) => setQuery(d)} />
         </div>
 
-          <div className="mt-5 max-h-[55vh] overflow-auto px-1">
+          <div className="mt-6 max-h-[55vh] overflow-auto px-1 pt-2">
           <div className="grid grid-cols-2 gap-5">
             {filtered.map((tool) => (
               <ToolCard

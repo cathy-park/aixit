@@ -189,7 +189,7 @@ export function WorkflowNavigatorBar({
       {!hideTitle ? <div className="text-sm font-semibold">추천 workflow navigator</div> : null}
 
       <div
-        className={cn("overflow-x-auto pb-1 px-4 sm:px-6", !hideTitle && "mt-4")}
+        className={cn("overflow-x-auto overflow-y-visible py-1 px-4 sm:px-6", !hideTitle && "mt-4")}
         ref={scrollWrapRef}
       >
         <div className="flex min-w-max items-center">

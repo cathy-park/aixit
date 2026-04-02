@@ -59,13 +59,20 @@ export function saveDeletedBuiltinIds(ids: Set<string>) {
 
 function mergeTool(base: Tool, patch?: Partial<Tool>): Tool {
   if (!patch) return { ...base };
-  const { credentialProvider, ...rest } = patch;
+  const { credentialProvider, highlightNote, ...rest } = patch;
   const out: Tool = { ...base, ...rest };
   if (Object.prototype.hasOwnProperty.call(patch, "credentialProvider")) {
     if (credentialProvider == null) {
       delete out.credentialProvider;
     } else {
       out.credentialProvider = credentialProvider;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "highlightNote")) {
+    if (highlightNote == null) {
+      delete out.highlightNote;
+    } else {
+      out.highlightNote = highlightNote;
     }
   }
   return out;
@@ -130,6 +137,8 @@ const EDITABLE_KEYS: (keyof Tool)[] = [
   "logoText",
   "logoImageUrl",
   "avatarBackgroundColor",
+  "credentials",
+  "activeCredentialId",
   "credentialProvider",
   "credentialId",
   "credentialSecret",
@@ -162,6 +171,10 @@ export function persistTool(tool: Tool) {
   const ov = loadOverrides()[tool.id];
   if (!tool.credentialProvider && ov?.credentialProvider) {
     (patch as Record<string, unknown>).credentialProvider = null;
+  }
+  // 레거시처럼 "삭제"가 의미있는 필드들은, seed에 없고 override에만 있던 값을 지울 수 있어야 합니다.
+  if (!tool.highlightNote && ov?.highlightNote) {
+    (patch as Record<string, unknown>).highlightNote = null;
   }
   upsertBuiltinOverride(tool.id, patch);
 }

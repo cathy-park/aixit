@@ -97,7 +97,7 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
 
   return (
     <DetailPageWrapper>
-      <header className="pb-5">
+      <header className="pb-3">
         <Link
           href="/workflows"
           className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-700 hover:text-zinc-950"
@@ -105,57 +105,68 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
           <span aria-hidden>←</span>
           워크플로우 템플릿
         </Link>
-        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1 space-y-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">{wf.name}</h1>
-            {wf.subtitle ? <p className="text-sm font-medium text-zinc-600">{wf.subtitle}</p> : null}
-            <p className="text-sm font-semibold text-zinc-600">
-              STEP {Math.min(currentIndex + 1, Math.max(wf.steps.length, 1))} / {Math.max(wf.steps.length, 1)} · 템플릿
-              미리보기
-            </p>
-          </div>
-          <div className="flex w-full shrink-0 flex-col items-stretch gap-3 sm:w-auto sm:items-end">
-            <label className="block w-full sm:max-w-[220px]">
-              <span className="text-xs font-semibold text-zinc-500">프로젝트 폴더</span>
-              <select
-                value={newProjectFolderId}
-                onChange={(e) => setNewProjectFolderId(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-              >
-                {projectFolderOptions.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.emoji} {f.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {linkedProjects.length > 0 ? (
-              <>
-                <button
-                  type="button"
-                  onClick={openLatestProject}
-                  className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
+        <div className="mt-3 flex flex-col gap-3">
+          {/* 1단: 제목 + 우측 액션 */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-2">
+              <label className="block">
+                <span className="sr-only">워크플로우 템플릿 제목</span>
+                <input
+                  value={wf.name}
+                  readOnly
+                  className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+                />
+              </label>
+              {wf.subtitle ? <p className="text-sm font-medium text-zinc-600">{wf.subtitle}</p> : null}
+            </div>
+
+            <div className="flex w-full shrink-0 flex-col items-stretch gap-3 sm:w-auto sm:items-end">
+              <label className="block w-full sm:max-w-[220px]">
+                <span className="text-xs font-semibold text-zinc-500">프로젝트 폴더</span>
+                <select
+                  value={newProjectFolderId}
+                  onChange={(e) => setNewProjectFolderId(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
                 >
-                  프로젝트 열기 (수정)
-                </button>
+                  {projectFolderOptions.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.emoji} {f.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {linkedProjects.length > 0 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={openLatestProject}
+                    className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
+                  >
+                    프로젝트 열기 (수정)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateProject}
+                    className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-zinc-800 ring-1 ring-zinc-200 hover:bg-zinc-50"
+                  >
+                    새 프로젝트 만들기
+                  </button>
+                </>
+              ) : (
                 <button
                   type="button"
                   onClick={handleCreateProject}
-                  className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-zinc-800 ring-1 ring-zinc-200 hover:bg-zinc-50"
+                  className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
                 >
-                  새 프로젝트 만들기
+                  프로젝트 생성
                 </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={handleCreateProject}
-                className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
-              >
-                프로젝트 생성
-              </button>
-            )}
+              )}
+            </div>
           </div>
+
+          <p className="text-xs font-semibold text-zinc-600">
+            STEP {Math.min(currentIndex + 1, Math.max(wf.steps.length, 1))} / {Math.max(wf.steps.length, 1)} · 템플릿 미리보기
+          </p>
         </div>
       </header>
 
