@@ -48,7 +48,7 @@ export default function LandingPageClient() {
           />
         </div>
 
-        <p className="mt-6 text-sm leading-relaxed text-zinc-600">
+        <p className="mt-0 text-sm leading-relaxed text-zinc-600">
           직관적이고 쉽고 빠르게 워크플로우를 관리해보세요!
         </p>
 
