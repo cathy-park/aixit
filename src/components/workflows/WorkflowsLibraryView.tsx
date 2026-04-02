@@ -306,36 +306,13 @@ export function WorkflowsLibraryView() {
         onTogglePin={() => setPinnedKeys(togglePinnedWorkflowKey(`tpl:${t.templateId}`))}
         onCopy={() => copyTemplateToProject(t.templateId)}
         onDelete={() => handleRemoveTemplateFromLibrary(t.templateId)}
+        dnd={{
+          mime: TEMPLATE_CARD_MIME,
+          onMoveBefore: (dragId, beforeId) => moveTemplateIdBefore(dragId, beforeId, templateCatalogIds),
+        }}
       />
     ),
     [pinnedKeys, copyTemplateToProject, handleRemoveTemplateFromLibrary],
-  );
-
-  const wrapTemplateDnD = useCallback(
-    (t: WorkflowTemplateListItem, card: ReactNode) => (
-      <div
-        key={t.templateId}
-        draggable
-        className="cursor-grab rounded-[30px] active:cursor-grabbing"
-        onDragStart={(e) => {
-          e.dataTransfer.setData(TEMPLATE_CARD_MIME, t.templateId);
-          e.dataTransfer.effectAllowed = "move";
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "move";
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          const raw = e.dataTransfer.getData(TEMPLATE_CARD_MIME);
-          if (!raw || raw === t.templateId) return;
-          moveTemplateIdBefore(raw, t.templateId, templateCatalogIds);
-        }}
-      >
-        {card}
-      </div>
-    ),
-    [templateCatalogIds],
   );
 
   return (
@@ -410,7 +387,9 @@ export function WorkflowsLibraryView() {
                 />
                 {isSectionExpanded(folder.id) ? (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {items.map((t) => wrapTemplateDnD(t, renderTemplateCard(t)))}
+                    {items.map((t) => (
+                      <div key={t.templateId}>{renderTemplateCard(t)}</div>
+                    ))}
                   </div>
                 ) : null}
               </section>
@@ -428,7 +407,9 @@ export function WorkflowsLibraryView() {
                 />
                 {isSectionExpanded(WF_MISC_SECTION_ID) ? (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {templatesInUnknownCategory.map((t) => wrapTemplateDnD(t, renderTemplateCard(t)))}
+                    {templatesInUnknownCategory.map((t) => (
+                      <div key={t.templateId}>{renderTemplateCard(t)}</div>
+                    ))}
                   </div>
                 ) : null}
               </section>

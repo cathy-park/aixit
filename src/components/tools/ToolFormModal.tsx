@@ -97,7 +97,7 @@ export function ToolFormModal({
   const [tagInput, setTagInput] = useState("");
   const [credentialProvider, setCredentialProvider] = useState<CredentialProviderId>("email");
   const [active, setActive] = useState(true);
-  const [priceType, setPriceType] = useState("없음");
+  const [priceType, setPriceType] = useState("무료");
   const [priceInfo, setPriceInfo] = useState("");
 
   useEffect(() => {
@@ -138,7 +138,7 @@ export function ToolFormModal({
       setTags([]);
       setTagInput("");
       setActive(true);
-      setPriceType("없음");
+      setPriceType("무료");
       setPriceInfo("");
     }
   }, [open, mode, initial]);

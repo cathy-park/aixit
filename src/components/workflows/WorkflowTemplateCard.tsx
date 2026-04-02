@@ -1,6 +1,6 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 import Link from "next/link";
 import { ToolMiniAvatar } from "@/components/tools/ToolMiniAvatar";
 import { cn } from "@/components/ui/cn";
@@ -21,6 +21,7 @@ export function WorkflowTemplateCard({
   onCopy,
   onDelete,
   deleteDisabled = false,
+  dnd,
 }: {
   t: WorkflowTemplateListItem;
   pinned?: boolean;
@@ -28,17 +29,53 @@ export function WorkflowTemplateCard({
   onCopy?: () => void;
   onDelete?: () => void;
   deleteDisabled?: boolean;
+  dnd?: {
+    mime: string;
+    onMoveBefore: (dragId: string, beforeId: string) => void;
+  };
 }) {
   const { tools: toolCatalog } = useMergedTools();
   const toolById = (id: string) => toolCatalog.find((x) => x.id === id) ?? getMergedToolById(id);
 
+  const draggable = Boolean(dnd);
+  const handleDragStart = (e: DragEvent) => {
+    if (!dnd) return;
+    e.dataTransfer.setData(dnd.mime, t.templateId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+  const handleDragOver = (e: DragEvent) => {
+    if (!dnd) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+  const handleDrop = (e: DragEvent) => {
+    if (!dnd) return;
+    e.preventDefault();
+    const raw = e.dataTransfer.getData(dnd.mime);
+    if (!raw || raw === t.templateId) return;
+    dnd.onMoveBefore(raw, t.templateId);
+  };
+
   return (
-    <div className="flex rounded-[28px] bg-white p-5 shadow-md shadow-zinc-200/50 ring-1 ring-zinc-200/80">
+    <div
+      className={cn(
+        "flex rounded-[28px] bg-white p-5 shadow-md shadow-zinc-200/50 ring-1 ring-zinc-200/80",
+        draggable && "cursor-grab active:cursor-grabbing",
+      )}
+      draggable={draggable}
+      onDragStart={draggable ? handleDragStart : undefined}
+      onDragOver={draggable ? handleDragOver : undefined}
+      onDrop={draggable ? handleDrop : undefined}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-3">
           <Link
             href={`/workflow/${encodeURIComponent(t.slug)}`}
             className="min-w-0 flex-1 rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
+            draggable={draggable}
+            onDragStart={draggable ? handleDragStart : undefined}
+            onDragOver={draggable ? handleDragOver : undefined}
+            onDrop={draggable ? handleDrop : undefined}
           >
             <div className="flex flex-wrap items-center gap-2 gap-y-1">
               <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{t.title}</span>
