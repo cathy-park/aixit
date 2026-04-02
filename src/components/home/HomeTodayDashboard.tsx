@@ -243,7 +243,7 @@ export function HomeTodayDashboard() {
                         }
                       }}
                       className={cn(
-                        "max-w-[12rem] rounded-md border border-orange-400 bg-white px-2 py-0.5 font-semibold tracking-tight text-orange-700 outline-none focus:ring-2 focus:ring-orange-200",
+                        "max-w-[12rem] rounded-md border border-orange-400/80 bg-zinc-800 px-2 py-0.5 font-semibold tracking-tight text-orange-300 outline-none focus:ring-2 focus:ring-orange-500/40",
                         compact ? "text-base sm:max-w-[11rem]" : "text-xl sm:max-w-[14rem] sm:text-2xl",
                       )}
                       aria-label="호칭"
@@ -252,7 +252,7 @@ export function HomeTodayDashboard() {
                     <button
                       type="button"
                       className={cn(
-                        "border-b border-dashed border-orange-500/90 bg-transparent px-0 text-left font-semibold text-orange-600 decoration-transparent transition hover:text-orange-700",
+                        "border-b border-dashed border-orange-400/90 bg-transparent px-0 text-left font-semibold text-orange-300 decoration-transparent transition hover:text-orange-200",
                         compact ? "text-base sm:text-lg" : "text-xl sm:text-2xl",
                       )}
                       onClick={() => {
@@ -267,7 +267,7 @@ export function HomeTodayDashboard() {
 
                   <svg
                     className={cn(
-                      "shrink-0 text-zinc-400",
+                      "shrink-0 text-zinc-500",
                       compact ? "h-3.5 w-3.5" : "h-4 w-4",
                     )}
                     viewBox="0 0 24 24"
@@ -281,20 +281,21 @@ export function HomeTodayDashboard() {
                   </svg>
                   <span
                     className={cn(
-                      "font-semibold text-zinc-950",
+                      "font-semibold text-zinc-100",
                       compact ? "text-base sm:text-lg" : "text-xl sm:text-2xl",
                     )}
                   >
                     님의 오늘 할 일
                   </span>
                   <TitleCountChip
+                    variant="onDark"
                     count={todayProjects.length}
                     className={cn(compact && "text-[10px]")}
                   />
               </div>
 
               {/* description line (title block 안에 포함) */}
-              <p className={cn("mt-1 text-sm text-zinc-600", compact ? "mt-0.5" : "mt-1")}>
+              <p className={cn("mt-1 text-sm text-zinc-400", compact ? "mt-0.5" : "mt-1")}>
                 오늘 일정이 포함된 프로젝트만 모아서 보여드립니다.
               </p>
             </div>

@@ -61,8 +61,8 @@ export function AdaptivePageHeader({
       className={cn(
         "sticky top-0 z-40 w-full shrink-0 shadow-none transition-[padding,background-color,border-color] duration-200 ease-out",
         compact
-          ? "border-b border-zinc-200 bg-white py-2.5"
-          : "border-b border-transparent bg-transparent py-3 pb-4",
+          ? "border-b border-zinc-800 bg-[#1E1E21] py-2.5"
+          : "border-b border-transparent bg-[#1E1E21] py-3 pb-4",
         className,
       )}
     >
@@ -76,13 +76,14 @@ export function AdaptivePageHeader({
         <div className="min-w-0 flex-1">
           <h1
             className={cn(
-              "flex flex-wrap items-baseline gap-x-2 gap-y-1 font-semibold tracking-tight text-zinc-950 transition-all duration-200 ease-out",
+              "flex flex-wrap items-baseline gap-x-2 gap-y-1 font-semibold tracking-tight text-zinc-50 transition-all duration-200 ease-out",
               compact ? "text-lg sm:text-xl" : "text-2xl sm:text-3xl",
             )}
           >
             <span className="min-w-0 [text-decoration:inherit]">{titleNode}</span>
             {count != null ? (
               <TitleCountChip
+                variant="onDark"
                 count={count}
                 className={cn("transition-all duration-200 ease-out", compact && "text-[10px]")}
               />
@@ -95,7 +96,7 @@ export function AdaptivePageHeader({
                 compact ? "pointer-events-none max-h-0 opacity-0" : "max-h-40 opacity-100",
               )}
             >
-              <p className="mt-1 mb-5 text-sm text-zinc-600">{description}</p>
+              <p className="mt-1 mb-5 text-sm text-zinc-400">{description}</p>
             </div>
           ) : null}
         </div>
