@@ -1,12 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import Image from "next/image";
+import { useMemo, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import type { InspirationSite } from "@/lib/inspiration-store";
 import { incrementInspirationShortcut } from "@/lib/inspiration-store";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
+
+function MemoNoteIcon({ className }: { className?: string }) {
+  return (
+    <span className={cn("relative inline-block", className)} aria-hidden>
+      <Image src="/memo-icon.png" alt="" width={16} height={16} className="h-4 w-4" />
+    </span>
+  );
+}
 
 export function InspirationSiteCard({
   site,
@@ -21,9 +30,11 @@ export function InspirationSiteCard({
   pinned?: boolean;
   onTogglePinned?: () => void;
 }) {
+  const [noteOpen, setNoteOpen] = useState(false);
   const logo = site.logoUrl?.trim();
   const initials = site.name.trim().slice(0, 2) || "?";
   const shortcutCount = useMemo(() => site.shortcutCount ?? 0, [site.shortcutCount]);
+  const hasMemo = Boolean(site.memo.trim());
 
   return (
     <div
@@ -48,7 +59,24 @@ export function InspirationSiteCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="truncate text-lg font-bold tracking-tight text-zinc-950">{site.name}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="truncate text-lg font-bold tracking-tight text-zinc-950">{site.name}</div>
+                {hasMemo ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setNoteOpen(true);
+                    }}
+                    className="inline-flex shrink-0 items-center justify-center rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+                    aria-label="메모 보기"
+                    title="메모 보기"
+                  >
+                    <MemoNoteIcon className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
               <p className="mt-1.5 text-sm leading-snug text-zinc-500">{site.description || site.category}</p>
             </div>
               <div className="flex shrink-0 items-start gap-0.5">
@@ -93,12 +121,6 @@ export function InspirationSiteCard({
         </div>
       </div>
 
-      {site.memo.trim() ? (
-        <div className="mt-5 rounded-2xl border border-amber-200/90 bg-[#fffbeb] px-4 py-3 text-sm font-medium leading-snug text-zinc-950">
-          {site.memo}
-        </div>
-      ) : null}
-
       <div className="mt-5 flex flex-wrap gap-2">
         {site.tags.map((t, i) => {
           const raw = t.startsWith("#") ? t.slice(1) : t;
@@ -132,6 +154,42 @@ export function InspirationSiteCard({
           </span>
         )}
       </div>
+
+      {noteOpen && hasMemo ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="inspiration-note-modal-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm"
+            aria-label="닫기"
+            onClick={() => setNoteOpen(false)}
+          />
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-zinc-200">
+            <div className="flex items-center gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-2xl bg-zinc-900 text-white">
+                <MemoNoteIcon className="h-5 w-5" />
+              </div>
+              <h2 id="inspiration-note-modal-title" className="text-lg font-bold text-zinc-950">
+                메모
+              </h2>
+            </div>
+            <div className="mt-5 whitespace-pre-wrap rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-800 ring-1 ring-zinc-200">
+              {site.memo.trim()}
+            </div>
+            <button
+              type="button"
+              onClick={() => setNoteOpen(false)}
+              className="mt-6 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-bold text-white hover:bg-zinc-800"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

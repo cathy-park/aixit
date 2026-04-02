@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { listWorkflowTemplates, type WorkflowTemplateListItem } from "@/lib/aixit-data";
 import { appendUserLayoutEntry } from "@/lib/dashboard-layout-store";
@@ -20,6 +20,7 @@ import {
 import { TEMPLATE_CARD_MIME } from "@/lib/layout-card-dnd";
 import {
   mergeTemplateOrderWithCatalog,
+  moveTemplateIdAfter,
   moveTemplateIdBefore,
   TEMPLATE_LIBRARY_ORDER_EVENT,
 } from "@/lib/template-display-order-store";
@@ -102,6 +103,7 @@ export function WorkflowsLibraryView() {
   );
   const [templateOrderTick, setTemplateOrderTick] = useState(0);
   const [userTemplateTick, setUserTemplateTick] = useState(0);
+  const [templateDropTarget, setTemplateDropTarget] = useState<string | null>(null);
 
   const refreshRemovedTemplates = useCallback(() => {
     setRemovedTemplateIds(loadRemovedWorkflowTemplateIds());
@@ -176,6 +178,48 @@ export function WorkflowsLibraryView() {
   }, [templateFolders, removedTemplateIds, userTemplateTick]);
 
   const templateCatalogIds = useMemo(() => templates.map((t) => t.templateId), [templates]);
+
+  const templateDnD = useMemo(() => {
+    const readDragId = (e: DragEvent) =>
+      e.dataTransfer.getData(TEMPLATE_CARD_MIME) || e.dataTransfer.getData("text/plain");
+
+    return {
+      dropTargetKey: templateDropTarget,
+      onDragStart: (e: DragEvent, templateId: string) => {
+        e.dataTransfer.setData(TEMPLATE_CARD_MIME, templateId);
+        e.dataTransfer.setData("text/plain", templateId);
+        e.dataTransfer.effectAllowed = "move";
+      },
+      onDragOver: (e: DragEvent, key: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        setTemplateDropTarget(key);
+      },
+      onDragLeave: (e: DragEvent) => {
+        const related = e.relatedTarget as Node | null;
+        if (related && e.currentTarget.contains(related)) return;
+        setTemplateDropTarget(null);
+      },
+      onDropBefore: (e: DragEvent, beforeId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setTemplateDropTarget(null);
+        const raw = readDragId(e);
+        if (!raw || raw === beforeId) return;
+        moveTemplateIdBefore(raw, beforeId, templateCatalogIds);
+      },
+      onDropAfterLast: (e: DragEvent, lastId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setTemplateDropTarget(null);
+        const raw = readDragId(e);
+        if (!raw || raw === lastId) return;
+        moveTemplateIdAfter(raw, lastId, templateCatalogIds);
+      },
+      onDragEnd: () => setTemplateDropTarget(null),
+    };
+  }, [templateDropTarget, templateCatalogIds]);
 
   const templateDisplayOrder = useMemo(
     () => mergeTemplateOrderWithCatalog(templateCatalogIds),
@@ -306,14 +350,49 @@ export function WorkflowsLibraryView() {
         onTogglePin={() => setPinnedKeys(togglePinnedWorkflowKey(`tpl:${t.templateId}`))}
         onCopy={() => copyTemplateToProject(t.templateId)}
         onDelete={() => handleRemoveTemplateFromLibrary(t.templateId)}
-        dnd={{
-          mime: TEMPLATE_CARD_MIME,
-          onMoveBefore: (dragId, beforeId) => moveTemplateIdBefore(dragId, beforeId, templateCatalogIds),
-        }}
       />
     ),
     [pinnedKeys, copyTemplateToProject, handleRemoveTemplateFromLibrary],
   );
+
+  const renderTemplateDndGrid = (items: WorkflowTemplateListItem[], sectionEndKey: string) => {
+    if (items.length === 0) return null;
+    const endDropKey = `__tpl_end__:${sectionEndKey}`;
+    const d = templateDnD;
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        {items.map((t) => {
+          const cellKey = `tplcell:${t.templateId}`;
+          return (
+            <div
+              key={t.templateId}
+              className={cn(
+                "min-w-0 w-full justify-self-start cursor-grab rounded-[30px] active:cursor-grabbing",
+                d.dropTargetKey === cellKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+              )}
+              draggable
+              onDragStart={(e) => d.onDragStart(e, t.templateId)}
+              onDragOver={(e) => d.onDragOver(e, cellKey)}
+              onDragLeave={d.onDragLeave}
+              onDrop={(e) => d.onDropBefore(e, t.templateId)}
+              onDragEnd={d.onDragEnd}
+            >
+              {renderTemplateCard(t)}
+            </div>
+          );
+        })}
+        <div
+          className={cn(
+            "col-span-full h-12 w-full rounded-2xl",
+            d.dropTargetKey === endDropKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+          )}
+          onDragOver={(e) => d.onDragOver(e, endDropKey)}
+          onDragLeave={d.onDragLeave}
+          onDrop={(e) => d.onDropAfterLast(e, items[items.length - 1]!.templateId)}
+        />
+      </div>
+    );
+  };
 
   return (
     <>
@@ -385,13 +464,7 @@ export function WorkflowsLibraryView() {
                   onToggle={() => toggleSection(folder.id)}
                   actions={categoryHeaderActions(folder)}
                 />
-                {isSectionExpanded(folder.id) ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {items.map((t) => (
-                      <div key={t.templateId}>{renderTemplateCard(t)}</div>
-                    ))}
-                  </div>
-                ) : null}
+                {isSectionExpanded(folder.id) ? renderTemplateDndGrid(items, folder.id) : null}
               </section>
             ))}
             {templatesInUnknownCategory.length > 0 ? (
@@ -405,13 +478,7 @@ export function WorkflowsLibraryView() {
                     <span className="px-2 text-xs font-medium text-zinc-500">숨김·미분류 카테고리</span>
                   }
                 />
-                {isSectionExpanded(WF_MISC_SECTION_ID) ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {templatesInUnknownCategory.map((t) => (
-                      <div key={t.templateId}>{renderTemplateCard(t)}</div>
-                    ))}
-                  </div>
-                ) : null}
+                {isSectionExpanded(WF_MISC_SECTION_ID) ? renderTemplateDndGrid(templatesInUnknownCategory, WF_MISC_SECTION_ID) : null}
               </section>
             ) : null}
             {searchFiltered.length === 0 ? (
@@ -443,11 +510,7 @@ export function WorkflowsLibraryView() {
                     조건에 맞는 템플릿이 없어요.
                   </div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {items.map((t) => (
-                      <div key={t.templateId}>{renderTemplateCard(t)}</div>
-                    ))}
-                  </div>
+                  renderTemplateDndGrid(items, folder.id)
                 )}
               </div>
             );

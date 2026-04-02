@@ -58,3 +58,16 @@ export function moveTemplateIdBefore(draggedTemplateId: string, targetTemplateId
   ord.splice(newTi, 0, draggedTemplateId);
   saveOrder(ord);
 }
+
+/** 그리드 맨 끝 드롭: `afterTemplateId` 뒤로 이동 (프로젝트 폴더 끝 드롭과 동일 UX) */
+export function moveTemplateIdAfter(draggedTemplateId: string, afterTemplateId: string, catalogIds: string[]) {
+  if (draggedTemplateId === afterTemplateId) return;
+  const ord = mergeTemplateOrderWithCatalog(catalogIds);
+  const di = ord.indexOf(draggedTemplateId);
+  const ai = ord.indexOf(afterTemplateId);
+  if (di < 0 || ai < 0) return;
+  ord.splice(di, 1);
+  const newAi = ord.indexOf(afterTemplateId);
+  ord.splice(newAi + 1, 0, draggedTemplateId);
+  saveOrder(ord);
+}
