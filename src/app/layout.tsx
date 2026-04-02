@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Workflow Navigator",
-  description: "Navigate AI workflows, steps, and run status.",
+  title: "AIXIT",
+  description: "AIXIT — workflow navigation.",
 };
 
 export default function RootLayout({
