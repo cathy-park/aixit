@@ -14,6 +14,34 @@ import {
 
 export type FolderBarItem = DashboardFolderRecord & { workflowCount: number };
 
+function AllCategoryMark({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "grid shrink-0 place-items-center rounded-full bg-[#1A1A1A]",
+        // FolderGlyph(sm)=20px와 맞춤
+        "h-5 w-5",
+        className,
+      )}
+      aria-hidden
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-3 w-3"
+      >
+        <path d="M5 7h14" />
+        <path d="M5 12h14" />
+        <path d="M5 17h14" />
+      </svg>
+    </span>
+  );
+}
+
 function FolderChipWithMenu({
   f,
   active,
@@ -184,7 +212,7 @@ export function DashboardFolderBar({
           activeFolderId === "all" ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 ring-1 ring-zinc-200 hover:bg-zinc-50",
         )}
       >
-        <span aria-hidden>📋</span>
+        <AllCategoryMark />
         <span>전체</span>
         <TitleCountChip count={allWorkflowCount} variant={activeFolderId === "all" ? "onAccent" : "default"} />
       </button>

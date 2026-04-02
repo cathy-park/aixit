@@ -57,15 +57,21 @@ const STAR_PATH = "M12 2.5l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.
 
 /** 상단 고정: 꺼짐은 회색 라인, 켜짐은 채운 별(부모 `text-amber-500` 등으로 색 지정) */
 export function IconStarPin({ active, className }: { active?: boolean; className?: string }) {
-  if (active) {
-    return (
-      <svg className={cn("h-[18px] w-[18px]", className)} viewBox="0 0 24 24" aria-hidden fill="currentColor">
-        <path d={STAR_PATH} />
-      </svg>
-    );
-  }
   return (
-    <svg className={cn("h-[18px] w-[18px]", className)} aria-hidden {...svgProps}>
+    <svg
+      className={cn(
+        "h-[18px] w-[18px] transition-[transform,fill,stroke] duration-200 ease-out",
+        active ? "scale-[1.03]" : "scale-100",
+        className,
+      )}
+      viewBox="0 0 24 24"
+      aria-hidden
+      fill={active ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={active ? 1.25 : 1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d={STAR_PATH} />
     </svg>
   );

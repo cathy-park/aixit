@@ -157,9 +157,9 @@ export function WorkflowCard({
               <div className="h-full rounded-full bg-blue-600 transition-[width]" style={{ width: `${progress}%` }} />
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-2">
+            <div className="mt-5 flex flex-wrap items-center gap-1.5">
               <span className="text-xs font-medium text-zinc-500">사용 중:</span>
-              <div className="flex items-center pl-1">
+              <div className="flex items-center">
                 {resolvedPreviewTools.length > 0
                   ? resolvedPreviewTools.map((t, i) => (
                       <div
@@ -186,7 +186,7 @@ export function WorkflowCard({
             </div>
           </Link>
 
-          <div className="flex shrink-0 flex-row items-start gap-0.5">
+          <div className="flex shrink-0 flex-row items-start gap-0">
             {onTogglePin ? (
               <button
                 type="button"
@@ -197,6 +197,7 @@ export function WorkflowCard({
                 }}
                 className={cn(
                   actionIconButtonClass,
+                  "h-8 w-8",
                   pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
                 )}
                 aria-pressed={Boolean(pinned)}
@@ -215,7 +216,7 @@ export function WorkflowCard({
                   stopDeleteNav(e);
                   onCopy();
                 }}
-                className={actionIconButtonClass}
+                className={cn(actionIconButtonClass, "h-8 w-8")}
               >
                 <IconCopy />
               </button>
@@ -230,7 +231,7 @@ export function WorkflowCard({
                   stopDeleteNav(e);
                   onSaveAsTemplate();
                 }}
-                className={actionIconButtonClass}
+                className={cn(actionIconButtonClass, "h-8 w-8")}
               >
                 <IconSaveTemplate />
               </button>
@@ -245,7 +246,7 @@ export function WorkflowCard({
                   stopDeleteNav(e);
                   onDelete();
                 }}
-                className={actionIconButtonClass}
+                className={cn(actionIconButtonClass, "h-8 w-8")}
               >
                 <IconTrash />
               </button>

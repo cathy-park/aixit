@@ -217,8 +217,8 @@ export function HomeTodayDashboard() {
     <>
       <AdaptivePageHeader
         title={(compact) => (
-          <div className="flex flex-row items-center gap-6">
-            <HeroCharacterIllustration className="w-32 shrink-0" />
+          <div className={cn("flex flex-row items-center", compact ? "gap-3" : "gap-4")}>
+            <HeroCharacterIllustration className={cn("shrink-0", compact ? "w-20" : "w-24")} />
             <div className="flex flex-col min-w-0">
               {/* title row: 호칭/텍스트 + badge */}
               <div className="flex min-w-0 items-baseline justify-between gap-4">
@@ -318,12 +318,12 @@ export function HomeTodayDashboard() {
             에서 전체 목록을 확인하거나 일정을 맞춰 보세요.
           </div>
         ) : (
-          <div className="snap-x snap-mandatory overflow-x-auto pb-1 px-4 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="snap-x snap-mandatory overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex w-max gap-4">
               {todayProjects.map(({ entry, folder, preview }) => (
                 <div
                   key={layoutEntryPinKey(entry.kind, entry.id)}
-                  className="w-[min(100%,22rem)] shrink-0 snap-start sm:w-[22rem] mx-1"
+                  className="w-[min(100%,22rem)] shrink-0 snap-start sm:w-[22rem]"
                 >
                   <WorkflowCard
                     wf={preview}
