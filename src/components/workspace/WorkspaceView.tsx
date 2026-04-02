@@ -35,6 +35,7 @@ import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
 import { DetailPageWrapper } from "@/components/layout/DetailPageWrapper";
 import {
+  WORKSPACE_HEADER_ADD_MATCH_BTN,
   WorkspaceRelatedLinksSection,
   WorkspaceWorkflowCommonMemosSection,
 } from "@/components/workspace/WorkspaceLinksMemosSections";
@@ -638,11 +639,7 @@ export function WorkspaceView() {
                   className="w-full resize-y rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
                 />
               </label>
-              <button
-                type="button"
-                onClick={addStepMemo}
-                className="h-10 shrink-0 rounded-full bg-zinc-900 px-5 text-sm font-semibold text-white hover:bg-zinc-800"
-              >
+              <button type="button" onClick={addStepMemo} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
                 메모 추가
               </button>
             </div>

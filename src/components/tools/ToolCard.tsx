@@ -412,8 +412,8 @@ export function ToolCard({
                 <span className="font-bold text-red-600">비활성화</span>
                 {tool.usageCount != null ? (
                   <>
-                    <span className="text-red-200">·</span>
-                    <span className="font-medium text-red-600/90">{tool.usageCount}회</span>
+                    <span className="text-zinc-300">·</span>
+                    <span className="font-medium text-zinc-500">{tool.usageCount}회</span>
                   </>
                 ) : null}
               </>

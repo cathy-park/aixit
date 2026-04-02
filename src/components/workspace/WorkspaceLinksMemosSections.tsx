@@ -17,6 +17,10 @@ export const WORKSPACE_MEMO_TEXTAREA_CLASS =
 
 const SECTION_SHELL = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200/80";
 
+/** 도구 창고 헤더「추가」와 동일: h-10, rounded-full, bg-zinc-900 */
+export const WORKSPACE_HEADER_ADD_MATCH_BTN =
+  "inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-bold leading-none text-white shadow-sm hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2";
+
 const softPrimaryBtn =
   "inline-flex items-center justify-center rounded-lg bg-zinc-200/90 px-3 py-1.5 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-300/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300/80";
 
@@ -92,26 +96,28 @@ export function WorkspaceRelatedLinksSection(props: WorkspaceRelatedLinksSection
 
   return (
     <section className={SECTION_SHELL}>
-      <div className="text-sm font-semibold text-zinc-900">관련 링크</div>
-      <p className="mt-1 text-sm text-zinc-500">{description}</p>
+      <div className="space-y-1">
+        <div className="text-sm font-semibold text-zinc-900">관련 링크</div>
+        <p className="text-sm leading-snug text-zinc-500">{description}</p>
+      </div>
 
       {/* 등록된 항목 리스트 (List State) */}
       <ul className="mt-3 space-y-1.5">
         {props.links.length === 0 ? (
-          <li className="rounded-lg border border-dashed border-zinc-200/90 bg-zinc-50/50 px-3 py-3 text-sm text-zinc-400">
+          <li className="rounded-lg border border-dashed border-zinc-200/90 bg-zinc-50/50 px-2.5 py-2 text-sm text-zinc-400">
             등록된 링크가 없어요.
           </li>
         ) : props.mode === "readonly" ? (
           props.links.map((l) => (
             <li
               key={l.id}
-              className="flex items-center gap-2 rounded-lg border border-zinc-100 bg-zinc-50/60 px-3 py-2"
+              className="flex min-h-9 items-center gap-2 rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5"
             >
               <a
                 href={openHref(l.url)}
                 target="_blank"
                 rel="noreferrer"
-                className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-800 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-950 hover:decoration-zinc-500"
+                className="min-w-0 flex-1 truncate py-0.5 pl-0.5 text-sm font-medium leading-snug text-zinc-800 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-950 hover:decoration-zinc-500"
               >
                 {l.label || l.url || "링크"}
               </a>
@@ -123,7 +129,7 @@ export function WorkspaceRelatedLinksSection(props: WorkspaceRelatedLinksSection
             return (
               <li
                 key={l.id}
-                className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-3 py-2 ring-1 ring-zinc-100/80"
+                className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5 ring-1 ring-zinc-100/80"
               >
                 {isEditing ? (
                   <div className="space-y-2">
@@ -151,17 +157,17 @@ export function WorkspaceRelatedLinksSection(props: WorkspaceRelatedLinksSection
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-h-9 items-center justify-between gap-2">
                     <a
                       href={openHref(l.url)}
                       target="_blank"
                       rel="noreferrer"
-                      className="min-w-0 flex-1 break-words text-sm font-medium text-zinc-800 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-950 hover:decoration-zinc-500"
+                      className="min-w-0 flex-1 break-words py-0.5 pl-0.5 text-sm font-medium leading-snug text-zinc-800 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-950 hover:decoration-zinc-500"
                       title={l.label || "링크 열기"}
                     >
                       {l.label || (l.url ? "(URL만 있음)" : "링크")}
                     </a>
-                    <div className="flex shrink-0 gap-0.5 pt-0.5">
+                    <div className="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"
                         onClick={() => startEdit(l)}
@@ -192,8 +198,10 @@ export function WorkspaceRelatedLinksSection(props: WorkspaceRelatedLinksSection
       {/* 새 링크 입력 폼 (Add Form only) */}
       {props.mode === "editable" ? (
         <div className="mt-4 border-t border-zinc-100 pt-4">
-          <div className="text-sm font-medium text-zinc-500">새 링크</div>
-          <div className="mt-2 space-y-2">
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-zinc-500">새 링크</div>
+          </div>
+          <div className="mt-3 space-y-2">
             <input
               value={props.linkDraft.label}
               onChange={(e) => props.onLinkDraftChange({ ...props.linkDraft, label: e.target.value })}
@@ -208,7 +216,7 @@ export function WorkspaceRelatedLinksSection(props: WorkspaceRelatedLinksSection
               className={WORKSPACE_LINK_URL_INPUT_CLASS}
               aria-label="새 링크 URL"
             />
-            <button type="button" onClick={props.onAddLink} className={softPrimaryBtn}>
+            <button type="button" onClick={props.onAddLink} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
               링크 추가
             </button>
           </div>
@@ -280,20 +288,22 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
 
   return (
     <section className={SECTION_SHELL}>
-      <div className="text-sm font-semibold text-zinc-900">{title}</div>
-      <p className="mt-1 text-sm text-zinc-500">{description}</p>
+      <div className="space-y-1">
+        <div className="text-sm font-semibold text-zinc-900">{title}</div>
+        <p className="text-sm leading-snug text-zinc-500">{description}</p>
+      </div>
 
       {/* 등록된 메모 리스트 */}
       <ul className="mt-3 space-y-1.5">
         {props.memos.length === 0 ? (
-          <li className="rounded-lg border border-dashed border-zinc-200/90 bg-zinc-50/50 px-3 py-3 text-sm text-zinc-400">
+          <li className="rounded-lg border border-dashed border-zinc-200/90 bg-zinc-50/50 px-2.5 py-2 text-sm text-zinc-400">
             {props.mode === "readonly" ? "메모가 없어요." : "아직 메모가 없어요."}
           </li>
         ) : props.mode === "readonly" ? (
           props.memos.map((m) => (
             <li
               key={m.id}
-              className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-3 py-2 ring-1 ring-zinc-100/80"
+              className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5 ring-1 ring-zinc-100/80"
             >
               <div className={MEMO_READ_BODY_CLASS}>{m.text}</div>
             </li>
@@ -304,7 +314,7 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
             return (
               <li
                 key={m.id}
-                className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-3 py-2 ring-1 ring-zinc-100/80"
+                className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5 ring-1 ring-zinc-100/80"
               >
                 {isEditing ? (
                   <div className="flex items-start justify-between gap-2">
@@ -331,7 +341,7 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
                 ) : (
                   <div className="flex items-start justify-between gap-2">
                     <div className={cn(MEMO_READ_BODY_CLASS, "min-w-0 flex-1")}>{m.text}</div>
-                    <div className="flex shrink-0 gap-0.5 pt-0.5">
+                    <div className="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"
                         onClick={() => startEdit(m)}
@@ -362,8 +372,10 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
       {/* 새 메모 입력 폼 */}
       {props.mode === "editable" ? (
         <div className="mt-4 border-t border-zinc-100 pt-4">
-          <div className="text-sm font-medium text-zinc-500">새 메모</div>
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-zinc-500">새 메모</div>
+          </div>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
             <textarea
               value={props.memoDraft}
               onChange={(e) => props.onMemoDraftChange(e.target.value)}
@@ -372,7 +384,7 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
               className={cn(WORKSPACE_MEMO_TEXTAREA_CLASS, "min-h-[4.5rem] max-h-[min(40vh,24rem)] flex-1")}
               aria-label="새 메모"
             />
-            <button type="button" onClick={props.onAddMemo} className={cn(softPrimaryBtn, "shrink-0 self-stretch sm:self-auto")}>
+            <button type="button" onClick={props.onAddMemo} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
               메모 추가
             </button>
           </div>
