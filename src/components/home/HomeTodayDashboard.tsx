@@ -222,7 +222,7 @@ export function HomeTodayDashboard() {
             <HeroCharacterIllustration className={cn("shrink-0", compact ? "w-20" : "w-24")} />
             <div className="flex flex-col min-w-0">
               {/* title row: 호칭/텍스트 + badge */}
-              <div className="flex min-w-0 items-baseline justify-between gap-4">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-4">
                 <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
                   {greetEdit ? (
                     <input

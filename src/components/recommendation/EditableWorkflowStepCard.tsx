@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/components/ui/cn";
+import { NavigatorIconEditorAccordion } from "@/components/workspace/NavigatorIconEditorAccordion";
 import { StepNavigatorIconSection } from "@/components/workspace/StepNavigatorIconSection";
 import { ToolAvatar } from "@/components/tools/ToolAvatar";
 import { useMergedTools } from "@/hooks/useMergedTools";
@@ -103,16 +104,18 @@ export function EditableWorkflowStepCard({
         ) : (
           <div className="mt-3 space-y-3">
             <div className="text-sm text-zinc-500">도구를 추가하면 로고가 내비게이터에 표시돼요.</div>
-            <div className="rounded-xl bg-zinc-50 p-4 ring-1 ring-zinc-200">
-              <div className="text-xs font-semibold text-zinc-600">도구가 없을 때 내비 아이콘</div>
-              <p className="mt-1 text-[11px] text-zinc-500">폴더·카테고리와 동일한 아이콘 선택 UI입니다.</p>
+            <NavigatorIconEditorAccordion
+              title="도구가 없을 때 내비 아이콘"
+              collapsedHint="펼치면 폴더·카테고리와 같은 아이콘 선택 UI가 열려요. 접어 두면 카드 아래가 덜 길어져요."
+            >
+              <p className="text-[11px] text-zinc-500">폴더·카테고리와 동일한 아이콘 선택 UI입니다.</p>
               <StepNavigatorIconSection
                 compact
                 className="mt-3"
                 step={step}
                 onApply={(patch) => onChange({ ...step, ...patch })}
               />
-            </div>
+            </NavigatorIconEditorAccordion>
           </div>
         )}
       </div>

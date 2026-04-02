@@ -46,7 +46,6 @@ export function WorkflowTemplateCard({
               <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{t.title}</span>
             </div>
             <p className="mt-2 line-clamp-2 text-sm font-medium text-zinc-500">{t.subtitle}</p>
-            <p className="mt-3 text-xs font-semibold text-zinc-400">{t.stepCount}단계 · 추천 도구 미리보기</p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <span className="text-xs font-medium text-zinc-500">주요 도구:</span>
