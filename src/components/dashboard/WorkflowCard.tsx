@@ -1,7 +1,7 @@
 "use client";
 
 import type { MouseEvent } from "react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { FolderGlyph } from "@/components/dashboard/FolderGlyph";
 import { ToolMiniAvatar } from "@/components/tools/ToolMiniAvatar";
@@ -11,7 +11,8 @@ import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { formatShortKoreanDate, isDdayLabelUrgent } from "@/lib/date-schedule";
 import { useMergedTools } from "@/hooks/useMergedTools";
 import { collectResolvedPreviewTools, uniqueToolIdsAcrossSteps } from "@/lib/dashboard-workflow-preview";
-import { getDashboardWorkflow } from "@/lib/workflows-store";
+import { getDashboardWorkflow, setDashboardWorkflowRunStatus } from "@/lib/workflows-store";
+import { WORKFLOW_STATUS_OPTIONS, type WorkflowRunStatus } from "@/lib/workflow-run-status";
 import { getMergedToolById } from "@/lib/user-tools-store";
 import { actionIconButtonClass, IconCopy, IconSaveTemplate, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 
@@ -73,6 +74,106 @@ function StatusBadge({ status }: { status: WorkflowPreview["status"] }) {
   return <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1", cls)}>{status}</span>;
 }
 
+function CardStatusControl({
+  workflowId,
+  status,
+  editable,
+}: {
+  workflowId: string;
+  status: WorkflowPreview["status"];
+  editable: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: globalThis.MouseEvent) => {
+      if (wrapRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  if (!editable) {
+    return <StatusBadge status={status} />;
+  }
+
+  const apply = (next: WorkflowRunStatus) => {
+    setDashboardWorkflowRunStatus(workflowId, next);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative shrink-0" ref={wrapRef}>
+      <button
+        type="button"
+        className="inline-flex rounded-full border-0 bg-transparent p-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label={`워크플로 상태: ${status}. 눌러서 변경`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+      >
+        <StatusBadge status={status} />
+      </button>
+      {open ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-[60] cursor-default"
+            aria-label="닫기"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpen(false);
+            }}
+          />
+          <ul
+            role="listbox"
+            aria-label="워크플로 상태 선택"
+            className="absolute left-0 top-[calc(100%+8px)] z-[70] min-w-[9.5rem] rounded-2xl bg-white py-1.5 text-left shadow-xl ring-1 ring-zinc-200"
+          >
+            {WORKFLOW_STATUS_OPTIONS.map((s) => (
+              <li key={s} role="presentation">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={s === status}
+                  className={cn(
+                    "flex w-full items-center px-3 py-2 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50",
+                    s === status && "bg-sky-50 text-sky-900",
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    apply(s);
+                  }}
+                >
+                  {s}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export function WorkflowCard({
   wf,
   folder,
@@ -132,7 +233,7 @@ export function WorkflowCard({
             <div className="flex flex-wrap items-center gap-2 gap-y-1">
               {folder ? <FolderGlyph folder={folder} size="md" className="shrink-0" accentColor={folder.color} /> : null}
               <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{wf.title}</span>
-              <StatusBadge status={wf.status} />
+              <CardStatusControl workflowId={wf.id} status={wf.status} editable={Boolean(liveWorkflow)} />
             </div>
             {wf.subtitle.trim() ? (
               <p className="mt-2 line-clamp-2 text-sm font-medium text-zinc-500">{wf.subtitle}</p>

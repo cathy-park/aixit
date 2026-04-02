@@ -3,7 +3,9 @@ import type { WorkflowDetail, WorkflowPreview } from "@/lib/aixit-data";
 import { workflows, workflowDetails } from "@/lib/aixit-data";
 import { scheduleMdToIso } from "@/lib/date-schedule";
 import { tools } from "@/lib/tools";
+import type { WorkflowRunStatus } from "@/lib/workflow-run-status";
 import { isWorkflowRunStatus } from "@/lib/workflow-run-status";
+import { getTodayIsoLocal } from "@/lib/today-project-filter";
 
 export type DashboardWorkflow = WorkspaceWorkflow & {
   updatedAt: number;
@@ -278,6 +280,17 @@ export function saveDashboardWorkflow(workflow: DashboardWorkflow) {
   const copy = [...list];
   copy[idx] = next;
   writeAll(copy);
+}
+
+/** 대시보드 카드 등에서 워크스페이스 없이 실행 상태만 갱신 */
+export function setDashboardWorkflowRunStatus(workflowId: string, status: WorkflowRunStatus): boolean {
+  if (typeof window === "undefined") return false;
+  const w = getDashboardWorkflow(workflowId);
+  if (!w) return false;
+  if (!isWorkflowRunStatus(status)) return false;
+  const completedAt = status === "완료" ? getTodayIsoLocal() : undefined;
+  saveDashboardWorkflow({ ...w, status, completedAt });
+  return true;
 }
 
 export function setDashboardWorkflowFolder(workflowId: string, folderId: string) {

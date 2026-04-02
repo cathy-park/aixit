@@ -195,6 +195,8 @@ export function DashboardExperience() {
   const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>({});
   const [layoutDropTarget, setLayoutDropTarget] = useState<string | null>(null);
   const [saveTemplateEntry, setSaveTemplateEntry] = useState<LayoutEntry | null>(null);
+  /** 프로젝트 카드에서 상태만 바꿔도 미리보기가 즉시 갱신되도록 */
+  const [workflowsDataRev, setWorkflowsDataRev] = useState(0);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const refreshFolders = useCallback(() => {
@@ -220,12 +222,18 @@ export function DashboardExperience() {
     return () => window.removeEventListener("aixit-dashboard-folders-updated", onFoldersUpdated);
   }, [refreshFolders]);
 
+  useEffect(() => {
+    const onWorkflows = () => setWorkflowsDataRev((n) => n + 1);
+    window.addEventListener("aixit-workflows-updated", onWorkflows);
+    return () => window.removeEventListener("aixit-workflows-updated", onWorkflows);
+  }, []);
+
   const resolvePreview = useCallback((entry: LayoutEntry) => {
     const u = ensureDashboardWorkflow(entry.id, entry.folderId);
     if (!u) return null;
     const templateEmoji = u.templateId ? workflows.find((w) => w.id === u.templateId)?.emoji : undefined;
     return dashboardWorkflowToPreview(u, { folderId: entry.folderId, builtinEmoji: templateEmoji ?? u.emoji });
-  }, []);
+  }, [workflowsDataRev]);
 
   const togglePin = useCallback((entry: LayoutEntry) => {
     setPinnedKeys(togglePinnedWorkflowKey(layoutEntryPinKey(entry.kind, entry.id)));
