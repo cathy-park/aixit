@@ -179,29 +179,31 @@ export function ToolCard({
   const showWarehouseActivationToggle = mode === "warehouse" && onWarehouseTogglePersist != null;
 
   const cardShell = cn(
-    "w-full rounded-[22px] bg-white p-6 text-left shadow-sm ring-1 ring-zinc-200/90 transition-[opacity,filter,saturate]",
+    "w-full rounded-[22px] bg-white p-6 text-left shadow-sm ring-1 ring-zinc-200/90",
     selected && "ring-2 ring-zinc-900 ring-offset-2 ring-offset-zinc-50",
-    !effectiveActive && "opacity-[0.72] saturate-[0.55] contrast-[0.95] grayscale-[0.4]",
     className,
   );
 
+  /** 비활성: 본문·태그만 흑백(스위치·바로가기는 푸터에서 제외) */
+  const grayscaleMainClass = cn(
+    !effectiveActive && "grayscale opacity-[0.88] [&_svg]:opacity-70 [&_img]:opacity-90",
+  );
+
   const linkButton =
-    !isPicker && tool.href && effectiveActive ? (
+    !isPicker && tool.href ? (
       <Link
         href={tool.href}
         target={tool.href.startsWith("http") ? "_blank" : undefined}
         rel={tool.href.startsWith("http") ? "noreferrer" : undefined}
-        className="inline-flex w-full items-center justify-center rounded-full bg-blue-600 px-6 py-2.5 text-center text-[13px] font-bold leading-tight text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
+        className={cn(
+          "inline-flex w-full items-center justify-center rounded-full px-6 py-2.5 text-center text-[13px] font-bold leading-tight shadow-sm sm:w-auto",
+          effectiveActive
+            ? "bg-blue-600 text-white transition-colors hover:bg-blue-700"
+            : "bg-zinc-900 text-white transition-colors hover:bg-zinc-800",
+        )}
       >
         바로가기
       </Link>
-    ) : !isPicker && tool.href && !effectiveActive ? (
-      <span
-        className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-full border border-zinc-200 bg-zinc-100 px-6 py-2.5 text-center text-[13px] font-semibold leading-tight text-zinc-400 sm:w-auto"
-        title="비활성 도구는 바로가기를 사용할 수 없어요"
-      >
-        바로가기 불가
-      </span>
     ) : null;
 
   const pickerActivates = isPicker && onSelect;
@@ -225,136 +227,149 @@ export function ToolCard({
       }
     >
       <div className={cardShell}>
-      <div className="flex gap-4">
-        <CardHeaderWithAccountBadge
-          tool={tool}
-          hasCreds={hasCreds}
-          onAccountClick={() => {
-            setShowSecret(false);
-            setCredPickId(null);
-            setCredentialOpen(true);
-          }}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{tool.name}</span>
-                {tool.userDisabled ? (
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
-                    창고 비활성화
-                  </span>
-                ) : null}
-                {!effectiveActive && tool.userDisabled !== true && tool.active === false ? (
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200/90 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-amber-900">
-                    미결제·한도
-                  </span>
-                ) : null}
-                {tool.subscriptionLabel ? (
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-sky-200/90 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-sky-800">
-                    {tool.subscriptionLabel}
-                  </span>
-                ) : null}
-                {hasNote ? (
+      <div className={grayscaleMainClass}>
+        <div className="flex gap-4">
+          <CardHeaderWithAccountBadge
+            tool={tool}
+            hasCreds={hasCreds}
+            onAccountClick={() => {
+              setShowSecret(false);
+              setCredPickId(null);
+              setCredentialOpen(true);
+            }}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{tool.name}</span>
+                  {tool.userDisabled ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
+                      창고 비활성화
+                    </span>
+                  ) : null}
+                  {!effectiveActive && tool.userDisabled !== true && tool.active === false ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200/90 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-amber-900">
+                      미결제·한도
+                    </span>
+                  ) : null}
+                  {tool.subscriptionLabel ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-sky-200/90 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-sky-800">
+                      {tool.subscriptionLabel}
+                    </span>
+                  ) : null}
+                  {hasNote ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setNoteOpen(true);
+                      }}
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-full p-1 text-zinc-400",
+                        effectiveActive
+                          ? "transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                          : "hover:bg-zinc-200/80",
+                      )}
+                      aria-label="메모 보기"
+                      title="메모 보기"
+                    >
+                      <MemoNoteIcon className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </div>
+                <p className="mt-1.5 text-sm leading-snug text-zinc-500">{tool.description ?? tool.category}</p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                {showDisconnect ? (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setNoteOpen(true);
+                      onDisconnect();
                     }}
-                    className="inline-flex items-center justify-center rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-                    aria-label="메모 보기"
-                    title="메모 보기"
+                    className={cn(
+                      "rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm",
+                      effectiveActive
+                        ? "border-rose-200 bg-white text-rose-700 transition-colors hover:bg-rose-50"
+                        : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100",
+                    )}
                   >
-                    <MemoNoteIcon className="h-4 w-4" />
+                    연결 해제
                   </button>
                 ) : null}
+                {showWarehouseActions ? (
+                  <div className="flex items-start gap-0">
+                    {mode === "warehouse" && onTogglePinned ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onTogglePinned();
+                        }}
+                        className={cn(
+                          actionIconButtonClass,
+                          "h-8 w-8",
+                          effectiveActive && pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                          (!effectiveActive || !pinned) && "text-[#9da2b0] hover:bg-zinc-100 hover:text-zinc-600",
+                        )}
+                        aria-pressed={Boolean(pinned)}
+                        title={pinned ? "상단 고정 해제" : "상단 고정"}
+                      >
+                        <IconStarPin active={Boolean(pinned) && effectiveActive} />
+                      </button>
+                    ) : null}
+                    {onEdit ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onEdit();
+                        }}
+                        className={cn(actionIconButtonClass, "h-8 w-8")}
+                        title="수정"
+                        aria-label="수정"
+                      >
+                        <IconEdit />
+                      </button>
+                    ) : null}
+                    {onDelete ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDelete();
+                        }}
+                        className={cn(actionIconButtonClass, "h-8 w-8")}
+                        title="삭제"
+                        aria-label="삭제"
+                      >
+                        <IconTrash />
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
-              <p className="mt-1.5 text-sm leading-snug text-zinc-500">{tool.description ?? tool.category}</p>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-2">
-              {showDisconnect ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onDisconnect();
-                  }}
-                  className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50"
-                >
-                  연결 해제
-                </button>
-              ) : null}
-              {showWarehouseActions ? (
-                <div className="flex items-start gap-0">
-                  {mode === "warehouse" && onTogglePinned ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onTogglePinned();
-                      }}
-                      className={cn(
-                        actionIconButtonClass,
-                        "h-8 w-8",
-                        pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
-                      )}
-                      aria-pressed={Boolean(pinned)}
-                      title={pinned ? "상단 고정 해제" : "상단 고정"}
-                    >
-                      <IconStarPin active={Boolean(pinned)} />
-                    </button>
-                  ) : null}
-                  {onEdit ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onEdit();
-                      }}
-                      className={cn(actionIconButtonClass, "h-8 w-8")}
-                      title="수정"
-                      aria-label="수정"
-                    >
-                      <IconEdit />
-                    </button>
-                  ) : null}
-                  {onDelete ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onDelete();
-                      }}
-                      className={cn(actionIconButtonClass, "h-8 w-8")}
-                      title="삭제"
-                      aria-label="삭제"
-                    >
-                      <IconTrash />
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        {displayTags.map((t, i) => {
-          const rawLabel = t.label.startsWith("#") ? t.label.slice(1) : t.label;
-          const tone = keywordTagToneClass(normalizeKeyword(rawLabel));
-          return (
-            <span key={`${t.label}-${i}`} className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tone)}>
-              {t.label.startsWith("#") ? t.label : `#${t.label}`}
-            </span>
-          );
-        })}
+        <div className="mt-5 flex flex-wrap gap-2">
+          {displayTags.map((t, i) => {
+            const rawLabel = t.label.startsWith("#") ? t.label.slice(1) : t.label;
+            const tone = keywordTagToneClass(normalizeKeyword(rawLabel));
+            return (
+              <span key={`${t.label}-${i}`} className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tone)}>
+                {t.label.startsWith("#") ? t.label : `#${t.label}`}
+              </span>
+            );
+          })}
+        </div>
       </div>
 
       <div
@@ -396,7 +411,7 @@ export function ToolCard({
                 />
                 <span className="font-bold text-red-600">비활성화</span>
                 {tool.userDisabled ? (
-                  <span className="text-zinc-400">· 창고 설정 유지</span>
+                  <span className="text-zinc-500">· 창고 설정 유지</span>
                 ) : null}
               </>
             )}
