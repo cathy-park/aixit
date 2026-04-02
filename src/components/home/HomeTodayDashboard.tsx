@@ -219,7 +219,9 @@ export function HomeTodayDashboard() {
       <AdaptivePageHeader
         title={(compact) => (
           <div className={cn("flex flex-row items-center", compact ? "gap-3" : "gap-4")}>
-            <HeroCharacterIllustration className={cn("shrink-0", compact ? "w-20" : "w-24")} />
+            <HeroCharacterIllustration
+              className={cn("shrink-0", compact ? "h-20 w-20" : "h-24 w-24 sm:h-28 sm:w-28")}
+            />
             <div className="flex flex-col min-w-0">
               {/* title row: 호칭/텍스트 + badge */}
               <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">

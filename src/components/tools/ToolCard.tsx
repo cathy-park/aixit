@@ -410,8 +410,11 @@ export function ToolCard({
                   aria-hidden
                 />
                 <span className="font-bold text-red-600">비활성화</span>
-                {tool.userDisabled ? (
-                  <span className="text-zinc-500">· 창고 설정 유지</span>
+                {tool.usageCount != null ? (
+                  <>
+                    <span className="text-red-200">·</span>
+                    <span className="font-medium text-red-600/90">{tool.usageCount}회</span>
+                  </>
                 ) : null}
               </>
             )}
