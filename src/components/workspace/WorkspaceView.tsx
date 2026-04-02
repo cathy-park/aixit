@@ -50,8 +50,6 @@ export function WorkspaceView() {
   const [wf, setWf] = useState<DashboardWorkflow | null>(null);
   /** true = 아직 로컬스토리지에 쓰지 않은 편집(디바운스 대기 중) */
   const [dirty, setDirty] = useState(false);
-  const [descOpen, setDescOpen] = useState(false);
-  const [navigatorCollapsed, setNavigatorCollapsed] = useState(false);
   const [toolPickerOpen, setToolPickerOpen] = useState(false);
   const [linkDraft, setLinkDraft] = useState({ label: "", url: "" });
   const [memoDraft, setMemoDraft] = useState("");
@@ -131,16 +129,6 @@ export function WorkspaceView() {
   useEffect(() => {
     reload();
   }, [reload]);
-
-  useEffect(() => {
-    // 페이지 진입 시 기본은 description 접힘 상태로 보여주기
-    setDescOpen(false);
-  }, [workflowId]);
-
-  useEffect(() => {
-    // "완료" 프로젝트는 STEP 영역을 기본 접힘으로 표시
-    setNavigatorCollapsed(Boolean(wf?.status === "완료"));
-  }, [wf?.status]);
 
   const applyLocal = useCallback(
     (next: DashboardWorkflow) => {
@@ -510,82 +498,23 @@ export function WorkspaceView() {
               </select>
             </label>
           </div>
-
-          {/* 설명: 기본 접힘 (compact) */}
-          <div>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-xs font-semibold text-zinc-500 hover:bg-zinc-50"
-              onClick={() => setDescOpen((v) => !v)}
-              aria-expanded={descOpen}
-            >
-              <span className="text-xs font-semibold">설명</span>
-              <span className="text-zinc-400" aria-hidden>
-                {descOpen ? "▲" : "▼"}
-              </span>
-            </button>
-
-            {descOpen ? (
-              <label className="mt-2 block max-w-2xl">
-                <span className="text-xs font-semibold text-zinc-500 sr-only">프로젝트 설명</span>
-                <textarea
-                  value={wf.subtitle ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    applyLocal({
-                      ...wf,
-                      subtitle: v.trim() ? v : undefined,
-                      updatedAt: Date.now(),
-                    });
-                  }}
-                  rows={2}
-                  placeholder="프로젝트 카드 제목 아래에 보일 설명을 적을 수 있어요. (선택)"
-                  className="mt-1 w-full resize-y rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-                />
-              </label>
-            ) : null}
-          </div>
-
-          {/* header를 작게 유지하기 위해 STEP count는 navigator와 중복이라, 최소 텍스트로만 표시 */}
-          <p className="text-xs font-semibold text-zinc-600">
-            STEP {Math.min(currentIndex + 1, Math.max(total, 1))} / {Math.max(total, 1)}
-          </p>
         </div>
       </header>
 
       <main className="space-y-4 pb-12 pt-0">
-        <div className="space-y-2">
-          <button
-            type="button"
-            onClick={() => setNavigatorCollapsed((v) => !v)}
-            className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white px-4 py-2 text-left text-sm font-semibold ring-1 ring-zinc-200 hover:bg-zinc-50"
-            aria-expanded={!navigatorCollapsed}
-          >
-            <span className="flex items-center gap-2">
-              <span className="text-zinc-700" aria-hidden>
-                {navigatorCollapsed ? "▼" : "▲"}
-              </span>
-              STEP 진행
-            </span>
-            <span className="text-xs font-bold text-zinc-400">{Math.max(1, total)}단계</span>
-          </button>
-
-          {!navigatorCollapsed ? (
-            <WorkflowNavigatorBar
-              hideTitle
-              steps={navSteps}
-              selectedIndex={currentIndex}
-              statuses={statuses}
-              onSelect={onSelectStep}
-              onReorder={reorderSteps}
-              onAddStep={addStepAfterCurrent}
-              onDeleteStep={deleteCurrentStep}
-              canDelete={wf.steps.length > 1}
-              className="bg-white"
-              toolsCatalog={toolCatalog}
-            />
-          ) : null}
-        </div>
+        <WorkflowNavigatorBar
+          hideTitle
+          steps={navSteps}
+          selectedIndex={currentIndex}
+          statuses={statuses}
+          onSelect={onSelectStep}
+          onReorder={reorderSteps}
+          onAddStep={addStepAfterCurrent}
+          onDeleteStep={deleteCurrentStep}
+          canDelete={wf.steps.length > 1}
+          className="bg-white"
+          toolsCatalog={toolCatalog}
+        />
 
         <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200">
           <div className="text-xs font-semibold text-zinc-500">현재 STEP</div>

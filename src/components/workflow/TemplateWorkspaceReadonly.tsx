@@ -110,17 +110,11 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
           </button>
         </div>
 
-        <div className="mt-3 space-y-2">
-          {wf.subtitle ? <p className="text-sm font-medium text-zinc-600">{wf.subtitle}</p> : null}
-          {linkedProjects.length > 0 ? (
-            <p className="text-[11px] font-semibold text-zinc-400">
-              기존에 이 템플릿으로 만든 프로젝트가 {linkedProjects.length}개 있어요.
-            </p>
-          ) : null}
-          <p className="text-xs font-semibold text-zinc-600">
-            STEP {Math.min(currentIndex + 1, Math.max(wf.steps.length, 1))} / {Math.max(wf.steps.length, 1)} · 템플릿 미리보기
+        {linkedProjects.length > 0 ? (
+          <p className="mt-3 text-[11px] font-semibold text-zinc-400">
+            기존에 이 템플릿으로 만든 프로젝트가 {linkedProjects.length}개 있어요.
           </p>
-        </div>
+        ) : null}
       </header>
 
       <main className="space-y-6 pb-12 pt-6">
