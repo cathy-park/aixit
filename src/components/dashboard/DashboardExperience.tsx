@@ -680,7 +680,7 @@ export function DashboardExperience() {
                     ? entriesCount === 0 ? (
                         <div
                           className={cn(
-                            "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-sm text-zinc-500",
+                            "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
                             layoutDnD.dropTargetKey === `__end__:${folder.id}` &&
                               "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
                           )}
@@ -688,7 +688,7 @@ export function DashboardExperience() {
                           onDragLeave={layoutDnD.onDragLeave}
                           onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
                         >
-                          이 폴더에 프로젝트가 없어요.
+                          이 폴더에 프로젝트가 없어요. 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -799,7 +799,7 @@ export function DashboardExperience() {
                   {entries.length === 0 ? (
                     <div
                       className={cn(
-                        "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-sm text-zinc-500",
+                        "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
                         layoutDnD.dropTargetKey === `__end__:${folder.id}` &&
                           "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
                       )}
@@ -807,7 +807,7 @@ export function DashboardExperience() {
                       onDragLeave={layoutDnD.onDragLeave}
                       onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
                     >
-                      이 폴더에 프로젝트가 없어요.
+                      이 폴더에 프로젝트가 없어요. 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
                     </div>
                   ) : (
                     <>
