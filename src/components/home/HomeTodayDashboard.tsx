@@ -427,7 +427,7 @@ export function HomeTodayDashboard() {
                     )}
                   />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-                    <span className={cn("min-w-0 text-sm font-medium text-zinc-900", t.done && "text-zinc-400 line-through")}>
+                    <span className={cn("min-w-0 text-sm font-medium text-zinc-900", t.done && "text-zinc-600 line-through")}>
                       {t.text}
                     </span>
                     {t.scheduledDate && !t.done ? (

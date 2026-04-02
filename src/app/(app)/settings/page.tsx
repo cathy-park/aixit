@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { supabase, supabaseEnabled } from "@/lib/supabase/supabaseClient";
 import { fetchAixitKvMap, flushAixitKvQueue } from "@/lib/supabase/aixitKv";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { OriginDataRecovery } from "@/components/settings/OriginDataRecovery";
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -159,6 +160,8 @@ export default function SettingsPage() {
       />
       <AppMainColumn>
         <div className="mt-4 space-y-4">
+          <OriginDataRecovery />
+
           <div className="rounded-2xl bg-white p-6 text-sm text-zinc-700 shadow-sm ring-1 ring-zinc-200">
             <div className="text-base font-semibold text-zinc-950">계정</div>
             <div className="mt-1 text-xs text-zinc-500">
