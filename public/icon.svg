@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AIXIT icon">
+  <rect width="64" height="64" rx="16" fill="#1A1A1A"/>
+  <path
+    d="M32 14c-7.7 0-14 6.3-14 14v8c0 7.7 6.3 14 14 14s14-6.3 14-14v-8c0-7.7-6.3-14-14-14zm0 10.3c2.1 0 3.8 1.7 3.8 3.8v1.3h-7.6v-1.3c0-2.1 1.7-3.8 3.8-3.8zm0 25.4c-3.9 0-7.1-3.2-7.1-7.1v-3.6h14.2v3.6c0 3.9-3.2 7.1-7.1 7.1z"
+    fill="#FFFFFF"
+    opacity="0.95"
+  />
+</svg>

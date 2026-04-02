@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AIXIT",
   description: "AIXIT — workflow navigation.",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({
@@ -33,8 +36,7 @@ export default function RootLayout({
     >
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" type="image/png" href="/favicon.png" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
       </head>
       <body className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 text-zinc-950">
         <AuthProvider>
