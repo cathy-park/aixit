@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
@@ -30,12 +31,9 @@ function OpenAiMark({ className }: { className?: string }) {
 
 function MemoNoteIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <path d="M8 3h8a2 2 0 0 1 2 2v10l-4 4H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-      <path d="M14 19v-4h4" />
-      <path d="M9 8h6" />
-      <path d="M9 11h6" />
-    </svg>
+    <span className={cn("relative inline-block", className)} aria-hidden>
+      <Image src="/memo-icon.png" alt="" width={16} height={16} className="h-4 w-4" />
+    </span>
   );
 }
 
