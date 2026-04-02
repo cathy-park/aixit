@@ -228,6 +228,11 @@ export function ToolCard({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{tool.name}</span>
+                {tool.subscriptionLabel ? (
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-sky-200/90 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-sky-800">
+                    {tool.subscriptionLabel}
+                  </span>
+                ) : null}
                 {hasNote ? (
                   <button
                     type="button"
@@ -242,11 +247,6 @@ export function ToolCard({
                   >
                     <MemoNoteIcon className="h-4 w-4" />
                   </button>
-                ) : null}
-                {tool.subscriptionLabel ? (
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-sky-200/90 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-sky-800">
-                    {tool.subscriptionLabel}
-                  </span>
                 ) : null}
               </div>
               <p className="mt-1.5 text-sm leading-snug text-zinc-500">{tool.description ?? tool.category}</p>
@@ -266,7 +266,7 @@ export function ToolCard({
                 </button>
               ) : null}
               {showWarehouseActions ? (
-                <div className="flex items-start gap-0.5">
+                <div className="flex items-start gap-0">
                   {mode === "warehouse" && onTogglePinned ? (
                     <button
                       type="button"
@@ -277,6 +277,7 @@ export function ToolCard({
                       }}
                       className={cn(
                         actionIconButtonClass,
+                        "h-8 w-8",
                         pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
                       )}
                       aria-pressed={Boolean(pinned)}
@@ -293,7 +294,7 @@ export function ToolCard({
                         e.stopPropagation();
                         onEdit();
                       }}
-                      className={actionIconButtonClass}
+                      className={cn(actionIconButtonClass, "h-8 w-8")}
                       title="수정"
                       aria-label="수정"
                     >
@@ -308,7 +309,7 @@ export function ToolCard({
                         e.stopPropagation();
                         onDelete();
                       }}
-                      className={actionIconButtonClass}
+                      className={cn(actionIconButtonClass, "h-8 w-8")}
                       title="삭제"
                       aria-label="삭제"
                     >
