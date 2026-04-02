@@ -60,56 +60,67 @@ export function AdaptivePageHeader({
     <header
       className={cn(
         "sticky top-0 z-40 w-full shrink-0 shadow-none transition-[padding,background-color,border-color] duration-200 ease-out",
-        compact
-          ? "border-b border-zinc-800 bg-[#1E1E21] py-2.5"
-          : "border-b border-transparent bg-[#1E1E21] py-3 pb-4",
         className,
       )}
     >
+      {/* 브라우저 theme-color(#1E1E21)와 이어지는 상단 포인트 띠 — 본문 헤더와 분리 */}
+      <div
+        className="w-full shrink-0 bg-[#1E1E21]"
+        style={{ height: "max(6px, env(safe-area-inset-top, 0px))" }}
+        aria-hidden
+      />
       <div
         className={cn(
-          appMainColumnClass,
-          "flex flex-col gap-3 transition-all duration-200 ease-out sm:flex-row sm:items-start sm:justify-between sm:gap-4",
-          compact && "gap-2",
+          "transition-[padding,background-color,border-color] duration-200 ease-out",
+          compact
+            ? "border-b border-zinc-200 bg-white py-2.5"
+            : "border-b border-transparent bg-transparent py-3 pb-4",
         )}
       >
-        <div className="min-w-0 flex-1">
-          <h1
-            className={cn(
-              "flex flex-wrap items-baseline gap-x-2 gap-y-1 font-semibold tracking-tight text-zinc-50 transition-all duration-200 ease-out",
-              compact ? "text-lg sm:text-xl" : "text-2xl sm:text-3xl",
-            )}
-          >
-            <span className="min-w-0 [text-decoration:inherit]">{titleNode}</span>
-            {count != null ? (
-              <TitleCountChip
-                variant="onDark"
-                count={count}
-                className={cn("transition-all duration-200 ease-out", compact && "text-[10px]")}
-              />
-            ) : null}
-          </h1>
-          {description != null ? (
-            <div
+        <div
+          className={cn(
+            appMainColumnClass,
+            "flex flex-col gap-3 transition-all duration-200 ease-out sm:flex-row sm:items-start sm:justify-between sm:gap-4",
+            compact && "gap-2",
+          )}
+        >
+          <div className="min-w-0 flex-1">
+            <h1
               className={cn(
-                "overflow-hidden transition-[max-height,opacity] duration-200 ease-out",
-                compact ? "pointer-events-none max-h-0 opacity-0" : "max-h-40 opacity-100",
+                "flex flex-wrap items-baseline gap-x-2 gap-y-1 font-semibold tracking-tight text-zinc-950 transition-all duration-200 ease-out",
+                compact ? "text-lg sm:text-xl" : "text-2xl sm:text-3xl",
               )}
             >
-              <p className="mt-1 mb-5 text-sm text-zinc-400">{description}</p>
+              <span className="min-w-0 [text-decoration:inherit]">{titleNode}</span>
+              {count != null ? (
+                <TitleCountChip
+                  count={count}
+                  className={cn("transition-all duration-200 ease-out", compact && "text-[10px]")}
+                />
+              ) : null}
+            </h1>
+            {description != null ? (
+              <div
+                className={cn(
+                  "overflow-hidden transition-[max-height,opacity] duration-200 ease-out",
+                  compact ? "pointer-events-none max-h-0 opacity-0" : "max-h-40 opacity-100",
+                )}
+              >
+                <p className="mt-1 mb-5 text-sm text-zinc-600">{description}</p>
+              </div>
+            ) : null}
+          </div>
+          {rightSlot ? (
+            <div
+              className={cn(
+                "flex w-full shrink-0 justify-end sm:w-auto sm:justify-end sm:self-start",
+                compact ? "pt-0.5" : "pt-0.5 sm:pt-1",
+              )}
+            >
+              {rightSlot}
             </div>
           ) : null}
         </div>
-        {rightSlot ? (
-          <div
-            className={cn(
-              "flex w-full shrink-0 justify-end sm:w-auto sm:justify-end sm:self-start",
-              compact ? "pt-0.5" : "pt-0.5 sm:pt-1",
-            )}
-          >
-            {rightSlot}
-          </div>
-        ) : null}
       </div>
     </header>
   );

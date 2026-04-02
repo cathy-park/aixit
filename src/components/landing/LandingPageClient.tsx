@@ -34,9 +34,9 @@ export default function LandingPageClient() {
   const canLogin = supabaseEnabled && Boolean(supabase);
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-[#1E1E21] px-6 py-12 text-zinc-100">
+    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-white px-6 py-12 text-zinc-900">
       <div className="w-full max-w-[420px] text-center">
-        <div className="mx-auto w-full max-w-[min(100%,320px)]">
+        <div className="mx-auto w-full max-w-[min(100%,320px)] rounded-2xl bg-white p-2">
           <Image
             src="/landing-intro-aixit.png?v=1"
             alt="AIXIT"
@@ -48,12 +48,12 @@ export default function LandingPageClient() {
           />
         </div>
 
-        <p className="mt-6 text-sm leading-relaxed text-zinc-400">
+        <p className="mt-6 text-sm leading-relaxed text-zinc-600">
           직관적이고 쉽고 빠르게 워크플로우를 관리해보세요!
         </p>
 
         {loading ? (
-          <div className="mt-8 rounded-xl border border-zinc-700 bg-zinc-800/80 px-4 py-3 text-sm text-zinc-300">
+          <div className="mt-8 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600">
             세션 확인 중…
           </div>
         ) : user ? (
@@ -75,7 +75,7 @@ export default function LandingPageClient() {
                 options: { redirectTo },
               });
             }}
-            className="mt-8 inline-flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-600 bg-zinc-800 px-4 py-3 text-sm font-semibold text-zinc-100 shadow-sm transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-8 inline-flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <GoogleMark />
             구글로 계속하기
@@ -83,7 +83,7 @@ export default function LandingPageClient() {
         )}
 
         {!canLogin ? (
-          <div className="mt-3 text-xs text-rose-400">
+          <div className="mt-3 text-xs text-rose-700">
             Supabase 환경변수가 설정되지 않아 로그인할 수 없어요. <span className="font-mono">.env.local</span>을
             확인해 주세요.
           </div>
@@ -92,7 +92,7 @@ export default function LandingPageClient() {
         <div className="mt-5">
           <Link
             href="/dashboard?guest=1"
-            className="text-sm font-semibold text-zinc-400 underline decoration-zinc-600 underline-offset-4 hover:text-zinc-200"
+            className="text-sm font-semibold text-zinc-600 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900"
           >
             둘러보기
           </Link>

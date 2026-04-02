@@ -29,12 +29,8 @@ export function PrimarySidebar() {
   const pathname = usePathname() ?? "";
 
   return (
-    <aside className="flex h-full min-h-0 w-[220px] shrink-0 flex-col overflow-y-auto border-r border-zinc-800 bg-[#1E1E21] px-3 py-6">
-      <Link
-        href="/dashboard"
-        className="block min-w-0 px-3"
-        aria-label="AIXIT 홈"
-      >
+    <aside className="flex h-full min-h-0 w-[220px] shrink-0 flex-col overflow-y-auto border-r border-zinc-200 bg-white px-3 py-6">
+      <Link href="/dashboard" className="block min-w-0 px-3 text-lg font-semibold tracking-tight text-zinc-950">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/sidebar-logo.png"
@@ -54,7 +50,7 @@ export function PrimarySidebar() {
               href={item.href}
               className={cn(
                 "rounded-xl px-3 py-2.5 text-sm font-semibold transition",
-                active ? "bg-zinc-100 text-zinc-900" : "text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-50",
+                active ? "bg-zinc-900 text-white" : "text-zinc-700 hover:bg-zinc-100",
               )}
             >
               {item.label}
