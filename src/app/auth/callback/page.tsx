@@ -11,6 +11,7 @@ export default function AuthCallbackPage() {
       setMessage("Supabase가 비활성화되어 있어 로그인 콜백을 처리할 수 없어요.");
       return;
     }
+    const client = supabase;
 
     const url = new URL(window.location.href);
     const code = url.searchParams.get("code");
@@ -19,7 +20,7 @@ export default function AuthCallbackPage() {
     async function run() {
       try {
         if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          const { error } = await client.auth.exchangeCodeForSession(code);
           if (error) {
             setMessage("로그인 세션 교환에 실패했어요. 다시 시도해 주세요.");
             return;
