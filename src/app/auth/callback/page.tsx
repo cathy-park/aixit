@@ -36,7 +36,7 @@ export default function AuthCallbackPage() {
   }, []);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-8 pb-8 pt-[80px] text-center text-sm text-zinc-600">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-8 pb-8 pt-[50px] text-center text-sm text-zinc-600">
       <div className="font-semibold text-zinc-900">Auth Callback</div>
       <div className="text-zinc-500">{message}</div>
     </div>

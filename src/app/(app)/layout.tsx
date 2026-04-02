@@ -12,7 +12,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
           id={AIXIT_MAIN_SCROLL_ID}
           className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain"
         >
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-transparent pb-6 pt-[80px]">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-transparent pb-6 pt-[50px]">
             {children}
           </div>
         </div>
