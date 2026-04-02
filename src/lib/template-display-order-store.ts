@@ -71,3 +71,13 @@ export function moveTemplateIdAfter(draggedTemplateId: string, afterTemplateId: 
   ord.splice(newAi + 1, 0, draggedTemplateId);
   saveOrder(ord);
 }
+
+/** 빈 폴더로 옮길 때 등: 전역 표시 순서 맨 끝 */
+export function moveTemplateIdToGlobalEnd(draggedTemplateId: string, catalogIds: string[]) {
+  const ord = mergeTemplateOrderWithCatalog(catalogIds);
+  const di = ord.indexOf(draggedTemplateId);
+  if (di < 0) return;
+  ord.splice(di, 1);
+  ord.push(draggedTemplateId);
+  saveOrder(ord);
+}

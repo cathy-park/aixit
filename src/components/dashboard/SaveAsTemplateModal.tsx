@@ -107,7 +107,7 @@ export function SaveAsTemplateModal({ open, workflowId, layoutFolderId, onClose 
         </label>
 
         <label className="mt-4 block">
-          <span className="text-xs font-semibold text-zinc-500">템플릿 카테고리</span>
+          <span className="text-xs font-semibold text-zinc-500">템플릿 폴더</span>
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}

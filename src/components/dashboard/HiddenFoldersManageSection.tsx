@@ -42,8 +42,8 @@ export function HiddenFoldersManageSection({
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const title = variant === "template" ? "숨김된 카테고리" : "숨김된 폴더";
-  const countLabel = variant === "template" ? "카테고리" : "폴더";
+  const title = "숨김된 폴더";
+  const countLabel = "폴더";
 
   return (
     <div className="mt-2 border-t border-zinc-200/50 pt-1.5">

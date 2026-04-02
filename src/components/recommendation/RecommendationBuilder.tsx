@@ -11,6 +11,8 @@ import type { RecommendationResult } from "@/lib/recommendations";
 import { ToolPickerModal } from "@/components/tools/ToolPickerModal";
 import { appendUserLayoutEntry } from "@/lib/dashboard-layout-store";
 import { loadDashboardFolders, pickDefaultProjectFolderId } from "@/lib/dashboard-folders-store";
+import { loadWorkflowTemplateFolders } from "@/lib/workflow-template-folders-store";
+import { createUserWorkflowTemplateBlueprint } from "@/lib/user-workflow-templates-store";
 import { addDashboardWorkflow } from "@/lib/workflows-store";
 import type { WorkspaceWorkflow } from "@/lib/workspace-store";
 import { DetailPageWrapper } from "@/components/layout/DetailPageWrapper";
@@ -20,14 +22,22 @@ function makeId() {
   return `step_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
 
+function pickDefaultWorkflowTemplateFolderId(): string {
+  const visible = loadWorkflowTemplateFolders().filter((f) => !f.hidden);
+  return visible[0]?.id ?? "wf-cat-plan";
+}
+
 export function RecommendationBuilder({
   taskType,
   preset,
+  intent = "project",
 }: {
   taskType: string;
   preset: RecommendationResult | null;
+  intent?: "project" | "template";
 }) {
   const router = useRouter();
+  const isTemplateIntent = intent === "template";
   const description = preset?.taskDescription?.trim() ?? "";
 
   const seededSteps = useMemo<EditableStep[]>(
@@ -45,14 +55,19 @@ export function RecommendationBuilder({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [targetFolderId, setTargetFolderId] = useState("ddokdi");
+  const [templateFolderId, setTemplateFolderId] = useState("wf-cat-plan");
+  const [templateTitle, setTemplateTitle] = useState("");
 
   const folderOptions = useMemo(() => loadDashboardFolders().filter((f) => !f.hidden), []);
+  const templateFolderOptions = useMemo(() => loadWorkflowTemplateFolders().filter((f) => !f.hidden), []);
 
   useEffect(() => {
     setBuilderSteps(seededSteps);
     setStartDate("");
     setEndDate("");
     setTargetFolderId(pickDefaultProjectFolderId(loadDashboardFolders()));
+    setTemplateFolderId(pickDefaultWorkflowTemplateFolderId());
+    setTemplateTitle("");
   }, [seededSteps]);
 
   const workflowName = useMemo(() => {
@@ -61,6 +76,12 @@ export function RecommendationBuilder({
     if (first) return first;
     return "새 워크플로우";
   }, [preset?.taskTitle, builderSteps]);
+
+  const resolvedTemplateTitle = useMemo(() => {
+    const t = templateTitle.trim();
+    if (t) return t;
+    return workflowName.replace(/\s*workflow\s*$/i, "").trim() || workflowName;
+  }, [templateTitle, workflowName]);
 
   const canStart = builderSteps.length > 0;
 
@@ -76,60 +97,99 @@ export function RecommendationBuilder({
               <span aria-hidden>←</span>
               워크플로우
             </Link>
-            <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">프로젝트 추가</h1>
-            <p className="mt-1 mb-5 text-sm text-zinc-600 sm:text-base">폴더·일정을 정한 뒤 단계를 쌓고 시작하세요.</p>
+            <h1 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">
+              {isTemplateIntent ? "워크플로우 템플릿 추가" : "프로젝트 추가"}
+            </h1>
+            <p className="mt-1 mb-5 text-sm text-zinc-600 sm:text-base">
+              {isTemplateIntent
+                ? "템플릿 폴더와 제목을 정한 뒤 단계를 쌓고 라이브러리에 저장하세요."
+                : "폴더·일정을 정한 뒤 단계를 쌓고 시작하세요."}
+            </p>
           </div>
           <Link
-            href="/projects"
+            href={isTemplateIntent ? "/workflows" : "/projects"}
             className="shrink-0 self-start rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-800 ring-1 ring-zinc-200 hover:bg-zinc-50 sm:self-auto"
           >
-            대시보드
+            {isTemplateIntent ? "템플릿 목록" : "대시보드"}
           </Link>
         </div>
       </header>
 
       <main className="pb-12 pt-6">
         <div className="space-y-4">
-          <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200">
-            <div className="text-sm font-semibold text-zinc-900">프로젝트 폴더</div>
-            <p className="mt-1 text-xs text-zinc-500">생성되는 워크플로우가 들어갈 프로젝트 폴더를 선택하세요.</p>
-            <select
-              value={targetFolderId}
-              onChange={(e) => setTargetFolderId(e.target.value)}
-              className="mt-3 block w-full max-w-md rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-            >
-              {folderOptions.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.emoji} {f.name}
-                </option>
-              ))}
-            </select>
-          </section>
+          {isTemplateIntent ? (
+            <>
+              <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200">
+                <div className="text-sm font-semibold text-zinc-900">템플릿 폴더</div>
+                <p className="mt-1 text-xs text-zinc-500">워크플로우 템플릿 라이브러리에서 이 템플릿이 들어갈 폴더를 선택하세요.</p>
+                <select
+                  value={templateFolderId}
+                  onChange={(e) => setTemplateFolderId(e.target.value)}
+                  className="mt-3 block w-full max-w-md rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+                >
+                  {templateFolderOptions.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.emoji} {f.name}
+                    </option>
+                  ))}
+                </select>
+              </section>
+              <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200">
+                <div className="text-sm font-semibold text-zinc-900">템플릿 이름</div>
+                <p className="mt-1 text-xs text-zinc-500">비워 두면 아래 단계·추천 제목으로 채워집니다.</p>
+                <input
+                  type="text"
+                  value={templateTitle}
+                  onChange={(e) => setTemplateTitle(e.target.value)}
+                  placeholder={resolvedTemplateTitle}
+                  className="mt-3 block w-full max-w-md rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+                />
+              </section>
+            </>
+          ) : (
+            <>
+              <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200">
+                <div className="text-sm font-semibold text-zinc-900">프로젝트 폴더</div>
+                <p className="mt-1 text-xs text-zinc-500">생성되는 워크플로우가 들어갈 프로젝트 폴더를 선택하세요.</p>
+                <select
+                  value={targetFolderId}
+                  onChange={(e) => setTargetFolderId(e.target.value)}
+                  className="mt-3 block w-full max-w-md rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+                >
+                  {folderOptions.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.emoji} {f.name}
+                    </option>
+                  ))}
+                </select>
+              </section>
 
-          <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200">
-            <div className="text-sm font-semibold text-zinc-900">일정</div>
-            <p className="mt-1 text-xs text-zinc-500">대시보드 카드에 시작일·마감일과 D-day가 표시됩니다.</p>
-            <div className="mt-4 flex flex-wrap gap-4">
-              <label className="block min-w-[140px] flex-1">
-                <span className="text-xs font-semibold text-zinc-500">시작일</span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-                />
-              </label>
-              <label className="block min-w-[140px] flex-1">
-                <span className="text-xs font-semibold text-zinc-500">마감일</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-                />
-              </label>
-            </div>
-          </section>
+              <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200">
+                <div className="text-sm font-semibold text-zinc-900">일정</div>
+                <p className="mt-1 text-xs text-zinc-500">대시보드 카드에 시작일·마감일과 D-day가 표시됩니다.</p>
+                <div className="mt-4 flex flex-wrap gap-4">
+                  <label className="block min-w-[140px] flex-1">
+                    <span className="text-xs font-semibold text-zinc-500">시작일</span>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+                    />
+                  </label>
+                  <label className="block min-w-[140px] flex-1">
+                    <span className="text-xs font-semibold text-zinc-500">마감일</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+                    />
+                  </label>
+                </div>
+              </section>
+            </>
+          )}
 
           <section className="space-y-3">
             <div className="flex items-center justify-between">
@@ -178,6 +238,19 @@ export function RecommendationBuilder({
             type="button"
             onClick={() => {
               if (!canStart) return;
+              if (isTemplateIntent) {
+                createUserWorkflowTemplateBlueprint({
+                  categoryId: templateFolderId,
+                  title: resolvedTemplateTitle,
+                  subtitle: description,
+                  steps: builderSteps.map((s) => ({
+                    title: s.title.trim() || "단계",
+                    toolIds: s.toolIds ?? [],
+                  })),
+                });
+                router.push("/workflows");
+                return;
+              }
               const workflow: WorkspaceWorkflow = {
                 id: `wf_${Date.now().toString(16)}`,
                 name: workflowName,
@@ -207,7 +280,7 @@ export function RecommendationBuilder({
             disabled={!canStart}
             className="w-full rounded-full bg-zinc-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            이 워크플로우로 시작하기
+            {isTemplateIntent ? "템플릿 라이브러리에 저장" : "이 워크플로우로 시작하기"}
           </button>
         </div>
       </main>

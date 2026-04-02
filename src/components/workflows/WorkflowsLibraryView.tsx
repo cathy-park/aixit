@@ -22,14 +22,21 @@ import {
   mergeTemplateOrderWithCatalog,
   moveTemplateIdAfter,
   moveTemplateIdBefore,
+  moveTemplateIdToGlobalEnd,
   TEMPLATE_LIBRARY_ORDER_EVENT,
 } from "@/lib/template-display-order-store";
 import {
   createProjectFromUserTemplate,
   isUserWorkflowTemplateId,
   listUserWorkflowTemplateListItems,
+  updateUserWorkflowTemplateCategory,
   USER_WORKFLOW_TEMPLATES_EVENT,
 } from "@/lib/user-workflow-templates-store";
+import {
+  getWorkflowTemplateCategoryOverride,
+  setWorkflowTemplateCategoryOverride,
+  TEMPLATE_CATEGORY_OVERRIDE_EVENT,
+} from "@/lib/workflow-template-category-override-store";
 import { createProjectFromTemplate } from "@/lib/workflows-store";
 import { WorkflowTemplateCard } from "@/components/workflows/WorkflowTemplateCard";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
@@ -103,6 +110,7 @@ export function WorkflowsLibraryView() {
   );
   const [templateOrderTick, setTemplateOrderTick] = useState(0);
   const [userTemplateTick, setUserTemplateTick] = useState(0);
+  const [categoryOverrideTick, setCategoryOverrideTick] = useState(0);
   const [templateDropTarget, setTemplateDropTarget] = useState<string | null>(null);
 
   const refreshRemovedTemplates = useCallback(() => {
@@ -143,6 +151,12 @@ export function WorkflowsLibraryView() {
     return () => window.removeEventListener(USER_WORKFLOW_TEMPLATES_EVENT, onUserTpl);
   }, []);
 
+  useEffect(() => {
+    const onCat = () => setCategoryOverrideTick((x) => x + 1);
+    window.addEventListener(TEMPLATE_CATEGORY_OVERRIDE_EVENT, onCat);
+    return () => window.removeEventListener(TEMPLATE_CATEGORY_OVERRIDE_EVENT, onCat);
+  }, []);
+
   const isSectionExpanded = useCallback(
     (id: string) => sectionExpanded[id] !== false,
     [sectionExpanded],
@@ -161,6 +175,7 @@ export function WorkflowsLibraryView() {
 
   const templates = useMemo(() => {
     void userTemplateTick;
+    void categoryOverrideTick;
     const labelById = Object.fromEntries(templateFolders.map((f) => [f.id, f.name]));
     const userItems = listUserWorkflowTemplateListItems()
       .filter((t) => !removedTemplateIds.has(t.templateId))
@@ -170,20 +185,21 @@ export function WorkflowsLibraryView() {
       }));
     const builtin = listWorkflowTemplates()
       .filter((t) => !removedTemplateIds.has(t.templateId))
-      .map((t) => ({
-        ...t,
-        categoryLabel: labelById[t.categoryId] ?? getWorkflowTemplateCategoryLabelStatic(t.categoryId),
-      }));
+      .map((t) => {
+        const categoryId = getWorkflowTemplateCategoryOverride(t.templateId) ?? t.categoryId;
+        return {
+          ...t,
+          categoryId,
+          categoryLabel: labelById[categoryId] ?? getWorkflowTemplateCategoryLabelStatic(categoryId),
+        };
+      });
     return [...userItems, ...builtin];
-  }, [templateFolders, removedTemplateIds, userTemplateTick]);
+  }, [templateFolders, removedTemplateIds, userTemplateTick, categoryOverrideTick]);
 
   const templateCatalogIds = useMemo(() => templates.map((t) => t.templateId), [templates]);
 
-  const templateDnD = useMemo(() => {
-    const readDragId = (e: DragEvent) =>
-      e.dataTransfer.getData(TEMPLATE_CARD_MIME) || e.dataTransfer.getData("text/plain");
-
-    return {
+  const templateDnD = useMemo(
+    () => ({
       dropTargetKey: templateDropTarget,
       onDragStart: (e: DragEvent, templateId: string) => {
         e.dataTransfer.setData(TEMPLATE_CARD_MIME, templateId);
@@ -201,25 +217,10 @@ export function WorkflowsLibraryView() {
         if (related && e.currentTarget.contains(related)) return;
         setTemplateDropTarget(null);
       },
-      onDropBefore: (e: DragEvent, beforeId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setTemplateDropTarget(null);
-        const raw = readDragId(e);
-        if (!raw || raw === beforeId) return;
-        moveTemplateIdBefore(raw, beforeId, templateCatalogIds);
-      },
-      onDropAfterLast: (e: DragEvent, lastId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setTemplateDropTarget(null);
-        const raw = readDragId(e);
-        if (!raw || raw === lastId) return;
-        moveTemplateIdAfter(raw, lastId, templateCatalogIds);
-      },
       onDragEnd: () => setTemplateDropTarget(null),
-    };
-  }, [templateDropTarget, templateCatalogIds]);
+    }),
+    [templateDropTarget],
+  );
 
   const templateDisplayOrder = useMemo(
     () => mergeTemplateOrderWithCatalog(templateCatalogIds),
@@ -284,16 +285,14 @@ export function WorkflowsLibraryView() {
 
   const sectionsAll = useMemo(
     () =>
-      visibleTemplateFolders
-        .map((folder) => ({
-          folder,
-          items: sortTemplatesByPinAndOrder(
-            searchFiltered.filter((t) => t.categoryId === folder.id),
-            pinnedKeys,
-            templateDisplayOrder,
-          ),
-        }))
-        .filter((x) => x.items.length > 0),
+      visibleTemplateFolders.map((folder) => ({
+        folder,
+        items: sortTemplatesByPinAndOrder(
+          searchFiltered.filter((t) => t.categoryId === folder.id),
+          pinnedKeys,
+          templateDisplayOrder,
+        ),
+      })),
     [visibleTemplateFolders, searchFiltered, pinnedKeys, templateDisplayOrder],
   );
 
@@ -301,7 +300,7 @@ export function WorkflowsLibraryView() {
 
   const categoryHeaderActions = (folder: WorkflowTemplateFolderRecord) => (
     <FolderSectionToolbar
-      entityLabel="category"
+      entityLabel="folder"
       folder={folder}
       onOpenEdit={(focus) => setFolderModal({ mode: "edit", initial: folder, editFocus: focus })}
       onToggleHidden={() => handleToggleTemplateFolderHidden(folder)}
@@ -355,10 +354,69 @@ export function WorkflowsLibraryView() {
     [pinnedKeys, copyTemplateToProject, handleRemoveTemplateFromLibrary],
   );
 
-  const renderTemplateDndGrid = (items: WorkflowTemplateListItem[], sectionEndKey: string) => {
-    if (items.length === 0) return null;
-    const endDropKey = `__tpl_end__:${sectionEndKey}`;
+  const renderTemplateDndGrid = (items: WorkflowTemplateListItem[], sectionFolderId: string) => {
     const d = templateDnD;
+    const readDragId = (e: DragEvent) =>
+      e.dataTransfer.getData(TEMPLATE_CARD_MIME) || e.dataTransfer.getData("text/plain");
+
+    const assignToFolderIfNeeded = (dragId: string) => {
+      const row = templates.find((x) => x.templateId === dragId);
+      if (!row || row.categoryId === sectionFolderId) return;
+      if (isUserWorkflowTemplateId(dragId)) {
+        updateUserWorkflowTemplateCategory(dragId, sectionFolderId);
+      } else {
+        setWorkflowTemplateCategoryOverride(dragId, sectionFolderId);
+      }
+    };
+
+    const onDropBefore = (e: DragEvent, beforeId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setTemplateDropTarget(null);
+      const raw = readDragId(e);
+      if (!raw || raw === beforeId) return;
+      assignToFolderIfNeeded(raw);
+      moveTemplateIdBefore(raw, beforeId, templateCatalogIds);
+    };
+
+    const onDropAfterLast = (e: DragEvent, lastId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setTemplateDropTarget(null);
+      const raw = readDragId(e);
+      if (!raw || raw === lastId) return;
+      assignToFolderIfNeeded(raw);
+      moveTemplateIdAfter(raw, lastId, templateCatalogIds);
+    };
+
+    const emptyKey = `__tpl_cat_empty__:${sectionFolderId}`;
+    const onDropEmptyFolder = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setTemplateDropTarget(null);
+      const raw = readDragId(e);
+      if (!raw) return;
+      assignToFolderIfNeeded(raw);
+      moveTemplateIdToGlobalEnd(raw, templateCatalogIds);
+    };
+
+    if (items.length === 0) {
+      return (
+        <div
+          className={cn(
+            "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+            d.dropTargetKey === emptyKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+          )}
+          onDragOver={(e) => d.onDragOver(e, emptyKey)}
+          onDragLeave={d.onDragLeave}
+          onDrop={onDropEmptyFolder}
+        >
+          이 폴더에 템플릿이 없어요. 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
+        </div>
+      );
+    }
+
+    const endDropKey = `__tpl_end__:${sectionFolderId}`;
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         {items.map((t) => {
@@ -374,7 +432,7 @@ export function WorkflowsLibraryView() {
               onDragStart={(e) => d.onDragStart(e, t.templateId)}
               onDragOver={(e) => d.onDragOver(e, cellKey)}
               onDragLeave={d.onDragLeave}
-              onDrop={(e) => d.onDropBefore(e, t.templateId)}
+              onDrop={(e) => onDropBefore(e, t.templateId)}
               onDragEnd={d.onDragEnd}
             >
               {renderTemplateCard(t)}
@@ -388,7 +446,7 @@ export function WorkflowsLibraryView() {
           )}
           onDragOver={(e) => d.onDragOver(e, endDropKey)}
           onDragLeave={d.onDragLeave}
-          onDrop={(e) => d.onDropAfterLast(e, items[items.length - 1]!.templateId)}
+          onDrop={(e) => onDropAfterLast(e, items[items.length - 1]!.templateId)}
         />
       </div>
     );
@@ -401,13 +459,13 @@ export function WorkflowsLibraryView() {
         count={headerTemplateCount}
         description={
           <>
-            템플릿을 고른 뒤 프로젝트로 만들면, 프로젝트 메뉴에서 진행 상황을 관리할 수 있어요. 카테고리는 프로젝트 폴더와 별도로
+            템플릿을 고른 뒤 프로젝트로 만들면, 프로젝트 메뉴에서 진행 상황을 관리할 수 있어요. 템플릿 폴더는 프로젝트 폴더와 별도로
             관리됩니다.
           </>
         }
         rightSlot={
           <Link
-            href="/recommendation"
+            href="/recommendation?intent=template"
             className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-bold leading-none text-white shadow-sm hover:bg-zinc-800"
           >
             추가
@@ -446,7 +504,7 @@ export function WorkflowsLibraryView() {
         <PillSearchField
           value={q}
           onChange={setQ}
-          placeholder="템플릿 이름, 설명, 카테고리 검색"
+          placeholder="템플릿 이름, 설명, 폴더 검색"
           aria-label="템플릿 검색"
         />
       </div>
@@ -475,7 +533,7 @@ export function WorkflowsLibraryView() {
                   expanded={isSectionExpanded(WF_MISC_SECTION_ID)}
                   onToggle={() => toggleSection(WF_MISC_SECTION_ID)}
                   actions={
-                    <span className="px-2 text-xs font-medium text-zinc-500">숨김·미분류 카테고리</span>
+                    <span className="px-2 text-xs font-medium text-zinc-500">숨김·미분류 폴더</span>
                   }
                 />
                 {isSectionExpanded(WF_MISC_SECTION_ID) ? renderTemplateDndGrid(templatesInUnknownCategory, WF_MISC_SECTION_ID) : null}
@@ -505,9 +563,9 @@ export function WorkflowsLibraryView() {
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">{categoryHeaderActions(folder)}</div>
                 </div>
-                {items.length === 0 ? (
+                {items.length === 0 && q.trim() ? (
                   <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
-                    조건에 맞는 템플릿이 없어요.
+                    검색 조건에 맞는 템플릿이 없어요.
                   </div>
                 ) : (
                   renderTemplateDndGrid(items, folder.id)
@@ -602,14 +660,14 @@ export function WorkflowsLibraryView() {
             aria-label="닫기"
           />
           <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-zinc-200">
-            <h2 className="text-lg font-bold text-zinc-950">카테고리 삭제</h2>
+            <h2 className="text-lg font-bold text-zinc-950">폴더 삭제</h2>
             <p className="mt-2 text-sm text-zinc-600">
-              <span className="font-semibold text-zinc-900">{deleteTarget.name}</span> 카테고리를 삭제합니다. 템플릿 데이터는 그대로이며,
+              <span className="font-semibold text-zinc-900">{deleteTarget.name}</span> 폴더를 삭제합니다. 템플릿 데이터는 그대로이며,
               전체 보기에서 &quot;기타&quot;로 묶여 보일 수 있어요.
             </p>
             {deleteBlockCount > 0 ? (
               <p className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800 ring-1 ring-rose-200">
-                이 카테고리를 사용 중인 템플릿이 {deleteBlockCount}개 있어 삭제할 수 없습니다.
+                이 폴더를 사용 중인 템플릿이 {deleteBlockCount}개 있어 삭제할 수 없습니다.
               </p>
             ) : null}
             <div className="mt-6 flex flex-wrap justify-end gap-2">

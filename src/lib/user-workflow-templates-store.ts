@@ -117,6 +117,49 @@ export function getUserWorkflowTemplateBySlug(slug: string): UserWorkflowTemplat
   return getUserWorkflowTemplateById(slug);
 }
 
+export function updateUserWorkflowTemplateCategory(templateId: string, categoryId: string): boolean {
+  const list = loadUserWorkflowTemplates();
+  const idx = list.findIndex((t) => t.id === templateId);
+  if (idx < 0) return false;
+  const next = [...list];
+  next[idx] = { ...next[idx], categoryId };
+  saveAll(next);
+  return true;
+}
+
+export type CreateUserWorkflowTemplateBlueprint = {
+  categoryId: string;
+  title: string;
+  subtitle: string;
+  emoji?: string;
+  steps: Array<{ title: string; toolIds: string[] }>;
+};
+
+/** 추천/빌더 UI에서 템플릿만 저장 (프로젝트 생성 없음) */
+export function createUserWorkflowTemplateBlueprint(params: CreateUserWorkflowTemplateBlueprint): UserWorkflowTemplateRecord {
+  const steps: UserWorkflowTemplateStep[] =
+    params.steps.length > 0
+      ? params.steps.map((s) => ({
+          toolName: s.title.trim() || "단계",
+          toolIds: [...(s.toolIds ?? []).filter((x) => typeof x === "string" && x.trim())],
+        }))
+      : [{ toolName: "1단계", toolIds: [] }];
+  const rec: UserWorkflowTemplateRecord = {
+    id: newTemplateId(),
+    categoryId: params.categoryId,
+    title: params.title.trim() || "내 템플릿",
+    subtitle: typeof params.subtitle === "string" ? params.subtitle.trim() : "",
+    emoji: params.emoji?.trim() || "📋",
+    steps,
+    links: [],
+    memos: [],
+    createdAt: Date.now(),
+  };
+  const list = loadUserWorkflowTemplates();
+  saveAll([rec, ...list]);
+  return rec;
+}
+
 function toolNameForStep(
   step: DashboardWorkflow["steps"][0],
   resolveTool: (toolId: string) => { name: string } | undefined,

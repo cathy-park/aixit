@@ -202,7 +202,7 @@ export function DashboardFolderBar({
     <div
       className="flex flex-wrap items-center gap-2"
       role="toolbar"
-      aria-label={variant === "template" ? "카테고리 필터" : "폴더 필터"}
+      aria-label="폴더 필터"
     >
       <button
         type="button"
@@ -236,7 +236,7 @@ export function DashboardFolderBar({
                 onOpenEdit={(focus) => onFolderOpenEdit!(f, focus)}
                 onToggleHidden={() => onFolderToggleHidden!(f)}
                 onDeleteRequest={() => onFolderDeleteRequest!(f)}
-                menuAriaKind={variant === "template" ? "category" : "folder"}
+                menuAriaKind="folder"
                 reorderMime={reorderEnabled ? reorderMime : undefined}
                 dropHighlight={folderDropTarget === f.id}
                 onReorderDragEnd={() => setFolderDropTarget(null)}
@@ -307,7 +307,7 @@ export function DashboardFolderBar({
         className="inline-flex items-center gap-1 rounded-full border border-dashed border-zinc-300 bg-zinc-50/80 px-3.5 py-2 text-sm font-semibold text-zinc-600 hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-800"
       >
         <span aria-hidden>+</span>
-        {variant === "template" ? "카테고리 추가" : "폴더 추가"}
+        폴더 추가
       </button>
     </div>
   );
