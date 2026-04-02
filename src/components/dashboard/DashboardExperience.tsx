@@ -38,6 +38,7 @@ import {
   ensureLayoutMerged,
   insertLayoutEntryAfter,
   migrateAllEntriesFromFolder,
+  moveEntryToFolderEnd,
   moveEntryBeforeTargetInFolder,
   remapLayoutUnknownFolders,
   removeLayoutEntry,
@@ -96,6 +97,8 @@ function buildGridNodes(
     pinnedKeys: Set<string>;
     /** 완료 카드들은 opacity를 약간 낮춰 "가상 완료 그룹"임을 표현 */
     dimCompleted?: boolean;
+    /** 그리드 빈 공간(끝) 드롭 시 이동할 폴더 */
+    endDropFolderId?: string;
     onTogglePin: (entry: LayoutEntry) => void;
     onCopy: (entry: LayoutEntry) => void;
     onSaveAsTemplate?: (entry: LayoutEntry) => void;
@@ -106,11 +109,13 @@ function buildGridNodes(
       onDragOver: (e: DragEvent, pinKey: string) => void;
       onDragLeave: (e: DragEvent) => void;
       onDrop: (e: DragEvent, targetEntry: LayoutEntry) => void;
+      onDropToFolderEnd: (e: DragEvent, folderId: string) => void;
       onDragEnd: () => void;
     };
   },
 ) {
   const dnd = opts.layoutDnD;
+  const endDropKey = dnd && opts.endDropFolderId ? `__end__:${opts.endDropFolderId}` : null;
   return (
     <div className={cn("grid gap-4", opts.gridClass)}>
       {items.map(({ folder, entry, preview }) => {
@@ -146,6 +151,17 @@ function buildGridNodes(
           </div>
         );
       })}
+      {dnd && opts.endDropFolderId ? (
+        <div
+          className={cn(
+            "col-span-full h-12 w-full rounded-2xl",
+            endDropKey && dnd.dropTargetKey === endDropKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+          )}
+          onDragOver={(e) => dnd.onDragOver(e, endDropKey!)}
+          onDragLeave={dnd.onDragLeave}
+          onDrop={(e) => dnd.onDropToFolderEnd(e, opts.endDropFolderId!)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -495,6 +511,30 @@ export function DashboardExperience() {
           return next;
         });
       },
+      onDropToFolderEnd: (e: DragEvent, folderId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setLayoutDropTarget(null);
+        const raw = e.dataTransfer.getData(LAYOUT_ENTRY_MIME);
+        if (!raw) return;
+        let dragged: { kind: LayoutEntry["kind"]; id: string };
+        try {
+          dragged = JSON.parse(raw) as { kind: LayoutEntry["kind"]; id: string };
+        } catch {
+          return;
+        }
+
+        setLayout((prev) => {
+          const d = prev.find((x) => x.kind === dragged.kind && x.id === dragged.id);
+          if (!d) return prev;
+          const next = moveEntryToFolderEnd(prev, d.kind, d.id, folderId);
+          if (d.folderId !== folderId) {
+            setDashboardWorkflowFolder(d.id, folderId);
+          }
+          saveLayout(next);
+          return next;
+        });
+      },
       onDragEnd: () => setLayoutDropTarget(null),
     }),
     [layoutDropTarget],
@@ -640,6 +680,7 @@ export function DashboardExperience() {
                               ...gridOpts,
                               gridClass: "grid-cols-1 sm:grid-cols-2",
                               showFolderBadge: false,
+                              endDropFolderId: folder.id,
                             })
                           ) : null}
 
@@ -695,6 +736,7 @@ export function DashboardExperience() {
                                           gridClass: "grid-cols-1 sm:grid-cols-2",
                                           showFolderBadge: false,
                                           dimCompleted: true,
+                                          endDropFolderId: folder.id,
                                         })}
                                       </div>
                                     ) : null}
@@ -752,6 +794,7 @@ export function DashboardExperience() {
                             ...gridOpts,
                             gridClass: "grid-cols-1 xl:grid-cols-3",
                             showFolderBadge: false,
+                            endDropFolderId: folder.id,
                           })}
                           {folderVisible < flatSingleFolder.length ? (
                             <div ref={loadMoreRef} className="h-12 w-full shrink-0" aria-hidden />
@@ -817,6 +860,7 @@ export function DashboardExperience() {
                                       gridClass: "grid-cols-1 xl:grid-cols-3",
                                       showFolderBadge: false,
                                       dimCompleted: true,
+                                      endDropFolderId: folder.id,
                                     })}
                                   </div>
                                 ) : null}

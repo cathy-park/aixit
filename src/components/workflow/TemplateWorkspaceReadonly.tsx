@@ -24,11 +24,6 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
   const { tools: toolCatalog } = useMergedTools();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [linkedProjects, setLinkedProjects] = useState<DashboardWorkflow[]>([]);
-  const [newProjectFolderId, setNewProjectFolderId] = useState(() =>
-    pickDefaultProjectFolderId(loadDashboardFolders()),
-  );
-
-  const projectFolderOptions = useMemo(() => loadDashboardFolders().filter((f) => !f.hidden), [detail.id]);
 
   const refreshLinked = useCallback(() => {
     setLinkedProjects(listDashboardWorkflowsByTemplateId(detail.id));
@@ -40,10 +35,6 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
     window.addEventListener("aixit-workflows-updated", onWf);
     return () => window.removeEventListener("aixit-workflows-updated", onWf);
   }, [refreshLinked]);
-
-  useEffect(() => {
-    setNewProjectFolderId(pickDefaultProjectFolderId(loadDashboardFolders()));
-  }, [detail.id]);
 
   const wf = useMemo(() => buildTemplatePreviewDashboardWorkflow(detail, preview), [detail, preview]);
 
@@ -80,7 +71,7 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
   const workflowMemos = wf.workflowMemos ?? [];
 
   const handleCreateProject = () => {
-    const fid = newProjectFolderId;
+    const fid = pickDefaultProjectFolderId(loadDashboardFolders());
     const proj = isUserWorkflowTemplateId(detail.id)
       ? createProjectFromUserTemplate(detail.id, fid)
       : createProjectFromTemplate(detail.id, fid);
@@ -92,56 +83,38 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
   return (
     <DetailPageWrapper>
       <header className="pb-3">
-        <Link
-          href="/workflows"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-700 hover:text-zinc-950"
-        >
-          <span aria-hidden>←</span>
-          워크플로우 템플릿
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/workflows"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-700 hover:text-zinc-950"
+          >
+            <span aria-hidden>←</span>
+            워크플로우 템플릿
+          </Link>
+          <button
+            type="button"
+            onClick={handleCreateProject}
+            className="shrink-0 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
+          >
+            프로젝트 생성
+          </button>
+        </div>
         <div className="mt-3 flex flex-col gap-3">
-          {/* 1단: 제목 + 우측 액션 */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1 space-y-2">
-              <label className="block">
-                <span className="sr-only">워크플로우 템플릿 제목</span>
-                <input
-                  value={wf.name}
-                  readOnly
-                  className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-                />
-              </label>
-              {wf.subtitle ? <p className="text-sm font-medium text-zinc-600">{wf.subtitle}</p> : null}
-            </div>
-
-            <div className="flex w-full shrink-0 flex-col items-stretch gap-3 sm:w-auto sm:items-end">
-              <label className="block w-full sm:max-w-[220px]">
-                <span className="text-xs font-semibold text-zinc-500">프로젝트 폴더</span>
-                <select
-                  value={newProjectFolderId}
-                  onChange={(e) => setNewProjectFolderId(e.target.value)}
-                  className="mt-1 block w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-                >
-                  {projectFolderOptions.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.emoji} {f.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                onClick={handleCreateProject}
-                className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
-              >
-                프로젝트 생성
-              </button>
-              {linkedProjects.length > 0 ? (
-                <div className="text-right text-[11px] font-semibold text-zinc-400">
-                  기존에 이 템플릿으로 만든 프로젝트가 {linkedProjects.length}개 있어요.
-                </div>
-              ) : null}
-            </div>
+          <div className="min-w-0 space-y-2">
+            <label className="block">
+              <span className="sr-only">워크플로우 템플릿 제목</span>
+              <input
+                value={wf.name}
+                readOnly
+                className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+              />
+            </label>
+            {wf.subtitle ? <p className="text-sm font-medium text-zinc-600">{wf.subtitle}</p> : null}
+            {linkedProjects.length > 0 ? (
+              <p className="text-[11px] font-semibold text-zinc-400">
+                기존에 이 템플릿으로 만든 프로젝트가 {linkedProjects.length}개 있어요.
+              </p>
+            ) : null}
           </div>
 
           <p className="text-xs font-semibold text-zinc-600">
