@@ -6,6 +6,7 @@ export function ServiceWorkerRegister() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
+    if (process.env.NODE_ENV !== "production") return;
 
     const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     const isSecure = window.location.protocol === "https:" || isLocalhost;

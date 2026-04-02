@@ -4,10 +4,12 @@ import { useEffect, useRef } from "react";
 import { AIXIT_LOCAL_STORAGE_KEYS, dispatchAixitStorageUpdatedEvents, isAixitCoreDataEmpty } from "@/lib/aixit-storage";
 import { flushAixitKvQueue, fetchAixitKvMap } from "@/lib/supabase/aixitKv";
 import { supabaseEnabled } from "@/lib/supabase/supabaseClient";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 type QueuedValue = string | null;
 
 export function AixitSupabaseSyncProvider() {
+  const { user, loading } = useAuth();
   const remoteApplyingRef = useRef(false);
   const queueRef = useRef<Map<string, QueuedValue>>(new Map());
   // DOM setTimeout은 number를 반환합니다.
@@ -16,6 +18,8 @@ export function AixitSupabaseSyncProvider() {
   useEffect(() => {
     if (!supabaseEnabled) return;
     if (typeof window === "undefined") return;
+    if (loading) return;
+    if (!user) return;
 
     let cancelled = false;
 
@@ -66,11 +70,13 @@ export function AixitSupabaseSyncProvider() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loading, user]);
 
   useEffect(() => {
     if (!supabaseEnabled) return;
     if (typeof window === "undefined") return;
+    if (loading) return;
+    if (!user) return;
 
     // localStorage write를 가로채서 remote에도 반영합니다.
     const ls = window.localStorage;
@@ -113,7 +119,7 @@ export function AixitSupabaseSyncProvider() {
       // 컴포넌트 unmount 시에는 원상 복구하지 않습니다.
       // (현재 앱은 SPA 형태로 상시 유지되며, 원상 복구를 넣으면 타이밍 이슈가 생길 수 있어요)
     };
-  }, []);
+  }, [loading, user]);
 
   return null;
 }

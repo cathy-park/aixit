@@ -4,6 +4,7 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { AixitStorageMigrationBootstrap } from "@/components/storage/AixitStorageMigrationBootstrap";
 import { AixitSupabaseSyncProvider } from "@/components/storage/AixitSupabaseSyncProvider";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,10 +37,12 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 text-zinc-950">
-        <AixitSupabaseSyncProvider />
-        <AixitStorageMigrationBootstrap />
-        {children}
-        <ServiceWorkerRegister />
+        <AuthProvider>
+          <AixitSupabaseSyncProvider />
+          <AixitStorageMigrationBootstrap />
+          {children}
+          <ServiceWorkerRegister />
+        </AuthProvider>
       </body>
     </html>
   );
