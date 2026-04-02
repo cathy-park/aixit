@@ -83,24 +83,23 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
   return (
     <DetailPageWrapper>
       <header className="pb-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-            <Link
-              href="/workflows"
-              className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-zinc-700 hover:text-zinc-950"
-            >
-              <span aria-hidden>←</span>
-              워크플로우 템플릿
-            </Link>
-            <label className="block min-w-0 flex-1">
-              <span className="sr-only">워크플로우 템플릿 제목</span>
-              <input
-                value={wf.name}
-                readOnly
-                className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-              />
-            </label>
-          </div>
+        <Link
+          href="/workflows"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-700 hover:text-zinc-950"
+        >
+          <span aria-hidden>←</span>
+          워크플로우 템플릿
+        </Link>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <label className="block min-w-0 flex-1">
+            <span className="sr-only">워크플로우 템플릿 제목</span>
+            <input
+              value={wf.name}
+              readOnly
+              className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+            />
+          </label>
           <button
             type="button"
             onClick={handleCreateProject}

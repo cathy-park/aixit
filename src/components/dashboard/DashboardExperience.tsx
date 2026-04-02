@@ -670,7 +670,16 @@ export function DashboardExperience() {
                   />
                   {isSectionExpanded(folder.id)
                     ? entriesCount === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-sm text-zinc-500">
+                        <div
+                          className={cn(
+                            "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-sm text-zinc-500",
+                            layoutDnD.dropTargetKey === `__end__:${folder.id}` &&
+                              "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                          )}
+                          onDragOver={(e) => layoutDnD.onDragOver(e, `__end__:${folder.id}`)}
+                          onDragLeave={layoutDnD.onDragLeave}
+                          onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
+                        >
                           이 폴더에 프로젝트가 없어요.
                         </div>
                       ) : (
@@ -783,7 +792,16 @@ export function DashboardExperience() {
 
                 <div className="space-y-5">
                   {entries.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-sm text-zinc-500">
+                    <div
+                      className={cn(
+                        "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-sm text-zinc-500",
+                        layoutDnD.dropTargetKey === `__end__:${folder.id}` &&
+                          "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                      )}
+                      onDragOver={(e) => layoutDnD.onDragOver(e, `__end__:${folder.id}`)}
+                      onDragLeave={layoutDnD.onDragLeave}
+                      onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
+                    >
                       이 폴더에 프로젝트가 없어요.
                     </div>
                   ) : (
