@@ -34,7 +34,7 @@ export default function LandingPageClient() {
   const canLogin = supabaseEnabled && Boolean(supabase);
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-white px-6 py-12 text-zinc-900">
+    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-white px-6 pb-12 pt-[80px] text-zinc-900">
       <div className="w-full max-w-[420px] text-center">
         <div className="mx-auto w-full max-w-[min(100%,288px)] bg-transparent p-0">
           <Image
