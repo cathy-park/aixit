@@ -57,6 +57,7 @@ export function HomeTodayDashboard() {
   const [greetEdit, setGreetEdit] = useState(false);
   const [greetDraft, setGreetDraft] = useState(DEFAULT_HOME_GREETING_NAME);
   const greetSkipBlur = useRef(false);
+  const [weekInfoOpen, setWeekInfoOpen] = useState(false);
   /** 날짜가 바뀌면(자정) 주간 칩의 오늘 표시를 갱신 */
   const [calendarPulse, setCalendarPulse] = useState(0);
 
@@ -342,22 +343,53 @@ export function HomeTodayDashboard() {
         <h2 id="week-todos-heading" className="text-lg font-semibold tracking-tight text-zinc-950">
           이번주 할 일
         </h2>
-        <p className="mt-1 flex items-center gap-2 text-sm text-zinc-500">
+        <p className="mt-1 flex items-center gap-2.5 text-sm text-zinc-500">
           <span className="font-medium text-zinc-700">{formatKoreanWeekRangeSunSat(weekStartIso)}</span>
-          <span aria-hidden className="text-zinc-300">·</span>
-          {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-200"
-            aria-label="캘린더 예정 일정 설명"
-            title="캘린더에 넣은 예정 일정은 예정일이 이번 주이면서 그날(로컬)이 되면 여기에 자동으로 붙습니다. 매주 일요일이 지나면 이번 주 목록은 비우고 새 주를 시작합니다. 완료한 기록은 캘린더에 남습니다. 이 기기 브라우저에 저장됩니다."
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4" />
-              <path d="M12 8h.01" />
-            </svg>
-          </button>
+          <span className="relative inline-flex items-center">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-200"
+              aria-label="캘린더 예정 일정 설명"
+              aria-expanded={weekInfoOpen}
+              onClick={() => setWeekInfoOpen((v) => !v)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setWeekInfoOpen(false);
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </button>
+            {weekInfoOpen ? (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-[60] cursor-default"
+                  aria-label="닫기"
+                  onClick={() => setWeekInfoOpen(false)}
+                />
+                <div
+                  role="dialog"
+                  aria-label="캘린더 예정 일정 안내"
+                  className="absolute left-0 top-[calc(100%+8px)] z-[70] w-[min(520px,calc(100vw-2rem))] rounded-2xl bg-white p-4 text-xs font-medium leading-relaxed text-zinc-700 shadow-xl ring-1 ring-zinc-200"
+                >
+                  캘린더에 넣은 예정 일정은 예정일이 이번 주이면서 그날(로컬)이 되면 여기에 자동으로 붙습니다. 매주 일요일이 지나면 이번 주 목록은 비우고
+                  새 주를 시작합니다. 완료한 기록은 캘린더에 남습니다. 이 기기 브라우저에 저장됩니다.
+                </div>
+              </>
+            ) : null}
+          </span>
         </p>
 
         <div

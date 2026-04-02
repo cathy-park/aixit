@@ -22,7 +22,6 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.png", type: "image/png" },
-      { url: "/icon.svg", type: "image/svg+xml" },
     ],
     apple: [{ url: "/apple-touch-icon.png", type: "image/png" }],
   },
@@ -40,7 +39,6 @@ export default function RootLayout({
     >
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
       </head>
