@@ -99,7 +99,7 @@ export default function SettingsPage() {
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn(e);
-      setSupFetchError("Supabase Pull 실패 (권한/테이블/RLS 확인 필요)");
+      setSupFetchError(`Supabase Pull 실패: ${(e as Error)?.message ?? "권한/테이블/RLS 확인 필요"}`);
     }
   }
 
@@ -122,7 +122,7 @@ export default function SettingsPage() {
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn(e);
-      setSupFetchError("Supabase Push 실패 (권한/테이블/RLS 확인 필요)");
+      setSupFetchError(`Supabase Push 실패: ${(e as Error)?.message ?? "권한/테이블/RLS 확인 필요"}`);
     }
   }
 
@@ -148,7 +148,7 @@ export default function SettingsPage() {
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn(e);
-      setSupFetchError("Supabase Check 실패 (권한/테이블/RLS 확인 필요)");
+      setSupFetchError(`Supabase Check 실패: ${(e as Error)?.message ?? "권한/테이블/RLS 확인 필요"}`);
     }
   }
 

@@ -652,7 +652,7 @@ export function DashboardExperience() {
 
       <div className="min-w-0 pb-10">
         {activeFolderId === "all" ? (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {flatAllWorkflowsAny.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
                 조건에 맞는 프로젝트가 없어요.
@@ -772,7 +772,7 @@ export function DashboardExperience() {
             const entries = layout.filter((e) => e.folderId === folder.id);
 
             return (
-              <div key={folder.id} className={cn("space-y-4 rounded-2xl", folderIdx > 0 && "mt-4")}>
+              <div key={folder.id} className={cn("space-y-4 rounded-2xl", folderIdx > 0 && "mt-5")}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 flex-1 items-center gap-3 py-1.5 pl-1">
                     <FolderGlyph folder={folder} size="md" accentColor={folder.color} />

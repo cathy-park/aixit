@@ -20,10 +20,8 @@ export async function fetchAixitKvMap(): Promise<Record<string, string>> {
   const keys = inKeysFilter(AIXIT_LOCAL_STORAGE_KEYS);
   const { data, error } = await supabase.from(TABLE).select("k,v").eq("user_id", user.id).in("k", keys);
   if (error) {
-    // 테이블이 없거나 권한이 없을 수 있으니 조용히 실패 처리
-    // eslint-disable-next-line no-console
-    console.warn("fetchAixitKvMap failed:", error.message);
-    return {};
+    // 에러를 숨기면 "원격이 비어있다"로만 보여 디버깅이 불가능해집니다.
+    throw new Error(`Supabase fetch failed: ${error.message}`);
   }
 
   const map: Record<string, string> = {};
@@ -43,8 +41,7 @@ export async function upsertAixitKv(k: string, v: string) {
   if (!user) return;
   const { error } = await supabase.from(TABLE).upsert({ user_id: user.id, k, v }, { onConflict: "user_id,k" });
   if (error) {
-    // eslint-disable-next-line no-console
-    console.warn("upsertAixitKv failed:", error.message);
+    throw new Error(`Supabase upsert failed: ${error.message}`);
   }
 }
 
@@ -56,8 +53,7 @@ export async function deleteAixitKv(k: string) {
   if (!user) return;
   const { error } = await supabase.from(TABLE).delete().eq("user_id", user.id).eq("k", k);
   if (error) {
-    // eslint-disable-next-line no-console
-    console.warn("deleteAixitKv failed:", error.message);
+    throw new Error(`Supabase delete failed: ${error.message}`);
   }
 }
 
@@ -82,8 +78,7 @@ export async function flushAixitKvQueue(queue: Map<string, string | null>) {
   if (upserts.length > 0) {
     const { error } = await supabase.from(TABLE).upsert(upserts, { onConflict: "user_id,k" });
     if (error) {
-      // eslint-disable-next-line no-console
-      console.warn("flushAixitKvQueue upsert failed:", error.message);
+      throw new Error(`Supabase bulk upsert failed: ${error.message}`);
     }
   }
 
@@ -91,8 +86,7 @@ export async function flushAixitKvQueue(queue: Map<string, string | null>) {
     // 다건 delete는 in 절 사용
     const { error } = await supabase.from(TABLE).delete().eq("user_id", user.id).in("k", deletes);
     if (error) {
-      // eslint-disable-next-line no-console
-      console.warn("flushAixitKvQueue delete failed:", error.message);
+      throw new Error(`Supabase bulk delete failed: ${error.message}`);
     }
   }
 }

@@ -91,7 +91,12 @@ export function AixitSupabaseSyncProvider() {
         flushTimerRef.current = null;
         const queue = new Map(queueRef.current);
         queueRef.current.clear();
-        await flushAixitKvQueue(queue);
+        try {
+          await flushAixitKvQueue(queue);
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn("AixitSupabaseSyncProvider flush failed:", e);
+        }
       }, 400);
     }
 
