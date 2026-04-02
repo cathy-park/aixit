@@ -89,12 +89,6 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
     router.push(`/workspace?id=${encodeURIComponent(proj.id)}`);
   };
 
-  const openLatestProject = () => {
-    const p = linkedProjects[0];
-    if (!p) return;
-    router.push(`/workspace?id=${encodeURIComponent(p.id)}`);
-  };
-
   return (
     <DetailPageWrapper>
       <header className="pb-3">
@@ -135,32 +129,18 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
                   ))}
                 </select>
               </label>
+              <button
+                type="button"
+                onClick={handleCreateProject}
+                className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
+              >
+                프로젝트 생성
+              </button>
               {linkedProjects.length > 0 ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={openLatestProject}
-                    className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
-                  >
-                    프로젝트 열기 (수정)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCreateProject}
-                    className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-zinc-800 ring-1 ring-zinc-200 hover:bg-zinc-50"
-                  >
-                    새 프로젝트 만들기
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleCreateProject}
-                  className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
-                >
-                  프로젝트 생성
-                </button>
-              )}
+                <div className="text-right text-[11px] font-semibold text-zinc-400">
+                  기존에 이 템플릿으로 만든 프로젝트가 {linkedProjects.length}개 있어요.
+                </div>
+              ) : null}
             </div>
           </div>
 
