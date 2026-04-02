@@ -3,8 +3,8 @@
   "short_name": "AIXIT",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1E1E21",
-  "theme_color": "#1E1E21",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
   "icons": [
     {
       "src": "/icon-192-v2.png?v=5",
