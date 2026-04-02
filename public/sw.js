@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const CACHE_NAME = `aixit-pwa-${CACHE_VERSION}`;
 
 const OFFLINE_URL = "/offline.html";
