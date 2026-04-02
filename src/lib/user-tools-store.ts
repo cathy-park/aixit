@@ -173,7 +173,10 @@ export function persistTool(tool: Tool) {
     (patch as Record<string, unknown>).credentialProvider = null;
   }
   // 레거시처럼 "삭제"가 의미있는 필드들은, seed에 없고 override에만 있던 값을 지울 수 있어야 합니다.
-  if (!tool.highlightNote && ov?.highlightNote) {
+  // highlightNote(메모): 빈 문자열/undefined는 JSON 저장 시 누락될 수 있으므로, 삭제는 항상 null로 명시합니다.
+  // - seed에 메모가 있는 내장 도구에서 "메모 삭제"를 하면, override에 null을 써서 seed 메모가 다시 나타나지 않게 합니다.
+  // - override에만 있던 메모 삭제도 동일하게 null로 처리합니다.
+  if (!tool.highlightNote && (seed.highlightNote || ov?.highlightNote)) {
     (patch as Record<string, unknown>).highlightNote = null;
   }
   upsertBuiltinOverride(tool.id, patch);

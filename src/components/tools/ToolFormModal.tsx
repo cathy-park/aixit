@@ -88,6 +88,7 @@ export function ToolFormModal({
   const [href, setHref] = useState("");
   const [credentials, setCredentials] = useState<ToolCredential[]>([]);
   const [activeCredentialId, setActiveCredentialId] = useState<string | undefined>(undefined);
+  const [editingCredentialId, setEditingCredentialId] = useState<string | null>(null);
   const [credLabel, setCredLabel] = useState("");
   const [credentialId, setCredentialId] = useState("");
   const [credentialSecret, setCredentialSecret] = useState("");
@@ -109,6 +110,7 @@ export function ToolFormModal({
       const legacy = legacyToCredentials(initial);
       setCredentials(legacy.list);
       setActiveCredentialId(legacy.activeId ?? legacy.list[0]?.id);
+      setEditingCredentialId(null);
       setCredLabel("");
       setCredentialId("");
       setCredentialSecret("");
@@ -127,6 +129,7 @@ export function ToolFormModal({
       setHref("");
       setCredentials([]);
       setActiveCredentialId(undefined);
+      setEditingCredentialId(null);
       setCredLabel("");
       setCredentialId("");
       setCredentialSecret("");
@@ -155,8 +158,8 @@ export function ToolFormModal({
     const loginTrim = credentialId.trim();
     const secretTrim = credentialSecret.trim();
     const labelTrim = credLabel.trim();
-    const hasData = Boolean(loginTrim || secretTrim);
-    if (!hasData) return;
+    const hasAnything = Boolean(loginTrim || secretTrim || labelTrim);
+    if (!hasAnything) return;
     const id = makeCredId();
     const item: ToolCredential = {
       id,
@@ -176,6 +179,52 @@ export function ToolFormModal({
   const removeCredential = (id: string) => {
     setCredentials((prev) => prev.filter((c) => c.id !== id));
     setActiveCredentialId((cur) => (cur === id ? undefined : cur));
+    setEditingCredentialId((cur) => (cur === id ? null : cur));
+  };
+
+  const startEditCredential = (c: ToolCredential) => {
+    setEditingCredentialId(c.id);
+    setCredentialProvider(c.provider);
+    setCredLabel(c.label ?? "");
+    setCredentialId(c.loginId ?? "");
+    setCredentialSecret(c.secret ?? "");
+  };
+
+  const cancelEditCredential = () => {
+    setEditingCredentialId(null);
+    setCredLabel("");
+    setCredentialId("");
+    setCredentialSecret("");
+    setCredentialProvider("email");
+  };
+
+  const commitEditCredential = () => {
+    const id = editingCredentialId;
+    if (!id) return;
+    const loginTrim = credentialId.trim();
+    const secretTrim = credentialSecret.trim();
+    const labelTrim = credLabel.trim();
+    const hasAnything = Boolean(loginTrim || secretTrim || labelTrim);
+    if (!hasAnything) return;
+
+    setCredentials((prev) =>
+      prev.map((c) =>
+        c.id !== id
+          ? c
+          : {
+              ...c,
+              provider: credentialProvider,
+              label: labelTrim || undefined,
+              loginId: loginTrim || undefined,
+              secret: secretTrim || undefined,
+            },
+      ),
+    );
+    setEditingCredentialId(null);
+    setCredLabel("");
+    setCredentialId("");
+    setCredentialSecret("");
+    setCredentialProvider("email");
   };
 
   const submit = () => {
@@ -324,6 +373,16 @@ export function ToolFormModal({
                         </button>
                         <button
                           type="button"
+                          onClick={() => startEditCredential(c)}
+                          className={cn(
+                            "shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold ring-1 hover:bg-zinc-50",
+                            editingCredentialId === c.id ? "text-blue-700 ring-blue-200" : "text-zinc-700 ring-zinc-200",
+                          )}
+                        >
+                          수정
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => removeCredential(c.id)}
                           className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50"
                         >
@@ -338,7 +397,18 @@ export function ToolFormModal({
               )}
 
               <div className="mt-4 border-t border-zinc-200/70 pt-4">
-                <div className="text-xs font-bold text-zinc-800">새 계정 추가</div>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="text-xs font-bold text-zinc-800">{editingCredentialId ? "계정 수정" : "새 계정 추가"}</div>
+                  {editingCredentialId ? (
+                    <button
+                      type="button"
+                      onClick={cancelEditCredential}
+                      className="text-[11px] font-semibold text-zinc-500 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-700"
+                    >
+                      편집 취소
+                    </button>
+                  ) : null}
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {CREDENTIAL_PROVIDER_LIST.map((p) => (
                     <button
@@ -379,10 +449,16 @@ export function ToolFormModal({
 
                 <button
                   type="button"
-                  onClick={addCredential}
-                  className="mt-3 w-full rounded-2xl bg-white py-3 text-sm font-bold text-zinc-900 ring-1 ring-zinc-200 hover:bg-zinc-50"
+                  onClick={editingCredentialId ? commitEditCredential : addCredential}
+                  disabled={!(credentialId.trim() || credentialSecret.trim() || credLabel.trim())}
+                  className={cn(
+                    "mt-3 w-full rounded-2xl bg-white py-3 text-sm font-bold text-zinc-900 ring-1 ring-zinc-200",
+                    credentialId.trim() || credentialSecret.trim() || credLabel.trim()
+                      ? "hover:bg-zinc-50"
+                      : "cursor-not-allowed opacity-50",
+                  )}
                 >
-                  계정 추가
+                  {editingCredentialId ? "수정 완료" : "계정 추가"}
                 </button>
               </div>
             </div>
