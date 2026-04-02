@@ -27,6 +27,7 @@ export const AIXIT_LOCAL_STORAGE_KEYS = [
   "aixit.deletedBuiltinToolIds.v1",
   "aixit.dismissedBuiltinWorkflows.v1",
   "aixit.dashboardLayout.v1",
+  "aixit.ideaNotes.v1",
 ] as const;
 
 const AUTO_MIGRATION_MARKER_PREFIX = "aixit.storageMigration.autoApplied.v1.";
@@ -127,6 +128,9 @@ export function dispatchAixitStorageUpdatedEvents() {
 
   // home greeting (import/export 후 즉시 헤더 갱신용)
   window.dispatchEvent(new Event("aixit-home-greeting-updated"));
+
+  // idea notes (메모 / 인큐베이터)
+  window.dispatchEvent(new CustomEvent("aixit-notes-updated"));
 }
 
 export const AIXIT_STORAGE_SNAPSHOT_MESSAGE_TYPE = "aixit-storage-snapshot";

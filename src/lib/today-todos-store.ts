@@ -162,6 +162,23 @@ export function getPlannedTodosGroupedByDate(): Record<string, TodayTodo[]> {
 }
 
 /** 캘린더에서 특정 날짜에 예정 할 일 추가 (홈 이번 주 목록과 동기화) */
+/** 메모 승격 등: 현재 주에 미완료 할 일을 여러 건 추가합니다. */
+export function appendTodayTodos(entries: Array<{ text: string }>): TodayTodo[] {
+  if (typeof window === "undefined") return [];
+  const ws = getLocalSundayWeekStartIso();
+  const trimmed = entries.map((e) => e.text.trim()).filter((t) => t.length > 0);
+  if (trimmed.length === 0) return [];
+  const all = loadTodayTodos();
+  const newOnes: TodayTodo[] = trimmed.map((text) => ({
+    id: newTodoId(),
+    text,
+    done: false,
+    weekStartIso: ws,
+  }));
+  saveTodayTodos([...all, ...newOnes]);
+  return newOnes;
+}
+
 export function addPlannedTodoForDate(text: string, dateIso: string): TodayTodo | null {
   const trimmed = text.trim();
   if (!trimmed || !validCompletedAt(dateIso)) return null;

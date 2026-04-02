@@ -2,9 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Lightbulb } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 
-const NAV = [
+const NAV: Array<{
+  href: string;
+  label: string;
+  match: (p: string) => boolean;
+  icon?: "lightbulb";
+}> = [
   { href: "/dashboard", label: "홈", match: (p: string) => p === "/dashboard" },
   {
     href: "/projects",
@@ -22,8 +28,9 @@ const NAV = [
   { href: "/calendar", label: "캘린더", match: (p: string) => p.startsWith("/calendar") },
   { href: "/tools", label: "도구 창고", match: (p: string) => p.startsWith("/tools") },
   { href: "/inspiration", label: "영감 창고", match: (p: string) => p.startsWith("/inspiration") },
+  { href: "/memos", label: "메모", match: (p: string) => p.startsWith("/memos"), icon: "lightbulb" },
   { href: "/settings", label: "설정", match: (p: string) => p.startsWith("/settings") },
-] as const;
+];
 
 export function PrimarySidebar() {
   const pathname = usePathname() ?? "";
@@ -52,10 +59,13 @@ export function PrimarySidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
                 active ? "bg-zinc-900 text-white" : "text-zinc-700 hover:bg-zinc-100",
               )}
             >
+              {item.icon === "lightbulb" ? (
+                <Lightbulb className={cn("h-4 w-4 shrink-0", active ? "text-white" : "text-zinc-500")} aria-hidden />
+              ) : null}
               {item.label}
             </Link>
           );
