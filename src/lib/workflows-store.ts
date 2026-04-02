@@ -185,6 +185,18 @@ export function getCompletedProjectsGroupedByDate(): Record<string, CalendarComp
   return map;
 }
 
+const CAL_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 캘린더에서 완료 프로젝트를 다른 날짜로 옮김 → `completedAt`(YYYY-MM-DD) 갱신 후 저장 */
+export function reassignCompletedProjectCalendarDate(workflowId: string, newDateIso: string): boolean {
+  if (typeof window === "undefined") return false;
+  if (!CAL_DATE_RE.test(newDateIso)) return false;
+  const w = getDashboardWorkflow(workflowId);
+  if (!w || w.status !== "완료") return false;
+  saveDashboardWorkflow({ ...w, completedAt: newDateIso });
+  return true;
+}
+
 function newWorkflowItemId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `id_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;

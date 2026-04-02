@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * 월간 캘린더는 FullCalendar 등 외부 라이브러리가 아니라 커스텀 그리드입니다.
- * 일정(예정·완료 할 일) 이동은 HTML5 Drag and Drop + `reassignTodayTodoCalendarDate`(localStorage)로 처리합니다.
+ * 월간 캘린더는 커스텀 그리드입니다.
+ * 일정 이동: HTML5 DnD — 예정·완료 할 일은 `reassignTodayTodoCalendarDate`, 완료 프로젝트는 `reassignCompletedProjectCalendarDate`(completedAt).
  */
 import type { DragEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -19,12 +19,50 @@ import {
   setTodayTodoDone,
   type TodayTodo,
 } from "@/lib/today-todos-store";
-import { getCompletedProjectsGroupedByDate, type CalendarCompletedProject } from "@/lib/workflows-store";
+import {
+  getCompletedProjectsGroupedByDate,
+  reassignCompletedProjectCalendarDate,
+  type CalendarCompletedProject,
+} from "@/lib/workflows-store";
 
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
-/** 캘린더 셀 간 할 일(예정·완료 기록) 이동 */
-const CAL_TODO_DRAG_MIME = "application/x-aixit-cal-todo";
+/** 캘린더 셀 간 일정(예정·완료 할 일·완료 프로젝트) 이동 */
+const CAL_ITEM_DRAG_MIME = "application/x-aixit-cal-item";
+
+type CalDragKind = "planned" | "todo" | "project";
+
+function parseCalDragPayload(dt: DataTransfer): { kind: CalDragKind; id: string } | null {
+  const raw = dt.getData(CAL_ITEM_DRAG_MIME);
+  if (raw) {
+    try {
+      const p = JSON.parse(raw) as { kind?: string; id?: string };
+      if (
+        (p.kind === "planned" || p.kind === "todo" || p.kind === "project") &&
+        typeof p.id === "string" &&
+        p.id.length > 0
+      ) {
+        return { kind: p.kind, id: p.id };
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  const plain = dt.getData("text/plain");
+  if (plain.startsWith("aixit-cal:")) {
+    const rest = plain.slice("aixit-cal:".length);
+    const colon = rest.indexOf(":");
+    if (colon > 0) {
+      const kind = rest.slice(0, colon) as CalDragKind;
+      const id = rest.slice(colon + 1);
+      if ((kind === "planned" || kind === "todo" || kind === "project") && id) return { kind, id };
+    }
+  }
+  if (plain.startsWith("aixit-cal-todo:")) {
+    return { kind: "todo", id: plain.slice("aixit-cal-todo:".length) };
+  }
+  return null;
+}
 
 function monthGridCells(year: number, monthIndex: number): (Date | null)[] {
   const first = new Date(year, monthIndex, 1);
@@ -79,7 +117,7 @@ export function MonthlyCalendarView() {
   const [dayPopupIso, setDayPopupIso] = useState<string | null>(null);
   const [planDraft, setPlanDraft] = useState("");
   const [calDropTargetIso, setCalDropTargetIso] = useState<string | null>(null);
-  const calTodoDraggingRef = useRef(false);
+  const calItemDraggingRef = useRef(false);
 
   useEffect(() => {
     const bump = () => setRefreshKey((k) => k + 1);
@@ -165,7 +203,7 @@ export function MonthlyCalendarView() {
   }, [dayPopupIso, planDraft]);
 
   const onCalDragOver = useCallback((e: DragEvent, iso: string) => {
-    if (!calTodoDraggingRef.current) return;
+    if (!calItemDraggingRef.current) return;
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
@@ -181,85 +219,86 @@ export function MonthlyCalendarView() {
   const onCalDrop = useCallback((e: DragEvent, iso: string) => {
     e.preventDefault();
     e.stopPropagation();
-    calTodoDraggingRef.current = false;
+    calItemDraggingRef.current = false;
     setCalDropTargetIso(null);
-    let raw = e.dataTransfer.getData(CAL_TODO_DRAG_MIME);
-    let id: string | undefined;
-    if (raw) {
-      try {
-        const p = JSON.parse(raw) as { id?: string };
-        if (typeof p.id === "string") id = p.id;
-      } catch {
-        /* ignore */
-      }
+    const parsed = parseCalDragPayload(e.dataTransfer);
+    if (!parsed) return;
+    let ok = false;
+    if (parsed.kind === "project") {
+      ok = reassignCompletedProjectCalendarDate(parsed.id, iso);
+    } else {
+      ok = reassignTodayTodoCalendarDate(parsed.id, iso);
     }
-    if (!id) {
-      const plain = e.dataTransfer.getData("text/plain");
-      if (plain.startsWith("aixit-cal-todo:")) id = plain.slice("aixit-cal-todo:".length);
-    }
-    if (!id) return;
-    if (reassignTodayTodoCalendarDate(id, iso)) {
-      setRefreshKey((k) => k + 1);
-    }
+    if (ok) setRefreshKey((k) => k + 1);
   }, []);
 
-  const onCalTodoDragStart = useCallback((e: DragEvent, id: string) => {
+  const onCalItemDragStart = useCallback((e: DragEvent, kind: CalDragKind, id: string) => {
     e.stopPropagation();
-    calTodoDraggingRef.current = true;
-    const payload = JSON.stringify({ id });
-    e.dataTransfer.setData(CAL_TODO_DRAG_MIME, payload);
-    e.dataTransfer.setData("text/plain", `aixit-cal-todo:${id}`);
+    calItemDraggingRef.current = true;
+    const payload = JSON.stringify({ kind, id });
+    e.dataTransfer.setData(CAL_ITEM_DRAG_MIME, payload);
+    e.dataTransfer.setData("text/plain", `aixit-cal:${kind}:${id}`);
     e.dataTransfer.effectAllowed = "move";
   }, []);
 
-  const onCalTodoDragEnd = useCallback(() => {
-    calTodoDraggingRef.current = false;
+  const onCalItemDragEnd = useCallback(() => {
+    calItemDraggingRef.current = false;
     setCalDropTargetIso(null);
   }, []);
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-3">
         <h2 className="text-lg font-bold tracking-tight text-zinc-950">{monthTitle(year, monthIndex)}</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={goThisMonth}
-            className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-200"
+        <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+          <ul
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-zinc-500"
+            aria-label="일정 색 범례"
           >
-            이번 달
-          </button>
-          <div className="flex items-center rounded-full ring-1 ring-zinc-200">
+            <li className="flex items-center gap-1">
+              <span className="h-2 w-2 shrink-0 rounded-sm bg-emerald-400" aria-hidden />
+              완료
+            </li>
+            <li className="flex items-center gap-1">
+              <span className="h-2 w-2 shrink-0 rounded-sm bg-sky-400" aria-hidden />
+              예정
+            </li>
+            <li className="flex items-center gap-1">
+              <span className="h-2 w-2 shrink-0 rounded-sm bg-indigo-400" aria-hidden />
+              프로젝트
+            </li>
+          </ul>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={goPrev}
-              className="px-3 py-1.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
-              aria-label="이전 달"
+              onClick={goThisMonth}
+              className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-200"
             >
-              ‹
+              이번 달
             </button>
-            <button
-              type="button"
-              onClick={goNext}
-              className="px-3 py-1.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
-              aria-label="다음 달"
-            >
-              ›
-            </button>
+            <div className="flex items-center rounded-full ring-1 ring-zinc-200">
+              <button
+                type="button"
+                onClick={goPrev}
+                className="px-3 py-1.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                aria-label="이전 달"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                className="px-3 py-1.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+                aria-label="다음 달"
+              >
+                ›
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-zinc-500">
-        날짜를 눌러 <span className="font-semibold text-sky-800">미리 일정(예정 할 일)</span>을 넣을 수 있어요.{" "}
-        <span className="font-semibold text-zinc-700">하늘색·초록</span> 할 일 줄을 다른 날짜 칸으로 끌어다 놓으면 그날로 옮겨집니다. 예정일이 이번 주에
-        들어오면 홈 <span className="font-semibold text-zinc-700">이번주 할 일</span>에 자동으로 나타납니다. 체크 완료한 할 일은{" "}
-        <span className="font-semibold text-emerald-800">초록</span>, 예정만 잡힌 일은{" "}
-        <span className="font-semibold text-sky-800">하늘색</span>, 워크스페이스 <span className="font-semibold text-zinc-700">완료</span> 프로젝트는{" "}
-        <span className="font-semibold text-indigo-800">보라</span> 톤으로 보입니다.
-      </p>
-
-      <div className="mt-4 grid grid-cols-7 gap-px overflow-hidden rounded-xl bg-zinc-200 ring-1 ring-zinc-200">
+      <div className="mt-3 grid grid-cols-7 gap-px overflow-hidden rounded-xl bg-zinc-200 ring-1 ring-zinc-200">
         {WEEKDAYS_KO.map((d, i) => (
           <div
             key={d}
@@ -285,9 +324,11 @@ export function MonthlyCalendarView() {
             <div
               key={cell ? iso : `empty-${i}`}
               className={cn(
-                "min-h-[5.5rem] bg-white p-1.5 sm:min-h-[6.5rem] sm:p-2",
+                "min-h-[5.5rem] bg-white p-1.5 transition-[background-color,box-shadow] duration-150 sm:min-h-[6.5rem] sm:p-2",
                 !cell && "bg-zinc-50/80",
-                cell && calDropTargetIso === iso && "bg-sky-50/90 ring-2 ring-inset ring-sky-400",
+                cell &&
+                  calDropTargetIso === iso &&
+                  "bg-sky-100/95 shadow-[inset_0_0_0_2px_theme(colors.sky.500)]",
               )}
               onDragOver={cell ? (e) => onCalDragOver(e, iso) : undefined}
               onDragLeave={cell ? onCalDragLeave : undefined}
@@ -318,29 +359,26 @@ export function MonthlyCalendarView() {
                     {cell.getDate()}
                   </div>
                   <ul className="space-y-0.5">
-                    {lines.map((line) => {
-                      const draggable = line.kind === "planned" || line.kind === "todo";
-                      return (
-                        <li
-                          key={`${line.kind}-${line.id}`}
-                          draggable={draggable}
-                          onDragStart={draggable ? (e) => onCalTodoDragStart(e, line.id) : undefined}
-                          onDragEnd={onCalTodoDragEnd}
-                          className={cn(
-                            "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 sm:text-[11px]",
-                            line.kind === "planned"
-                              ? "bg-sky-50 text-sky-950 ring-sky-100"
-                              : line.kind === "todo"
-                                ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
-                                : "bg-indigo-50 text-indigo-900 ring-indigo-100",
-                            draggable && "cursor-grab active:cursor-grabbing",
-                          )}
-                          title={draggable ? `${line.label} — 드래그하여 다른 날로 이동` : line.label}
-                        >
-                          {line.label}
-                        </li>
-                      );
-                    })}
+                    {lines.map((line) => (
+                      <li
+                        key={`${line.kind}-${line.id}`}
+                        draggable
+                        onDragStart={(e) => onCalItemDragStart(e, line.kind, line.id)}
+                        onDragEnd={onCalItemDragEnd}
+                        className={cn(
+                          "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 sm:text-[11px]",
+                          line.kind === "planned"
+                            ? "bg-sky-50 text-sky-950 ring-sky-100"
+                            : line.kind === "todo"
+                              ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
+                              : "bg-indigo-50 text-indigo-900 ring-indigo-100",
+                          "cursor-grab active:cursor-grabbing",
+                        )}
+                        title={`${line.label} — 드래그하여 다른 날로 이동`}
+                      >
+                        {line.label}
+                      </li>
+                    ))}
                     {total > 3 ? (
                       <li className="text-[10px] font-semibold text-zinc-400">+{total - 3}</li>
                     ) : null}
@@ -406,7 +444,11 @@ export function MonthlyCalendarView() {
                     {popupPlanned.map((t) => (
                       <li
                         key={t.id}
-                        className="flex items-center gap-2 rounded-xl border border-sky-100 bg-sky-50/90 px-3 py-2.5"
+                        draggable
+                        onDragStart={(e) => onCalItemDragStart(e, "planned", t.id)}
+                        onDragEnd={onCalItemDragEnd}
+                        className="flex cursor-grab items-center gap-2 rounded-xl border border-sky-100 bg-sky-50/90 px-3 py-2.5 active:cursor-grabbing"
+                        title="드래그하여 다른 날로 이동"
                       >
                         <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
                           <input
@@ -442,7 +484,11 @@ export function MonthlyCalendarView() {
                       {popupCompletedTodos.map((t) => (
                         <li
                           key={t.id}
-                          className="rounded-xl border border-emerald-100 bg-emerald-50/80 px-4 py-3 text-sm font-medium leading-snug text-emerald-950"
+                          draggable
+                          onDragStart={(e) => onCalItemDragStart(e, "todo", t.id)}
+                          onDragEnd={onCalItemDragEnd}
+                          className="cursor-grab rounded-xl border border-emerald-100 bg-emerald-50/80 px-4 py-3 text-sm font-medium leading-snug text-emerald-950 active:cursor-grabbing"
+                          title="드래그하여 다른 날로 이동"
                         >
                           {t.text}
                         </li>
@@ -457,7 +503,14 @@ export function MonthlyCalendarView() {
                     </h3>
                     <ul className="mt-2 space-y-2">
                       {popupProjects.map((p) => (
-                        <li key={p.id}>
+                        <li
+                          key={p.id}
+                          draggable
+                          onDragStart={(e) => onCalItemDragStart(e, "project", p.id)}
+                          onDragEnd={onCalItemDragEnd}
+                          className="cursor-grab active:cursor-grabbing"
+                          title="드래그하여 다른 날로 이동"
+                        >
                           <button
                             type="button"
                             onClick={() => openProject(p.id)}
