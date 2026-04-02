@@ -474,33 +474,33 @@ export function WorkflowsLibraryView() {
       />
 
       <AppMainColumn className="min-w-0 pb-10">
-      <div>
-        <DashboardFolderBar
-          variant="template"
-          allWorkflowCount={templates.length}
-          folders={folderBarItems}
-          activeFolderId={activeFolderId}
-          onChange={setActiveFolderId}
-          onAddFolderClick={() => setFolderModal({ mode: "create", initial: null })}
-          onFolderOpenEdit={(f, focus) => setFolderModal({ mode: "edit", initial: f, editFocus: focus })}
-          onFolderToggleHidden={handleToggleTemplateFolderHidden}
-          onFolderDeleteRequest={(f) => setDeleteTarget(f)}
-          onReorderFolders={(dragId, beforeId) => {
-            reorderWorkflowTemplateFolderBefore(dragId, beforeId);
-          }}
-        />
-        <HiddenFoldersManageSection
-          variant="template"
-          folders={hiddenTemplateFolders}
-          onUnhide={(id) => {
-            updateWorkflowTemplateFolder(id, { hidden: false });
-            refreshTemplateFolders();
-          }}
-          onRequestDelete={(f) => setDeleteTarget(f)}
-        />
-      </div>
-
-      <div className="mt-6 min-w-0">
+      {/* 프로젝트 목록과 동일: 폴더·숨김 ↔ 검색 = space-y-4, 본문 전 mb-6 */}
+      <div className="mb-6 space-y-4">
+        <div className="min-w-0">
+          <DashboardFolderBar
+            variant="template"
+            allWorkflowCount={templates.length}
+            folders={folderBarItems}
+            activeFolderId={activeFolderId}
+            onChange={setActiveFolderId}
+            onAddFolderClick={() => setFolderModal({ mode: "create", initial: null })}
+            onFolderOpenEdit={(f, focus) => setFolderModal({ mode: "edit", initial: f, editFocus: focus })}
+            onFolderToggleHidden={handleToggleTemplateFolderHidden}
+            onFolderDeleteRequest={(f) => setDeleteTarget(f)}
+            onReorderFolders={(dragId, beforeId) => {
+              reorderWorkflowTemplateFolderBefore(dragId, beforeId);
+            }}
+          />
+          <HiddenFoldersManageSection
+            variant="template"
+            folders={hiddenTemplateFolders}
+            onUnhide={(id) => {
+              updateWorkflowTemplateFolder(id, { hidden: false });
+              refreshTemplateFolders();
+            }}
+            onRequestDelete={(f) => setDeleteTarget(f)}
+          />
+        </div>
         <PillSearchField
           value={q}
           onChange={setQ}
@@ -509,7 +509,7 @@ export function WorkflowsLibraryView() {
         />
       </div>
 
-      <div className="mt-8 space-y-6">
+      <div className="space-y-6">
         {activeFolderId === "all" ? (
           <>
             {sectionsAll.map(({ folder, items }) => (
@@ -553,19 +553,45 @@ export function WorkflowsLibraryView() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 flex-1 items-center gap-3 py-1.5 pl-1">
                     <FolderGlyph folder={folder} size="md" accentColor={folder.color} />
-                    <span className="truncate text-base font-bold text-zinc-950">{folder.name}</span>
-                    {folder.hidden ? (
-                      <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">
-                        숨김
-                      </span>
-                    ) : null}
-                    <TitleCountChip count={items.length} />
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-base font-bold text-zinc-950">{folder.name}</span>
+                      {folder.hidden ? (
+                        <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">
+                          숨김
+                        </span>
+                      ) : null}
+                      <TitleCountChip count={items.length} />
+                    </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">{categoryHeaderActions(folder)}</div>
                 </div>
                 {items.length === 0 && q.trim() ? (
-                  <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
-                    검색 조건에 맞는 템플릿이 없어요.
+                  <div
+                    className={cn(
+                      "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                      templateDnD.dropTargetKey === `__tpl_cat_empty__:${folder.id}` &&
+                        "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                    )}
+                    onDragOver={(e) => templateDnD.onDragOver(e, `__tpl_cat_empty__:${folder.id}`)}
+                    onDragLeave={templateDnD.onDragLeave}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setTemplateDropTarget(null);
+                      const raw =
+                        e.dataTransfer.getData(TEMPLATE_CARD_MIME) || e.dataTransfer.getData("text/plain");
+                      if (!raw) return;
+                      const row = templates.find((x) => x.templateId === raw);
+                      if (!row || row.categoryId === folder.id) return;
+                      if (isUserWorkflowTemplateId(raw)) {
+                        updateUserWorkflowTemplateCategory(raw, folder.id);
+                      } else {
+                        setWorkflowTemplateCategoryOverride(raw, folder.id);
+                      }
+                      moveTemplateIdToGlobalEnd(raw, templateCatalogIds);
+                    }}
+                  >
+                    검색 조건에 맞는 템플릿이 없어요. 검색어를 바꾸거나, 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
                   </div>
                 ) : (
                   renderTemplateDndGrid(items, folder.id)

@@ -1,7 +1,12 @@
 "use client";
 
+/**
+ * 월간 캘린더는 FullCalendar 등 외부 라이브러리가 아니라 커스텀 그리드입니다.
+ * 일정(예정·완료 할 일) 이동은 HTML5 Drag and Drop + `reassignTodayTodoCalendarDate`(localStorage)로 처리합니다.
+ */
+import type { DragEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
 import { formatKoreanShortDateWithWeekday, getTodayIsoLocal } from "@/lib/today-project-filter";
@@ -9,6 +14,7 @@ import {
   addPlannedTodoForDate,
   getCompletedTodosGroupedByDate,
   getPlannedTodosGroupedByDate,
+  reassignTodayTodoCalendarDate,
   removeTodayTodoById,
   setTodayTodoDone,
   type TodayTodo,
@@ -16,6 +22,9 @@ import {
 import { getCompletedProjectsGroupedByDate, type CalendarCompletedProject } from "@/lib/workflows-store";
 
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+
+/** 캘린더 셀 간 할 일(예정·완료 기록) 이동 */
+const CAL_TODO_DRAG_MIME = "application/x-aixit-cal-todo";
 
 function monthGridCells(year: number, monthIndex: number): (Date | null)[] {
   const first = new Date(year, monthIndex, 1);
@@ -69,6 +78,8 @@ export function MonthlyCalendarView() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [dayPopupIso, setDayPopupIso] = useState<string | null>(null);
   const [planDraft, setPlanDraft] = useState("");
+  const [calDropTargetIso, setCalDropTargetIso] = useState<string | null>(null);
+  const calTodoDraggingRef = useRef(false);
 
   useEffect(() => {
     const bump = () => setRefreshKey((k) => k + 1);
@@ -153,6 +164,59 @@ export function MonthlyCalendarView() {
     setPlanDraft("");
   }, [dayPopupIso, planDraft]);
 
+  const onCalDragOver = useCallback((e: DragEvent, iso: string) => {
+    if (!calTodoDraggingRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setCalDropTargetIso(iso);
+  }, []);
+
+  const onCalDragLeave = useCallback((e: DragEvent) => {
+    const related = e.relatedTarget as Node | null;
+    if (related && e.currentTarget.contains(related)) return;
+    setCalDropTargetIso(null);
+  }, []);
+
+  const onCalDrop = useCallback((e: DragEvent, iso: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    calTodoDraggingRef.current = false;
+    setCalDropTargetIso(null);
+    let raw = e.dataTransfer.getData(CAL_TODO_DRAG_MIME);
+    let id: string | undefined;
+    if (raw) {
+      try {
+        const p = JSON.parse(raw) as { id?: string };
+        if (typeof p.id === "string") id = p.id;
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!id) {
+      const plain = e.dataTransfer.getData("text/plain");
+      if (plain.startsWith("aixit-cal-todo:")) id = plain.slice("aixit-cal-todo:".length);
+    }
+    if (!id) return;
+    if (reassignTodayTodoCalendarDate(id, iso)) {
+      setRefreshKey((k) => k + 1);
+    }
+  }, []);
+
+  const onCalTodoDragStart = useCallback((e: DragEvent, id: string) => {
+    e.stopPropagation();
+    calTodoDraggingRef.current = true;
+    const payload = JSON.stringify({ id });
+    e.dataTransfer.setData(CAL_TODO_DRAG_MIME, payload);
+    e.dataTransfer.setData("text/plain", `aixit-cal-todo:${id}`);
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
+
+  const onCalTodoDragEnd = useCallback(() => {
+    calTodoDraggingRef.current = false;
+    setCalDropTargetIso(null);
+  }, []);
+
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-4">
@@ -187,8 +251,9 @@ export function MonthlyCalendarView() {
       </div>
 
       <p className="mt-3 text-xs text-zinc-500">
-        날짜를 눌러 <span className="font-semibold text-sky-800">미리 일정(예정 할 일)</span>을 넣을 수 있어요. 예정일이 이번 주에 들어오면 홈{" "}
-        <span className="font-semibold text-zinc-700">이번주 할 일</span>에 자동으로 나타납니다. 체크 완료한 할 일은{" "}
+        날짜를 눌러 <span className="font-semibold text-sky-800">미리 일정(예정 할 일)</span>을 넣을 수 있어요.{" "}
+        <span className="font-semibold text-zinc-700">하늘색·초록</span> 할 일 줄을 다른 날짜 칸으로 끌어다 놓으면 그날로 옮겨집니다. 예정일이 이번 주에
+        들어오면 홈 <span className="font-semibold text-zinc-700">이번주 할 일</span>에 자동으로 나타납니다. 체크 완료한 할 일은{" "}
         <span className="font-semibold text-emerald-800">초록</span>, 예정만 잡힌 일은{" "}
         <span className="font-semibold text-sky-800">하늘색</span>, 워크스페이스 <span className="font-semibold text-zinc-700">완료</span> 프로젝트는{" "}
         <span className="font-semibold text-indigo-800">보라</span> 톤으로 보입니다.
@@ -222,7 +287,11 @@ export function MonthlyCalendarView() {
               className={cn(
                 "min-h-[5.5rem] bg-white p-1.5 sm:min-h-[6.5rem] sm:p-2",
                 !cell && "bg-zinc-50/80",
+                cell && calDropTargetIso === iso && "bg-sky-50/90 ring-2 ring-inset ring-sky-400",
               )}
+              onDragOver={cell ? (e) => onCalDragOver(e, iso) : undefined}
+              onDragLeave={cell ? onCalDragLeave : undefined}
+              onDrop={cell ? (e) => onCalDrop(e, iso) : undefined}
             >
               {cell ? (
                 <button
@@ -249,22 +318,29 @@ export function MonthlyCalendarView() {
                     {cell.getDate()}
                   </div>
                   <ul className="space-y-0.5">
-                    {lines.map((line) => (
-                      <li
-                        key={`${line.kind}-${line.id}`}
-                        className={cn(
-                          "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 sm:text-[11px]",
-                          line.kind === "planned"
-                            ? "bg-sky-50 text-sky-950 ring-sky-100"
-                            : line.kind === "todo"
-                              ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
-                              : "bg-indigo-50 text-indigo-900 ring-indigo-100",
-                        )}
-                        title={line.label}
-                      >
-                        {line.label}
-                      </li>
-                    ))}
+                    {lines.map((line) => {
+                      const draggable = line.kind === "planned" || line.kind === "todo";
+                      return (
+                        <li
+                          key={`${line.kind}-${line.id}`}
+                          draggable={draggable}
+                          onDragStart={draggable ? (e) => onCalTodoDragStart(e, line.id) : undefined}
+                          onDragEnd={onCalTodoDragEnd}
+                          className={cn(
+                            "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 sm:text-[11px]",
+                            line.kind === "planned"
+                              ? "bg-sky-50 text-sky-950 ring-sky-100"
+                              : line.kind === "todo"
+                                ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
+                                : "bg-indigo-50 text-indigo-900 ring-indigo-100",
+                            draggable && "cursor-grab active:cursor-grabbing",
+                          )}
+                          title={draggable ? `${line.label} — 드래그하여 다른 날로 이동` : line.label}
+                        >
+                          {line.label}
+                        </li>
+                      );
+                    })}
                     {total > 3 ? (
                       <li className="text-[10px] font-semibold text-zinc-400">+{total - 3}</li>
                     ) : null}

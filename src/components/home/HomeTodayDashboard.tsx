@@ -222,8 +222,7 @@ export function HomeTodayDashboard() {
             <HeroCharacterIllustration className={cn("shrink-0", compact ? "w-20" : "w-24")} />
             <div className="flex flex-col min-w-0">
               {/* title row: 호칭/텍스트 + badge */}
-              <div className="flex min-w-0 flex-wrap items-baseline gap-4">
-                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
                   {greetEdit ? (
                     <input
                       autoFocus
@@ -286,12 +285,10 @@ export function HomeTodayDashboard() {
                   >
                     님의 오늘 할 일
                   </span>
-                </div>
-
-                <TitleCountChip
-                  count={todayProjects.length}
-                  className={cn(compact && "text-[10px]")}
-                />
+                  <TitleCountChip
+                    count={todayProjects.length}
+                    className={cn(compact && "text-[10px]")}
+                  />
               </div>
 
               {/* description line (title block 안에 포함) */}

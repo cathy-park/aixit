@@ -193,3 +193,22 @@ export function setTodayTodoDone(id: string, done: boolean) {
   });
   saveTodayTodos(all);
 }
+
+/** 캘린더에서 할 일(예정·완료 기록)을 다른 날짜로 옮김 */
+export function reassignTodayTodoCalendarDate(id: string, newDateIso: string): boolean {
+  if (!validCompletedAt(newDateIso)) return false;
+  const all = loadTodayTodos();
+  let hit = false;
+  const next = all.map((t) => {
+    if (t.id !== id) return t;
+    hit = true;
+    const ws = getLocalSundayWeekStartIso(parseLocalDateFromIso(newDateIso));
+    if (t.done) {
+      return { ...t, completedAt: newDateIso };
+    }
+    return { ...t, scheduledDate: newDateIso, weekStartIso: ws };
+  });
+  if (!hit) return false;
+  saveTodayTodos(next);
+  return true;
+}

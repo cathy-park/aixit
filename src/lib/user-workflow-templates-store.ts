@@ -127,6 +127,20 @@ export function updateUserWorkflowTemplateCategory(templateId: string, categoryI
   return true;
 }
 
+/** 내 워크플로 템플릿 상세에서 관련 링크·공통 메모 편집 시 저장 */
+export function updateUserWorkflowTemplateLinksAndMemos(
+  templateId: string,
+  payload: { links: Array<{ label: string; href: string }>; memos: string[] },
+): boolean {
+  const list = loadUserWorkflowTemplates();
+  const idx = list.findIndex((t) => t.id === templateId);
+  if (idx < 0) return false;
+  const next = [...list];
+  next[idx] = { ...next[idx], links: payload.links, memos: payload.memos };
+  saveAll(next);
+  return true;
+}
+
 export type CreateUserWorkflowTemplateBlueprint = {
   categoryId: string;
   title: string;

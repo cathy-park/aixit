@@ -53,11 +53,13 @@ export function FolderSectionAccordionHeader({
         aria-expanded={expanded}
       >
         <FolderGlyph folder={folder} size="md" accentColor={folder.color} />
-        <span className="truncate text-base font-bold text-zinc-950">{label}</span>
-        {showHiddenBadge ? (
-          <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">숨김</span>
-        ) : null}
-        <TitleCountChip count={count} />
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate text-base font-bold text-zinc-950">{label}</span>
+          {showHiddenBadge ? (
+            <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">숨김</span>
+          ) : null}
+          <TitleCountChip count={count} />
+        </span>
       </button>
       {actions ? (
         <div className="flex shrink-0 items-center gap-0.5" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>

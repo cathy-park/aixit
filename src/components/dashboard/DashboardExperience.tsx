@@ -692,6 +692,29 @@ export function DashboardExperience() {
                         </div>
                       ) : (
                         <div className="space-y-3">
+                          {(() => {
+                            const explicit = completedExpandedByFolder[folder.id];
+                            const completedExpanded = explicit ?? includeCompletedInAllView;
+                            const onlyCompletedCollapsed =
+                              nonCompletedItems.length === 0 &&
+                              completedItems.length > 0 &&
+                              !completedExpanded;
+                            return onlyCompletedCollapsed ? (
+                              <div
+                                className={cn(
+                                  "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                                  layoutDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                    "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                                )}
+                                onDragOver={(e) => layoutDnD.onDragOver(e, `__end__:${folder.id}`)}
+                                onDragLeave={layoutDnD.onDragLeave}
+                                onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
+                              >
+                                지금 노출 설정으로 이 폴더에 바로 보이는 프로젝트가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                                폴더에서 카드를 끌어다 놓을 수 있어요.
+                              </div>
+                            ) : null;
+                          })()}
                           {nonCompletedItems.length > 0 ? (
                             buildGridNodes(nonCompletedItems, {
                               ...gridOpts,
@@ -764,8 +787,17 @@ export function DashboardExperience() {
                           ) : null}
 
                           {nonCompletedItems.length === 0 && completedItems.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-sm text-zinc-500">
-                              선택한 조건에 맞는 프로젝트가 없어요. 필터를 바꿔 보세요.
+                            <div
+                              className={cn(
+                                "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                                layoutDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                  "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                              )}
+                              onDragOver={(e) => layoutDnD.onDragOver(e, `__end__:${folder.id}`)}
+                              onDragLeave={layoutDnD.onDragLeave}
+                              onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
+                            >
+                              선택한 조건에 맞는 프로젝트가 없어요. 필터를 바꿔 보거나, 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
                             </div>
                           ) : null}
                         </div>
@@ -784,13 +816,15 @@ export function DashboardExperience() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 flex-1 items-center gap-3 py-1.5 pl-1">
                     <FolderGlyph folder={folder} size="md" accentColor={folder.color} />
-                    <span className="truncate text-base font-bold text-zinc-950">{folder.name}</span>
-                    {folder.hidden ? (
-                      <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">
-                        숨김
-                      </span>
-                    ) : null}
-                    <TitleCountChip count={flatSingleFolder.length} />
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-base font-bold text-zinc-950">{folder.name}</span>
+                      {folder.hidden ? (
+                        <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">
+                          숨김
+                        </span>
+                      ) : null}
+                      <TitleCountChip count={flatSingleFolder.length} />
+                    </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">{projectSectionToolbar(folder)}</div>
                 </div>
@@ -811,6 +845,29 @@ export function DashboardExperience() {
                     </div>
                   ) : (
                     <>
+                      {(() => {
+                        const explicit = completedExpandedByFolder[folder.id];
+                        const expanded = explicit ?? false;
+                        const onlyCompletedCollapsed =
+                          flatSingleFolder.length === 0 &&
+                          flatSingleFolderCompleted.length > 0 &&
+                          !expanded;
+                        return onlyCompletedCollapsed ? (
+                          <div
+                            className={cn(
+                              "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                              layoutDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                            )}
+                            onDragOver={(e) => layoutDnD.onDragOver(e, `__end__:${folder.id}`)}
+                            onDragLeave={layoutDnD.onDragLeave}
+                            onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
+                          >
+                            지금 노출 설정으로 이 폴더에 바로 보이는 프로젝트가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                            폴더에서 카드를 끌어다 놓을 수 있어요.
+                          </div>
+                        ) : null;
+                      })()}
                       {flatSingleFolder.length > 0 ? (
                         <Fragment>
                           {buildGridNodes(folderShown, {
@@ -826,8 +883,17 @@ export function DashboardExperience() {
                       ) : null}
 
                       {flatSingleFolder.length === 0 && flatSingleFolderCompleted.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-sm text-zinc-500">
-                          선택한 조건에 맞는 프로젝트가 없어요. 필터를 바꿔 보세요.
+                        <div
+                          className={cn(
+                            "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                            layoutDnD.dropTargetKey === `__end__:${folder.id}` &&
+                              "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                          )}
+                          onDragOver={(e) => layoutDnD.onDragOver(e, `__end__:${folder.id}`)}
+                          onDragLeave={layoutDnD.onDragLeave}
+                          onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
+                        >
+                          선택한 조건에 맞는 프로젝트가 없어요. 필터를 바꿔 보거나, 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
                         </div>
                       ) : null}
 
