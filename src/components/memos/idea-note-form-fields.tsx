@@ -103,10 +103,10 @@ export function buildIdeaCopyText(form: IdeaFormState): string {
   const lines: string[] = [`제목:\n${form.title}`, `본문:\n${form.content}`];
   if (form.category === "MVP") {
     lines.push(
-      `Problem:\n${form.mvp.problem}`,
-      `Hypothesis:\n${form.mvp.hypothesis}`,
-      `Experience:\n${form.mvp.criticalExperience}`,
-      `Features:\n${form.mvp.features}`,
+      `Problem (문제):\n${form.mvp.problem}`,
+      `Hypothesis (가설):\n${form.mvp.hypothesis}`,
+      `Experience (핵심 경험):\n${form.mvp.criticalExperience}`,
+      `Features (최소 기능):\n${form.mvp.features}`,
     );
   } else if (form.category === "강의") {
     lines.push(
