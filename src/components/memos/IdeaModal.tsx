@@ -139,6 +139,7 @@ export function IdeaModal({
       const note = addNote({
         title: form.title,
         content: form.content,
+        tags: form.tags,
         metadata,
         folderId: form.folderId,
       });
@@ -152,6 +153,7 @@ export function IdeaModal({
       title: form.title,
       content: form.content,
       folderId: form.folderId,
+      tags: form.tags,
       metadata,
     });
     onSaved?.();

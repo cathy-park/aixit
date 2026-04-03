@@ -68,6 +68,8 @@ export type IdeaNote = {
   title: string;
   content: string;
   category: NoteCategory;
+  /** 사용자 지정 태그 (폴더 category와 별도; UI는 #폴더 + #태그) */
+  tags: string[];
   metadata: MvpNoteMetadata | LectureNoteMetadata | NovelNoteMetadata | GeneralNoteMetadata;
   /** 메모 전용 폴더 id (`memo-folders-store`) */
   folderId: string;
@@ -106,6 +108,28 @@ function safeParse<T>(raw: string | null): T | null {
 function makeId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `note_${Date.now().toString(16)}`;
+}
+
+const MAX_TAGS_PER_NOTE = 48;
+const MAX_TAG_LENGTH = 48;
+
+/** 로컬 저장용 태그 배열 정규화 (trim, # 제거, 대소문자 무시 중복 제거) */
+export function normalizeIdeaNoteTags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const x of raw) {
+    if (typeof x !== "string") continue;
+    let t = x.trim().replace(/^#+/u, "").trim();
+    if (!t) continue;
+    if (t.length > MAX_TAG_LENGTH) t = t.slice(0, MAX_TAG_LENGTH).trim();
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+    if (out.length >= MAX_TAGS_PER_NOTE) break;
+  }
+  return out;
 }
 
 function deriveNoteProjectStatus(n: Pick<IdeaNote, "isConverted" | "projectStatus">): ProjectLifecycleStatus {
@@ -156,11 +180,13 @@ function normalizeNote(n: IdeaNote): IdeaNote {
     isConverted: Boolean(n.isConverted),
     projectStatus: (n as { projectStatus?: ProjectLifecycleStatus }).projectStatus,
   });
+  const tags = normalizeIdeaNoteTags((n as { tags?: unknown }).tags);
   return {
     ...n,
     title: typeof n.title === "string" ? n.title : "",
     content: typeof n.content === "string" ? n.content : "",
     category,
+    tags,
     metadata,
     folderId,
     projectStatus,
@@ -340,12 +366,14 @@ export function updateNote(id: string, patch: Partial<Omit<IdeaNote, "id" | "cre
     patch.metadata !== undefined
       ? migrateMetadataForCategory(workingCategory, patch.metadata)
       : prev.metadata;
+  const mergedTags = patch.tags !== undefined ? patch.tags : prev.tags;
   const next = normalizeNote({
     ...prev,
     ...patch,
     folderId: workingFolderId,
     category: workingCategory,
     metadata: mergedMeta,
+    tags: mergedTags,
     id: prev.id,
     createdAt: prev.createdAt,
     updatedAt: Date.now(),

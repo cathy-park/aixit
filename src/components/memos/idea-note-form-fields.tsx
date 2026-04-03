@@ -6,7 +6,8 @@ import { cn } from "@/components/ui/cn";
 import { WORKSPACE_MEMO_TEXTAREA_CLASS } from "@/components/workspace/WorkspaceLinksMemosSections";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { memoFolderCategoryKey } from "@/lib/memo-folders-store";
-import type { IdeaNote, NoteStructureKey } from "@/lib/notes-store";
+import { normalizeKeyword } from "@/lib/keyword-tag-styles";
+import { normalizeIdeaNoteTags, type IdeaNote, type NoteStructureKey } from "@/lib/notes-store";
 import {
   buildSectionSetsFromRawMetadata,
   emptySectionSets,
@@ -35,6 +36,8 @@ export type IdeaFormState = {
   content: string;
   folderId: string;
   planTemplate: NoteStructureKey;
+  /** 사용자 태그 (저장 시 정규화; 폴더명 태그와 별도) */
+  tags: string[];
   sectionSets: SectionsByTemplate;
 };
 
@@ -44,6 +47,7 @@ export function emptyIdeaFormState(defaultFolderId: string): IdeaFormState {
     content: "",
     folderId: defaultFolderId,
     planTemplate: "강의",
+    tags: [],
     sectionSets: emptySectionSets(),
   };
 }
@@ -55,6 +59,7 @@ export function noteToFormState(note: IdeaNote): IdeaFormState {
     content: note.content,
     folderId: note.folderId,
     planTemplate: resolveMemoPlanTemplateForForm(m, note.category),
+    tags: [...note.tags],
     sectionSets: buildSectionSetsFromRawMetadata(m),
   };
 }
@@ -70,6 +75,9 @@ export function buildIdeaCopyText(form: IdeaFormState): string {
   for (const s of sections) {
     const head = [s.title, s.subtitle].filter(Boolean).join(" · ") || s.key;
     lines.push(`${head}:\n${s.value}`);
+  }
+  if (form.tags.length > 0) {
+    lines.push(`태그:\n${form.tags.map((t) => `#${t}`).join("  ")}`);
   }
   return lines.join("\n\n");
 }
@@ -202,6 +210,27 @@ export function IdeaFormFields({
   const templateKey = form.planTemplate === "일반" ? null : (form.planTemplate as StructuredMemoTemplateKey);
 
   const [focusTitleSectionId, setFocusTitleSectionId] = useState<string | null>(null);
+  const [tagDraft, setTagDraft] = useState("");
+
+  const commitTagDraft = useCallback(() => {
+    const raw = tagDraft.trim();
+    if (!raw) return;
+    const t = raw.replace(/^#+/u, "").trim();
+    if (!t) return;
+    const norm = normalizeKeyword(t);
+    setForm((prev) => {
+      if (prev.tags.some((x) => normalizeKeyword(x) === norm)) return prev;
+      return { ...prev, tags: normalizeIdeaNoteTags([...prev.tags, t]) };
+    });
+    setTagDraft("");
+  }, [setForm, tagDraft]);
+
+  const removeTag = useCallback(
+    (tag: string) => {
+      setForm((prev) => ({ ...prev, tags: prev.tags.filter((x) => x !== tag) }));
+    },
+    [setForm],
+  );
 
   const onFolderPick = (folderId: string) => {
     setForm((prev) => ({ ...prev, folderId }));
@@ -371,6 +400,48 @@ export function IdeaFormFields({
         onChange={(e) => setForm({ content: e.target.value })}
         placeholder="생각을 풀어 쓰기…"
       />
+
+      <div className="space-y-1.5">
+        <label htmlFor="idea-memo-tag-input" className="block text-xs font-semibold text-zinc-500">
+          태그
+        </label>
+        <p className="text-[11px] leading-snug text-zinc-500">
+          폴더명은 카드에 자동 표시됩니다. Enter로 태그를 추가하세요.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {form.tags.map((tag) => (
+            <span
+              key={tag}
+              className="group inline-flex max-w-full items-center gap-0.5 rounded-full bg-zinc-100 py-0.5 pl-2.5 pr-0.5 text-[11px] font-bold text-zinc-800 ring-1 ring-zinc-200/90"
+            >
+              <span className="min-w-0 truncate">#{tag}</span>
+              <button
+                type="button"
+                className="shrink-0 rounded-full p-0.5 text-zinc-500 opacity-70 transition hover:bg-zinc-200/80 hover:text-zinc-800 hover:opacity-100"
+                aria-label={`${tag} 태그 제거`}
+                title="삭제"
+                onClick={() => removeTag(tag)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          id="idea-memo-tag-input"
+          className={cn(TITLE_INPUT_CLASS, "mt-0")}
+          value={tagDraft}
+          onChange={(e) => setTagDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commitTagDraft();
+            }
+          }}
+          placeholder="태그 입력 후 Enter"
+          maxLength={52}
+        />
+      </div>
     </div>
   );
 }

@@ -94,7 +94,8 @@ function noteMatchesSearch(n: IdeaNote, q: string, folderName: string): boolean 
   if (!t) return true;
   const meta = (n.metadata ?? {}) as Record<string, unknown>;
   const sectionHay = metadataAllSectionsSearchText(meta);
-  const hay = `${n.title} ${n.content} ${n.category} ${sectionHay} ${folderName}`.toLowerCase();
+  const tagHay = (n.tags ?? []).join(" ");
+  const hay = `${n.title} ${n.content} ${n.category} ${tagHay} ${sectionHay} ${folderName}`.toLowerCase();
   return hay.includes(t);
 }
 
@@ -195,6 +196,17 @@ function IdeaMemoCard({
                   <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tagTone)}>
                     #{note.category}
                   </span>
+                  {(note.tags ?? []).map((tag) => (
+                    <span
+                      key={`${note.id}:${tag}`}
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[11px] font-bold ring-1",
+                        keywordTagToneClass(normalizeKeyword(tag)),
+                      )}
+                    >
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
               </div>
             </button>
