@@ -11,6 +11,7 @@ import { actionIconButtonClass, IconCopy, IconStarPin, IconTrash } from "@/compo
 import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
 import {
   APP_CARD_SHELL_DASHBOARD_CLASS,
+  APP_CARD_SHELL_DASHBOARD_INNER_CLASS,
   APP_CARD_TITLE_TEXT_CLASS,
   APP_CARD_TITLE_TRACK_CLASS,
 } from "@/components/cards/app-card-layout";
@@ -40,7 +41,7 @@ export function WorkflowTemplateCard({
 
   return (
     <div className={APP_CARD_SHELL_DASHBOARD_CLASS}>
-      <div className="min-w-0 flex-1">
+      <div className={APP_CARD_SHELL_DASHBOARD_INNER_CLASS}>
         <div className="flex items-start gap-3">
           <Link
             href={`/workflow/${encodeURIComponent(t.slug)}`}

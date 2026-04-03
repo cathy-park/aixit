@@ -1,7 +1,8 @@
 "use client";
 
 import type { MouseEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { FolderGlyph } from "@/components/dashboard/FolderGlyph";
 import { ToolMiniAvatar } from "@/components/tools/ToolMiniAvatar";
@@ -22,6 +23,7 @@ import { actionIconButtonClass, IconCopy, IconSaveTemplate, IconStarPin, IconTra
 import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
 import {
   APP_CARD_SHELL_DASHBOARD_CLASS,
+  APP_CARD_SHELL_DASHBOARD_INNER_CLASS,
   APP_CARD_TITLE_TEXT_CLASS,
   APP_CARD_TITLE_TRACK_CLASS,
 } from "@/components/cards/app-card-layout";
@@ -83,11 +85,35 @@ export function EditableLifecycleStatusControl({
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+    const sync = () => {
+      const el = wrapRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setMenuPos({ top: Math.round(r.bottom + 8), left: Math.round(r.left) });
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    window.addEventListener("scroll", sync, true);
+    return () => {
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("scroll", sync, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const close = (e: globalThis.PointerEvent) => {
-      if (wrapRef.current?.contains(e.target as Node)) return;
+      const t = e.target as Node;
+      if (wrapRef.current?.contains(t)) return;
+      if (menuRef.current?.contains(t)) return;
       setOpen(false);
     };
     document.addEventListener("pointerdown", close, true);
@@ -112,12 +138,68 @@ export function EditableLifecycleStatusControl({
     setOpen(false);
   };
 
+  const portal =
+    open &&
+    menuPos &&
+    typeof document !== "undefined" &&
+    createPortal(
+      <>
+        <button
+          type="button"
+          draggable={false}
+          className="touch-manipulation fixed inset-0 z-[85] cursor-default bg-transparent"
+          aria-label="닫기"
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(false);
+          }}
+        />
+        <ul
+          ref={menuRef}
+          role="listbox"
+          aria-label={`${ariaLabelEntity} 상태 선택`}
+          className="fixed z-[95] min-w-[9.5rem] rounded-2xl bg-white py-1.5 text-left shadow-xl ring-1 ring-zinc-200"
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
+          {PROJECT_LIFECYCLE_OPTIONS.map((s) => (
+            <li key={s} role="presentation">
+              <button
+                type="button"
+                role="option"
+                draggable={false}
+                aria-selected={s === status}
+                className={cn(
+                  "touch-manipulation flex w-full items-center px-3 py-2 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50",
+                  s === status && "bg-sky-50 text-sky-900",
+                )}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  apply(s);
+                }}
+              >
+                {PROJECT_LIFECYCLE_LABEL[s]}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </>,
+      document.body,
+    );
+
   return (
-    <div className="relative shrink-0" ref={wrapRef}>
+    <div className="relative z-20 shrink-0" ref={wrapRef}>
       <button
         type="button"
         draggable={false}
-        className="touch-manipulation inline-flex rounded-full border-0 bg-transparent p-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+        className="touch-manipulation relative z-[1] inline-flex rounded-full border-0 bg-transparent p-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={`${ariaLabelEntity} 상태: ${PROJECT_LIFECYCLE_LABEL[status]}. 눌러서 변경`}
@@ -132,54 +214,7 @@ export function EditableLifecycleStatusControl({
       >
         <StatusChip status={status} />
       </button>
-      {open ? (
-        <>
-          <button
-            type="button"
-            draggable={false}
-            className="touch-manipulation fixed inset-0 z-[60] cursor-default"
-            aria-label="닫기"
-            onPointerDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setOpen(false);
-            }}
-          />
-          <ul
-            role="listbox"
-            aria-label={`${ariaLabelEntity} 상태 선택`}
-            className="absolute left-0 top-[calc(100%+8px)] z-[70] min-w-[9.5rem] rounded-2xl bg-white py-1.5 text-left shadow-xl ring-1 ring-zinc-200"
-          >
-            {PROJECT_LIFECYCLE_OPTIONS.map((s) => (
-              <li key={s} role="presentation">
-                <button
-                  type="button"
-                  role="option"
-                  draggable={false}
-                  aria-selected={s === status}
-                  className={cn(
-                    "touch-manipulation flex w-full items-center px-3 py-2 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50",
-                    s === status && "bg-sky-50 text-sky-900",
-                  )}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    apply(s);
-                  }}
-                >
-                  {PROJECT_LIFECYCLE_LABEL[s]}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
+      {portal}
     </div>
   );
 }
@@ -254,7 +289,7 @@ export function WorkflowCard({
 
   return (
     <div className={APP_CARD_SHELL_DASHBOARD_CLASS}>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className={APP_CARD_SHELL_DASHBOARD_INNER_CLASS}>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             {/* 상태 칩은 Link 밖 — 카드 이동과 클릭이 겹치지 않도록 */}
@@ -268,13 +303,13 @@ export function WorkflowCard({
               >
                 <span className={APP_CARD_TITLE_TEXT_CLASS}>{wf.title}</span>
               </Link>
-              <span className="shrink-0">
+              <div className="flex shrink-0 items-center self-center">
                 <CardProjectLifecycleControl
                   workflowId={wf.id}
                   projectStatus={wf.projectStatus ?? "waiting"}
                   editable
                 />
-              </span>
+              </div>
             </div>
           </div>
 

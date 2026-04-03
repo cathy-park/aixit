@@ -47,7 +47,7 @@ import {
   reorderBeforeTarget,
   saveLayout,
 } from "@/lib/dashboard-layout-store";
-import { LAYOUT_ENTRY_MIME } from "@/lib/layout-card-dnd";
+import { cancelNativeCardLayoutDragIfInteractive, LAYOUT_ENTRY_MIME } from "@/lib/layout-card-dnd";
 import {
   layoutEntryPinKey,
   loadPinnedWorkflowKeys,
@@ -111,7 +111,14 @@ function buildGridNodes(
               opts.dimCompleted && preview.status === "완료" && "opacity-[0.78]",
             )}
             draggable={Boolean(dnd)}
-            onDragStart={dnd ? (e) => dnd.onDragStart(e, entry) : undefined}
+            onDragStart={
+              dnd
+                ? (e) => {
+                    if (cancelNativeCardLayoutDragIfInteractive(e)) return;
+                    dnd.onDragStart(e, entry);
+                  }
+                : undefined
+            }
             onDragOver={dnd ? (e) => dnd.onDragOver(e, pinKey) : undefined}
             onDragLeave={dnd ? (e) => dnd.onDragLeave(e) : undefined}
             onDrop={dnd ? (e) => dnd.onDrop(e, entry) : undefined}

@@ -24,6 +24,7 @@ import {
   APP_CARD_GRID_CLASS,
   APP_CARD_GRID_ITEM_CLASS,
   APP_CARD_SHELL_DASHBOARD_CLASS,
+  APP_CARD_SHELL_DASHBOARD_INNER_CLASS,
   APP_CARD_TITLE_TEXT_CLASS,
   APP_CARD_TITLE_TRACK_CLASS,
 } from "@/components/cards/app-card-layout";
@@ -40,7 +41,7 @@ import {
   reorderMemoFolderBefore,
   updateMemoFolder,
 } from "@/lib/memo-folders-store";
-import { MEMO_ENTRY_MIME } from "@/lib/layout-card-dnd";
+import { cancelNativeCardLayoutDragIfInteractive, MEMO_ENTRY_MIME } from "@/lib/layout-card-dnd";
 import {
   ensureMemoLayoutMerged,
   loadMemoLayout,
@@ -173,7 +174,7 @@ function IdeaMemoCard({
       onDragEnd={dnd ? dnd.onDragEnd : undefined}
     >
       <div className={APP_CARD_SHELL_DASHBOARD_CLASS}>
-        <div className="min-w-0 flex-1">
+        <div className={APP_CARD_SHELL_DASHBOARD_INNER_CLASS}>
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className={cn(APP_CARD_TITLE_TRACK_CLASS, grayscaleMain)}>
@@ -185,14 +186,14 @@ function IdeaMemoCard({
                 >
                   <span className={APP_CARD_TITLE_TEXT_CLASS}>{note.title.trim() || "제목 없음"}</span>
                 </button>
-                <span className="shrink-0">
+                <div className="flex shrink-0 items-center self-center">
                   <EditableLifecycleStatusControl
                     status={note.projectStatus ?? "waiting"}
                     editable={!converted}
                     ariaLabelEntity="아이디어"
                     onChange={(next) => updateNote(note.id, { projectStatus: next })}
                   />
-                </span>
+                </div>
                 {converted ? (
                   <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
                     전환 완료
@@ -509,6 +510,7 @@ export function IdeaMemosView() {
   );
 
   const onMemoDragStart = useCallback((e: DragEvent, id: string) => {
+    if (cancelNativeCardLayoutDragIfInteractive(e)) return;
     e.dataTransfer.setData(MEMO_ENTRY_MIME, JSON.stringify({ id }));
     e.dataTransfer.effectAllowed = "move";
   }, []);
