@@ -2,6 +2,7 @@ import type { WorkflowPreview } from "@/lib/aixit-data";
 import type { Tool } from "@/lib/tools";
 import type { DashboardWorkflow } from "@/lib/workflows-store";
 import { ddayLabelFromEnd } from "@/lib/date-schedule";
+import { deriveStoredProjectStatus } from "@/lib/project-lifecycle-status";
 
 /** 모든 단계의 toolIds 를 순서대로 훑어 중복 id 는 한 번만 — 종류(고유) 수·미리보기 id 목록 */
 export function uniqueToolIdsAcrossSteps(w: DashboardWorkflow): string[] {
@@ -76,6 +77,7 @@ export function dashboardWorkflowToPreview(
   const subtitle = typeof w.subtitle === "string" ? w.subtitle.trim() : "";
 
   const allToolIds = uniqueToolIdsAcrossSteps(w);
+  const projectStatus = deriveStoredProjectStatus(w, status);
 
   return {
     id: w.id,
@@ -83,6 +85,7 @@ export function dashboardWorkflowToPreview(
     title,
     subtitle,
     status,
+    projectStatus,
     emoji,
     href: `/workspace?id=${encodeURIComponent(w.id)}`,
     stepsCompleted,

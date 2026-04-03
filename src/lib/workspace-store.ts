@@ -1,4 +1,5 @@
 import type { WorkflowRunStatus } from "@/lib/workflow-run-status";
+import type { ProjectLifecycleStatus } from "@/lib/project-lifecycle-status";
 import type { DashboardFolderIconType } from "@/lib/dashboard-folders-store";
 
 export type WorkspaceMemoItem = {
@@ -40,6 +41,8 @@ export type WorkspaceWorkflow = {
   sourceTaskType?: string;
   /** 대시보드·워크스페이스 공통 상태 */
   status?: WorkflowRunStatus;
+  /** 카드 UI·간단 필터용: waiting | in_progress | completed (`status`와 동기화) */
+  projectStatus?: ProjectLifecycleStatus;
   /** 사용자 워크플로우 카드 이모지 (없으면 기본) */
   emoji?: string;
   /** 카드 부제목 (대시보드 한 줄 설명) */

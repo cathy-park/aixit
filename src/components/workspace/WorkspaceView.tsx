@@ -20,6 +20,7 @@ import {
   updateEntryFolder,
 } from "@/lib/dashboard-layout-store";
 import { getTodayIsoLocal } from "@/lib/today-project-filter";
+import { runStatusToProjectLifecycle } from "@/lib/project-lifecycle-status";
 import { WORKFLOW_STATUS_OPTIONS } from "@/lib/workflow-run-status";
 import type { WorkspaceLinkItem, WorkspaceMemoItem } from "@/lib/workspace-store";
 import { WorkflowNavigatorBar, type NavigatorStatus } from "@/components/recommendation/WorkflowNavigatorBar";
@@ -223,7 +224,8 @@ export function WorkspaceView() {
     if (!wf) return;
     clearPersistTimer();
     const completedAt = status === "완료" ? getTodayIsoLocal() : undefined;
-    const next: DashboardWorkflow = { ...wf, status, completedAt, updatedAt: Date.now() };
+    const projectStatus = runStatusToProjectLifecycle(status);
+    const next: DashboardWorkflow = { ...wf, status, projectStatus, completedAt, updatedAt: Date.now() };
     setWf(next);
     saveDashboardWorkflow(next);
     wfDraftRef.current = next;

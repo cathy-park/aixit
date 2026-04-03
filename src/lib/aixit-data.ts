@@ -1,4 +1,5 @@
 import type { WorkflowRunStatus } from "@/lib/workflow-run-status";
+import type { ProjectLifecycleStatus } from "@/lib/project-lifecycle-status";
 import { getWorkflowTemplateCategoryLabelStatic } from "@/lib/workflow-template-folders-store";
 import { tools } from "@/lib/tools";
 
@@ -17,6 +18,8 @@ export type WorkflowPreview = {
   title: string;
   subtitle: string;
   status: WorkflowStatus;
+  /** 저장 프로젝트 카드용 간단 상태 (없으면 status에서 유도) */
+  projectStatus?: ProjectLifecycleStatus;
   emoji: string;
   href: string;
   /** 완료한 단계 수 (n/m 단계 완료의 n) */

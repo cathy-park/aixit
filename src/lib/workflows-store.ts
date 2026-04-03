@@ -5,6 +5,12 @@ import { scheduleMdToIso } from "@/lib/date-schedule";
 import { tools } from "@/lib/tools";
 import type { WorkflowRunStatus } from "@/lib/workflow-run-status";
 import { isWorkflowRunStatus } from "@/lib/workflow-run-status";
+import {
+  deriveStoredProjectStatus,
+  projectLifecycleToRunStatus,
+  runStatusToProjectLifecycle,
+  type ProjectLifecycleStatus,
+} from "@/lib/project-lifecycle-status";
 import { getTodayIsoLocal } from "@/lib/today-project-filter";
 
 export type DashboardWorkflow = WorkspaceWorkflow & {
@@ -68,6 +74,7 @@ export function buildTemplatePreviewDashboardWorkflow(detail: WorkflowDetail, pr
     createdAt: Date.now(),
     updatedAt: Date.now(),
     status: complete ? "완료" : steps.length === 0 ? "준비중" : "진행중",
+    projectStatus: complete ? "completed" : steps.length === 0 ? "waiting" : "in_progress",
     emoji: preview.emoji,
     relatedLinks: detail.links.map((l) => ({ id: makeSeedId(), label: l.label, url: l.href })),
     workflowMemos: detail.memo.map((text) => ({ id: makeSeedId(), text })),
@@ -91,6 +98,7 @@ export function seedBuiltinDashboardWorkflow(builtinId: string, layoutFolderId?:
   });
 
   const done = Math.min(Math.max(0, detail.progress.done), Math.max(0, steps.length - 1));
+  const complete = steps.length > 0 && detail.progress.done >= detail.progress.total;
 
   const raw: DashboardWorkflow = {
     id: detail.id,
@@ -109,7 +117,10 @@ export function seedBuiltinDashboardWorkflow(builtinId: string, layoutFolderId?:
     workflowMemos: detail.memo.map((text) => ({ id: makeSeedId(), text })),
   };
 
-  return normalizeDashboardWorkflow(raw);
+  return normalizeDashboardWorkflow({
+    ...raw,
+    projectStatus: complete ? "completed" : steps.length === 0 ? "waiting" : "in_progress",
+  });
 }
 
 /** 로컬스토리지에 예전 형태로 저장된 워크플로우를 최신 필드로 맞춤 */
@@ -143,10 +154,12 @@ export function normalizeDashboardWorkflow(wf: DashboardWorkflow): DashboardWork
   const rawCompleted = (wf as { completedAt?: unknown }).completedAt;
   const completedAt =
     typeof rawCompleted === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawCompleted) ? rawCompleted : undefined;
+  const projectStatus = deriveStoredProjectStatus(wf, status);
   return {
     ...wf,
     steps,
     status,
+    projectStatus,
     subtitle: typeof wf.subtitle === "string" ? wf.subtitle : undefined,
     startDate: typeof wf.startDate === "string" ? wf.startDate : undefined,
     endDate: typeof wf.endDate === "string" ? wf.endDate : undefined,
@@ -262,9 +275,11 @@ function writeAll(workflows: DashboardWorkflow[]) {
 /** recommendation에서 생성한 워크플로우를 대시보드 목록에 추가 */
 export function addDashboardWorkflow(workflow: WorkspaceWorkflow & { folderId?: string }): DashboardWorkflow {
   const now = Date.now();
+  const baseStatus = workflow.status ?? "진행중";
   const stored = normalizeDashboardWorkflow({
     ...workflow,
-    status: workflow.status ?? "진행중",
+    status: baseStatus,
+    projectStatus: workflow.projectStatus ?? runStatusToProjectLifecycle(baseStatus),
     updatedAt: now,
     folderId: workflow.folderId ?? "ddokdi",
   });
@@ -281,10 +296,36 @@ export function removeDashboardWorkflow(workflowId: string) {
   writeAll(list);
 }
 
+function dashboardWorkflowProgressPercentForAutoComplete(w: DashboardWorkflow): number {
+  const total = Math.max(1, w.steps.length);
+  const status = w.status ?? "진행중";
+  const stepsCompleted =
+    status === "완료"
+      ? total
+      : status === "준비중"
+        ? 0
+        : Math.min(Math.max(0, w.currentStepIndex), total);
+  return status === "완료" ? 100 : status === "준비중" ? 0 : Math.min(100, Math.round((stepsCompleted / total) * 100));
+}
+
+function applyProgressAutoCompleteIfNeeded(w: DashboardWorkflow): DashboardWorkflow {
+  const pct = dashboardWorkflowProgressPercentForAutoComplete(w);
+  if (pct >= 100) {
+    return {
+      ...w,
+      status: "완료",
+      projectStatus: "completed",
+      completedAt: w.completedAt ?? getTodayIsoLocal(),
+    };
+  }
+  return w;
+}
+
 /** workspace에서 진행 상태 등 변경 시 저장 */
 export function saveDashboardWorkflow(workflow: DashboardWorkflow) {
-  const next: DashboardWorkflow = { ...workflow, updatedAt: Date.now() };
   if (typeof window === "undefined") return;
+  let next = normalizeDashboardWorkflow({ ...workflow, updatedAt: Date.now() });
+  next = applyProgressAutoCompleteIfNeeded(next);
   const list = listDashboardWorkflows();
   const idx = list.findIndex((w) => w.id === next.id);
   if (idx === -1) {
@@ -302,8 +343,20 @@ export function setDashboardWorkflowRunStatus(workflowId: string, status: Workfl
   const w = getDashboardWorkflow(workflowId);
   if (!w) return false;
   if (!isWorkflowRunStatus(status)) return false;
-  const completedAt = status === "완료" ? getTodayIsoLocal() : undefined;
-  saveDashboardWorkflow({ ...w, status, completedAt });
+  const completedAt = status === "완료" ? (w.completedAt ?? getTodayIsoLocal()) : undefined;
+  const projectStatus = runStatusToProjectLifecycle(status);
+  saveDashboardWorkflow({ ...w, status, projectStatus, completedAt });
+  return true;
+}
+
+/** 카드 칩(대기/진행중/완료)에서 상태 변경 */
+export function setDashboardProjectLifecycleStatus(workflowId: string, ps: ProjectLifecycleStatus): boolean {
+  if (typeof window === "undefined") return false;
+  const w = getDashboardWorkflow(workflowId);
+  if (!w) return false;
+  const status = projectLifecycleToRunStatus(ps);
+  const completedAt = ps === "completed" ? (w.completedAt ?? getTodayIsoLocal()) : undefined;
+  saveDashboardWorkflow({ ...w, projectStatus: ps, status, completedAt });
   return true;
 }
 
@@ -337,6 +390,7 @@ export function createProjectFromTemplate(templateCatalogId: string, folderId: s
   const done = Math.min(Math.max(0, detail.progress.done), Math.max(0, steps.length - 1));
   const complete = steps.length > 0 && detail.progress.done >= detail.progress.total;
   const status = complete ? "완료" : steps.length === 0 ? "준비중" : "진행중";
+  const projectStatus = complete ? "completed" : steps.length === 0 ? "waiting" : "in_progress";
 
   const wf: DashboardWorkflow = normalizeDashboardWorkflow({
     id: newUserWorkflowId(),
@@ -349,6 +403,7 @@ export function createProjectFromTemplate(templateCatalogId: string, folderId: s
     updatedAt: Date.now(),
     folderId,
     status,
+    projectStatus,
     emoji: preview.emoji,
     startDate: undefined,
     endDate: undefined,
@@ -373,6 +428,7 @@ export function createBlankProject(folderId: string): DashboardWorkflow {
     updatedAt: Date.now(),
     folderId,
     status: "준비중",
+    projectStatus: "waiting",
     emoji: "📋",
     relatedLinks: [],
     workflowMemos: [],
@@ -395,6 +451,7 @@ export function duplicateDashboardWorkflowAsUser(sourceWorkflowId: string, folde
     /** 동일 템플릿 출처 유지 → 워크플로 템플릿 상세에서 `listDashboardWorkflowsByTemplateId`로 복사본도 찾아 "프로젝트 열기(수정)" 가능 */
     completedAt: undefined,
     status: "진행중",
+    projectStatus: "in_progress",
     name: `${base.name.trim()} (복사본)`,
     createdAt: Date.now(),
     updatedAt: Date.now(),
