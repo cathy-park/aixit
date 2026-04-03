@@ -33,7 +33,10 @@ const PRIMARY_BLUE_BTN =
   "inline-flex h-10 w-full shrink-0 items-center justify-center rounded-full bg-blue-600 px-5 text-sm font-bold leading-none text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40";
 
 const SELECT_CLASS =
-  "mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-300 focus:ring-2 focus:ring-zinc-100";
+  "mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-100/90 focus-visible:ring-offset-0";
+
+/** 드롭다운: 워크플로 템플릿 없이 빈 프로젝트로 시작 */
+const PROMOTE_BLANK_SELECT_VALUE = "__blank__";
 
 export function IdeaModal({
   open,
@@ -53,7 +56,7 @@ export function IdeaModal({
   const router = useRouter();
   const [form, setForm] = useState<IdeaFormState>(() => emptyIdeaFormState("memo-folder-s1"));
   const [resolvedNoteId, setResolvedNoteId] = useState<string | null>(null);
-  const [selectedWorkflowTemplateId, setSelectedWorkflowTemplateId] = useState("");
+  const [selectedWorkflowTemplateId, setSelectedWorkflowTemplateId] = useState(PROMOTE_BLANK_SELECT_VALUE);
   const [templateMenuTick, setTemplateMenuTick] = useState(0);
 
   const effectiveNoteId = resolvedNoteId ?? noteId;
@@ -86,7 +89,7 @@ export function IdeaModal({
       setForm(n ? noteToFormState(n) : emptyIdeaFormState(folderIdForCreate));
       setResolvedNoteId(null);
     }
-    setSelectedWorkflowTemplateId("");
+    setSelectedWorkflowTemplateId(PROMOTE_BLANK_SELECT_VALUE);
   }, [mode, noteId, folderIdForCreate]);
 
   useEffect(() => {
@@ -144,7 +147,12 @@ export function IdeaModal({
   }, [form, mode, effectiveNoteId, onSaved]);
 
   const save = () => {
-    persistFormToStore();
+    const id = persistFormToStore();
+    if (id !== null) {
+      onClose();
+    } else {
+      window.alert("메모를 저장할 수 없습니다.");
+    }
   };
 
   const runPromote = (choice: PromoteTemplateChoice) => {
@@ -177,9 +185,17 @@ export function IdeaModal({
     router.push(`/workspace?id=${encodeURIComponent(result.projectId)}`);
   };
 
-  const onStartWithTemplate = () => {
-    if (!selectedWorkflowTemplateId.trim()) return;
-    runPromote(selectedWorkflowTemplateId.trim());
+  const onStartProject = () => {
+    if (selectedWorkflowTemplateId === PROMOTE_BLANK_SELECT_VALUE) {
+      runPromote("blank");
+      return;
+    }
+    const tid = selectedWorkflowTemplateId.trim();
+    if (!tid) {
+      runPromote("blank");
+      return;
+    }
+    runPromote(tid);
   };
 
   const onStartBlankOnly = () => {
@@ -255,12 +271,14 @@ export function IdeaModal({
                       value={selectedWorkflowTemplateId}
                       onChange={(e) => setSelectedWorkflowTemplateId(e.target.value)}
                     >
-                      <option value="">템플릿을 선택하세요</option>
+                      <option value={PROMOTE_BLANK_SELECT_VALUE}>
+                        템플릿 선택 안 함 (빈 프로젝트로 시작)
+                      </option>
                       {workflowTemplates.map((t) => (
                         <option
                           key={t.templateId}
                           value={t.templateId}
-                          title={[t.subtitle, `${t.stepCount} steps`].filter(Boolean).join("\n")}
+                          title={[t.subtitle, `${t.stepCount}단계`].filter(Boolean).join("\n")}
                         >
                           {t.title}
                           {t.subtitle ? ` — ${t.subtitle}` : ""} · {t.stepCount}단계
@@ -268,12 +286,7 @@ export function IdeaModal({
                       ))}
                     </select>
                   </div>
-                  <button
-                    type="button"
-                    disabled={!selectedWorkflowTemplateId.trim()}
-                    onClick={onStartWithTemplate}
-                    className={PRIMARY_BLUE_BTN}
-                  >
+                  <button type="button" onClick={onStartProject} className={PRIMARY_BLUE_BTN}>
                     프로젝트 시작하기
                   </button>
                 </>

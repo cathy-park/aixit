@@ -1,6 +1,5 @@
 "use client";
 
-import type { DragEvent } from "react";
 import { useCallback, useState } from "react";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { cn } from "@/components/ui/cn";
@@ -22,7 +21,7 @@ import {
 } from "@/lib/structured-memo-sections";
 
 export const TITLE_INPUT_CLASS =
-  "min-h-9 w-full rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1.5 text-sm leading-snug text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-300 focus:ring-2 focus:ring-zinc-100";
+  "min-h-9 w-full rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1.5 text-sm leading-snug text-zinc-900 outline-none placeholder:text-zinc-400 focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-100/90 focus-visible:ring-offset-0";
 
 const SECTION_INPUT_CLASS =
   "min-h-8 w-full rounded-lg border border-zinc-200/80 bg-white px-2 py-1 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-100/90 focus-visible:ring-offset-0";
@@ -120,31 +119,6 @@ function emptyCustomSection(): StructuredMemoSection {
   };
 }
 
-function moveSectionBefore(
-  list: StructuredMemoSection[],
-  fromId: string,
-  beforeId: string,
-): StructuredMemoSection[] {
-  if (fromId === beforeId) return list;
-  const fromIdx = list.findIndex((s) => s.id === fromId);
-  const beforeIdx = list.findIndex((s) => s.id === beforeId);
-  if (fromIdx < 0 || beforeIdx < 0) return list;
-  const copy = [...list];
-  const [item] = copy.splice(fromIdx, 1);
-  const b = copy.findIndex((s) => s.id === beforeId);
-  copy.splice(b, 0, item);
-  return copy;
-}
-
-function moveSectionToEnd(list: StructuredMemoSection[], fromId: string): StructuredMemoSection[] {
-  const fromIdx = list.findIndex((s) => s.id === fromId);
-  if (fromIdx < 0) return list;
-  const copy = [...list];
-  const [item] = copy.splice(fromIdx, 1);
-  copy.push(item);
-  return copy;
-}
-
 const SECTION_CARD_SHELL =
   "rounded-lg border border-zinc-200/90 bg-white p-3 shadow-sm ring-0 outline-none";
 
@@ -154,60 +128,16 @@ function StructuredSectionCard({
   onChange,
   onRemove,
   onTitleFocused,
-  draggable,
-  onGripDragStart,
-  onGripDragEnd,
-  onCardDragOver,
-  onCardDrop,
 }: {
   section: StructuredMemoSection;
   autoFocusTitle?: boolean;
   onChange: (patch: Partial<StructuredMemoSection>) => void;
   onRemove: () => void;
   onTitleFocused?: () => void;
-  draggable: boolean;
-  onGripDragStart: () => void;
-  onGripDragEnd: () => void;
-  onCardDragOver: (e: DragEvent) => void;
-  onCardDrop: (e: DragEvent) => void;
 }) {
   return (
-    <div
-      className={SECTION_CARD_SHELL}
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onCardDragOver(e);
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onCardDrop(e);
-      }}
-    >
+    <div className={SECTION_CARD_SHELL}>
       <div className="flex items-start justify-between gap-2">
-        {draggable ? (
-          <div
-            role="button"
-            tabIndex={0}
-            draggable
-            onDragStart={(e) => {
-              e.stopPropagation();
-              e.dataTransfer.effectAllowed = "move";
-              e.dataTransfer.setData("text/plain", section.id);
-              onGripDragStart();
-            }}
-            onDragEnd={(e) => {
-              e.stopPropagation();
-              onGripDragEnd();
-            }}
-            className="mt-1 shrink-0 cursor-grab touch-none select-none rounded px-1 py-0.5 text-zinc-400 outline-none hover:bg-zinc-100 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-zinc-200/80 focus-visible:ring-offset-0"
-            aria-label="섹션 순서 변경(드래그)"
-            title="드래그하여 순서 변경"
-          >
-            <span className="block text-[10px] leading-none tracking-tighter">⋮⋮</span>
-          </div>
-        ) : null}
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap gap-2">
             <input
@@ -230,7 +160,7 @@ function StructuredSectionCard({
         <button
           type="button"
           onClick={onRemove}
-          className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-zinc-400 transition hover:bg-rose-50 hover:text-rose-700"
+          className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-zinc-400 transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-200/80 focus-visible:ring-offset-0"
           aria-label="섹션 삭제"
         >
           삭제
@@ -268,7 +198,6 @@ export function IdeaFormFields({
   const templateKey = form.planTemplate === "일반" ? null : (form.planTemplate as StructuredMemoTemplateKey);
 
   const [focusTitleSectionId, setFocusTitleSectionId] = useState<string | null>(null);
-  const [draggingSectionId, setDraggingSectionId] = useState<string | null>(null);
 
   const onFolderPick = (folderId: string) => {
     setForm((prev) => ({ ...prev, folderId }));
@@ -333,44 +262,6 @@ export function IdeaFormFields({
     }));
   };
 
-  const applyReorder = useCallback(
-    (tk: StructuredMemoTemplateKey, fromId: string, beforeId: string | "end") => {
-      if (fromId === beforeId) return;
-      setForm((prev) => {
-        const list = prev.sectionSets[tk];
-        const next =
-          beforeId === "end" ? moveSectionToEnd(list, fromId) : moveSectionBefore(list, fromId, beforeId);
-        return {
-          ...prev,
-          sectionSets: { ...prev.sectionSets, [tk]: next },
-        };
-      });
-    },
-    [setForm],
-  );
-
-  const onSectionCardDrop = useCallback(
-    (e: DragEvent, beforeSectionId: string) => {
-      e.preventDefault();
-      const fromId = e.dataTransfer.getData("text/plain") || draggingSectionId;
-      if (!fromId || !templateKey) return;
-      applyReorder(templateKey, fromId, beforeSectionId);
-      setDraggingSectionId(null);
-    },
-    [applyReorder, draggingSectionId, templateKey],
-  );
-
-  const onListEndDrop = useCallback(
-    (e: DragEvent) => {
-      e.preventDefault();
-      const fromId = e.dataTransfer.getData("text/plain") || draggingSectionId;
-      if (!fromId || !templateKey) return;
-      applyReorder(templateKey, fromId, "end");
-      setDraggingSectionId(null);
-    },
-    [applyReorder, draggingSectionId, templateKey],
-  );
-
   return (
     <div className="space-y-4">
       <label className="block text-xs font-semibold text-zinc-500">메모 폴더</label>
@@ -398,7 +289,7 @@ export function IdeaFormFields({
 
       <label className="block text-xs font-semibold text-zinc-500">구조 템플릿</label>
       <p className="-mt-2 text-[11px] leading-snug text-zinc-500">
-        일반은 제목·자유 메모만 씁니다. MVP·강의·소설은 해당 기본 섹션이 열리며, 블록을 더하거나 빼거나 순서를 바꿀 수 있습니다.
+        일반은 제목·자유 메모만 씁니다. MVP·강의·소설은 기본 섹션이 열리며, 블록을 추가하거나 삭제할 수 있습니다.
       </p>
       <div className="flex flex-wrap gap-2">
         {PLAN_CHIPS.map(({ key, label }) => (
@@ -456,37 +347,12 @@ export function IdeaFormFields({
                 key={section.id}
                 section={section}
                 autoFocusTitle={focusTitleSectionId === section.id}
-                draggable
-                onGripDragStart={() => setDraggingSectionId(section.id)}
-                onGripDragEnd={() => setDraggingSectionId(null)}
-                onCardDragOver={(e) => {
-                  e.dataTransfer.dropEffect = "move";
-                }}
-                onCardDrop={(e) => onSectionCardDrop(e, section.id)}
                 onChange={(patch) => patchSection(templateKey, section.id, patch)}
                 onRemove={() => removeSection(templateKey, section.id)}
                 onTitleFocused={() => setFocusTitleSectionId(null)}
               />
             ))}
           </div>
-
-          {form.sectionSets[templateKey].length > 0 ? (
-            <div
-              className="mt-2 min-h-[2rem] rounded-lg border border-dashed border-transparent text-center text-[11px] text-zinc-400 transition hover:border-zinc-300 hover:bg-white/60"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.dataTransfer.dropEffect = "move";
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onListEndDrop(e);
-              }}
-            >
-              <span className="inline-block py-2">여기에 놓으면 맨 아래로 이동</span>
-            </div>
-          ) : null}
         </div>
       ) : null}
 
