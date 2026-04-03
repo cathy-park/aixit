@@ -25,7 +25,7 @@ export const TITLE_INPUT_CLASS =
   "min-h-9 w-full rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1.5 text-sm leading-snug text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-300 focus:ring-2 focus:ring-zinc-100";
 
 const SECTION_INPUT_CLASS =
-  "min-h-8 w-full rounded-lg border border-zinc-200/80 bg-white px-2 py-1 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-300 focus:ring-2 focus:ring-zinc-100";
+  "min-h-8 w-full rounded-lg border border-zinc-200/80 bg-white px-2 py-1 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-100/90 focus-visible:ring-offset-0";
 
 export type IdeaFormState = {
   title: string;
@@ -145,9 +145,11 @@ function moveSectionToEnd(list: StructuredMemoSection[], fromId: string): Struct
   return copy;
 }
 
+const SECTION_CARD_SHELL =
+  "rounded-lg border border-zinc-200/90 bg-white p-3 shadow-sm ring-0 outline-none";
+
 function StructuredSectionCard({
   section,
-  highlight,
   autoFocusTitle,
   onChange,
   onRemove,
@@ -159,7 +161,6 @@ function StructuredSectionCard({
   onCardDrop,
 }: {
   section: StructuredMemoSection;
-  highlight?: boolean;
   autoFocusTitle?: boolean;
   onChange: (patch: Partial<StructuredMemoSection>) => void;
   onRemove: () => void;
@@ -172,31 +173,40 @@ function StructuredSectionCard({
 }) {
   return (
     <div
-      className={cn(
-        highlight &&
-          "rounded-lg border-2 border-zinc-900 bg-white p-3 shadow-sm ring-2 ring-zinc-900/10",
-        !highlight && "rounded-lg border border-zinc-200/90 bg-white p-3",
-      )}
-      onDragOver={onCardDragOver}
-      onDrop={onCardDrop}
+      className={SECTION_CARD_SHELL}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onCardDragOver(e);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onCardDrop(e);
+      }}
     >
       <div className="flex items-start justify-between gap-2">
         {draggable ? (
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             draggable
             onDragStart={(e) => {
+              e.stopPropagation();
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData("text/plain", section.id);
               onGripDragStart();
             }}
-            onDragEnd={onGripDragEnd}
-            className="mt-1 shrink-0 cursor-grab touch-none rounded px-1 py-0.5 text-zinc-400 hover:bg-zinc-100 active:cursor-grabbing"
+            onDragEnd={(e) => {
+              e.stopPropagation();
+              onGripDragEnd();
+            }}
+            className="mt-1 shrink-0 cursor-grab touch-none select-none rounded px-1 py-0.5 text-zinc-400 outline-none hover:bg-zinc-100 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-zinc-200/80 focus-visible:ring-offset-0"
             aria-label="섹션 순서 변경(드래그)"
             title="드래그하여 순서 변경"
           >
             <span className="block text-[10px] leading-none tracking-tighter">⋮⋮</span>
-          </button>
+          </div>
         ) : null}
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap gap-2">
@@ -236,6 +246,7 @@ function StructuredSectionCard({
         <AutoResizeTextarea
           className={WORKSPACE_MEMO_TEXTAREA_CLASS}
           minHeightPx={72}
+          maxHeightPx={320}
           value={section.value}
           onChange={(e) => onChange({ value: e.target.value })}
           placeholder="내용을 입력하세요…"
@@ -413,15 +424,6 @@ export function IdeaFormFields({
         placeholder="한 줄로 요약"
       />
 
-      <label className="block text-xs font-semibold text-zinc-500">자유 메모</label>
-      <AutoResizeTextarea
-        className={cn(WORKSPACE_MEMO_TEXTAREA_CLASS, "mt-1.5 min-h-[100px]")}
-        minHeightPx={100}
-        value={form.content}
-        onChange={(e) => setForm({ content: e.target.value })}
-        placeholder="생각을 풀어 쓰기…"
-      />
-
       {templateKey ? (
         <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">
@@ -449,17 +451,15 @@ export function IdeaFormFields({
           </div>
 
           <div className="mt-3 space-y-4">
-            {form.sectionSets[templateKey].map((section, idx) => (
+            {form.sectionSets[templateKey].map((section) => (
               <StructuredSectionCard
                 key={section.id}
                 section={section}
-                highlight={idx === 0 && form.planTemplate === "MVP"}
                 autoFocusTitle={focusTitleSectionId === section.id}
                 draggable
                 onGripDragStart={() => setDraggingSectionId(section.id)}
                 onGripDragEnd={() => setDraggingSectionId(null)}
                 onCardDragOver={(e) => {
-                  e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
                 }}
                 onCardDrop={(e) => onSectionCardDrop(e, section.id)}
@@ -475,15 +475,30 @@ export function IdeaFormFields({
               className="mt-2 min-h-[2rem] rounded-lg border border-dashed border-transparent text-center text-[11px] text-zinc-400 transition hover:border-zinc-300 hover:bg-white/60"
               onDragOver={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 e.dataTransfer.dropEffect = "move";
               }}
-              onDrop={onListEndDrop}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onListEndDrop(e);
+              }}
             >
               <span className="inline-block py-2">여기에 놓으면 맨 아래로 이동</span>
             </div>
           ) : null}
         </div>
       ) : null}
+
+      <label className="block text-xs font-semibold text-zinc-500">자유 메모</label>
+      <AutoResizeTextarea
+        className={cn(WORKSPACE_MEMO_TEXTAREA_CLASS, "mt-1.5 min-h-[100px]")}
+        minHeightPx={100}
+        maxHeightPx={320}
+        value={form.content}
+        onChange={(e) => setForm({ content: e.target.value })}
+        placeholder="생각을 풀어 쓰기…"
+      />
     </div>
   );
 }

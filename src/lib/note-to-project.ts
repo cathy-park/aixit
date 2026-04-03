@@ -13,6 +13,10 @@ import {
   structuredSectionsToStepTitlesAndBodies,
 } from "@/lib/structured-memo-sections";
 import { appendTodayTodos } from "@/lib/today-todos-store";
+import {
+  createProjectFromUserTemplate,
+  getUserWorkflowTemplateById,
+} from "@/lib/user-workflow-templates-store";
 
 function newMemoId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -180,6 +184,8 @@ export function promoteNoteToProject(
   let base = null as ReturnType<typeof getDashboardWorkflow>;
   if (templateChoice === "blank") {
     base = createBlankProject(folderId);
+  } else if (getUserWorkflowTemplateById(templateChoice)) {
+    base = createProjectFromUserTemplate(templateChoice, folderId);
   } else {
     base = createProjectFromTemplate(templateChoice, folderId);
   }
