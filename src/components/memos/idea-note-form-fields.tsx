@@ -26,6 +26,10 @@ export const TITLE_INPUT_CLASS =
 const SECTION_INPUT_CLASS =
   "min-h-8 w-full rounded-lg border border-zinc-200/80 bg-white px-2 py-1 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-100/90 focus-visible:ring-offset-0";
 
+/** 메모 모달 상단 폴더·구조 템플릿 드롭다운 공통 */
+const MEMO_FORM_SELECT_CLASS =
+  "h-9 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[13px] text-zinc-900 outline-none focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-100/90 focus-visible:ring-offset-0";
+
 export type IdeaFormState = {
   title: string;
   content: string;
@@ -264,47 +268,49 @@ export function IdeaFormFields({
 
   return (
     <div className="space-y-4">
-      <label className="block text-xs font-semibold text-zinc-500">메모 폴더</label>
-      <p className="-mt-2 text-[11px] leading-snug text-zinc-500">
-        폴더는 메모 분류(category)입니다. 구조형 입력 양식은 아래「구조 템플릿」에서 고릅니다.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {memoFolders.map((f) => {
-          const label = memoFolderCategoryKey(f);
-          return (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => onFolderPick(f.id)}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                form.folderId === f.id ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/80",
-              )}
+      <div className="space-y-1.5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
+          <div className="min-w-0 flex-1 basis-full sm:min-w-[10rem] sm:basis-0 sm:flex-1">
+            <label htmlFor="idea-memo-folder-select" className="block text-xs font-semibold text-zinc-500">
+              메모 폴더
+            </label>
+            <select
+              id="idea-memo-folder-select"
+              className={cn(MEMO_FORM_SELECT_CLASS, "mt-1")}
+              value={memoFolders.some((f) => f.id === form.folderId) ? form.folderId : memoFolders[0]?.id ?? ""}
+              onChange={(e) => onFolderPick(e.target.value)}
             >
-              {f.hidden ? `${label} (숨김)` : label}
-            </button>
-          );
-        })}
-      </div>
-
-      <label className="block text-xs font-semibold text-zinc-500">구조 템플릿</label>
-      <p className="-mt-2 text-[11px] leading-snug text-zinc-500">
-        일반은 제목·자유 메모만 씁니다. MVP·강의·소설은 기본 섹션이 열리며, 블록을 추가하거나 삭제할 수 있습니다.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {PLAN_CHIPS.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setPlanTemplate(key)}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-semibold transition",
-              form.planTemplate === key ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/80",
-            )}
-          >
-            {label}
-          </button>
-        ))}
+              {memoFolders.map((f) => {
+                const label = memoFolderCategoryKey(f);
+                return (
+                  <option key={f.id} value={f.id}>
+                    {f.hidden ? `${label} (숨김)` : label}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div className="min-w-0 flex-1 basis-full sm:min-w-[10rem] sm:basis-0 sm:flex-1">
+            <label htmlFor="idea-plan-template-select" className="block text-xs font-semibold text-zinc-500">
+              구조 템플릿
+            </label>
+            <select
+              id="idea-plan-template-select"
+              className={cn(MEMO_FORM_SELECT_CLASS, "mt-1")}
+              value={form.planTemplate}
+              onChange={(e) => setPlanTemplate(e.target.value as NoteStructureKey)}
+            >
+              {PLAN_CHIPS.map(({ key, label }) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <p className="text-[11px] leading-snug text-zinc-500">
+          폴더는 분류, 템플릿은 입력 양식입니다. 일반은 자유 메모만, MVP·강의·소설은 구조형 섹션을 씁니다.
+        </p>
       </div>
 
       <label className="block text-xs font-semibold text-zinc-500">제목</label>
