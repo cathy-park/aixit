@@ -19,6 +19,7 @@ import { TEMPLATE_CATEGORY_OVERRIDE_EVENT } from "@/lib/workflow-template-catego
 import { listWorkflowTemplatesForMenu } from "@/lib/workflow-templates-menu-list";
 import { REMOVED_WORKFLOW_TEMPLATES_EVENT } from "@/lib/user-removed-workflow-templates-store";
 import { USER_WORKFLOW_TEMPLATES_EVENT } from "@/lib/user-workflow-templates-store";
+import { cn } from "@/components/ui/cn";
 import {
   addNote,
   getNote,
@@ -29,9 +30,16 @@ import {
 
 export type IdeaModalMode = "create" | "edit" | "view";
 
-/** 프로젝트 시작: 저장보다 덜 튀도록 윤곽 스타일 + 약간 낮은 높이 */
-const PROJECT_START_BTN =
-  "inline-flex h-9 w-full shrink-0 items-center justify-center rounded-full border border-blue-600 bg-white px-4 text-sm font-semibold leading-none text-blue-700 shadow-none transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:text-zinc-400 disabled:hover:bg-white";
+/** 높이·타이포 공통 (폴더 칩 미선택 / 구조 템플릿 선택 색과 맞춤) */
+const PROJECT_START_BTN_BASE =
+  "inline-flex h-9 w-full shrink-0 items-center justify-center rounded-full px-4 text-sm font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2";
+
+const PROJECT_START_BTN_ENABLED =
+  "border border-blue-600 bg-blue-600 text-white hover:bg-blue-700";
+
+/** 메모 폴더 칩 비활성(미선택)과 동일 톤 */
+const PROJECT_START_BTN_DISABLED =
+  "cursor-not-allowed border border-zinc-200/80 bg-zinc-100 text-zinc-600";
 
 const SELECT_CLASS =
   "mt-1 h-9 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-0 text-[13px] leading-9 text-zinc-900 outline-none focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-100/90 focus-visible:ring-offset-0";
@@ -257,7 +265,11 @@ export function IdeaModal({
                   <p className="text-sm leading-snug text-zinc-600">
                     등록된 워크플로우 템플릿이 없습니다.
                   </p>
-                  <button type="button" onClick={onStartBlankOnly} className={PROJECT_START_BTN}>
+                  <button
+                    type="button"
+                    onClick={onStartBlankOnly}
+                    className={cn(PROJECT_START_BTN_BASE, PROJECT_START_BTN_ENABLED)}
+                  >
                     빈 프로젝트로 시작
                   </button>
                 </>
@@ -293,7 +305,10 @@ export function IdeaModal({
                     type="button"
                     disabled={!canStartProject}
                     onClick={onStartProject}
-                    className={PROJECT_START_BTN}
+                    className={cn(
+                      PROJECT_START_BTN_BASE,
+                      canStartProject ? PROJECT_START_BTN_ENABLED : PROJECT_START_BTN_DISABLED,
+                    )}
                   >
                     프로젝트 시작하기
                   </button>
