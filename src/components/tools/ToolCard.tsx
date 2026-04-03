@@ -12,6 +12,10 @@ import { IosCardToggle } from "@/components/ui/IosCardToggle";
 
 export type ToolCardMode = "warehouse" | "workflow" | "picker";
 
+/** 도구 카드 외곽선·그림자·모서리·내부 여백 — 메모 카드 등과 통일용 */
+export const TOOL_CARD_SHELL_CLASS =
+  "w-full rounded-[22px] bg-white p-6 text-left shadow-sm ring-1 ring-zinc-200/90";
+
 function IconEye({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
@@ -179,7 +183,7 @@ export function ToolCard({
   const showWarehouseActivationToggle = mode === "warehouse" && onWarehouseTogglePersist != null;
 
   const cardShell = cn(
-    "w-full rounded-[22px] bg-white p-6 text-left shadow-sm ring-1 ring-zinc-200/90",
+    TOOL_CARD_SHELL_CLASS,
     selected && "ring-2 ring-zinc-900 ring-offset-2 ring-offset-zinc-50",
     className,
   );

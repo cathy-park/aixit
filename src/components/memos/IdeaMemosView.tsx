@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lightbulb } from "lucide-react";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { cn } from "@/components/ui/cn";
+import { DashboardFolderBar, type FolderBarItem } from "@/components/dashboard/DashboardFolderBar";
+import { PillSearchField } from "@/components/ui/PillSearchField";
+import { TOOL_CARD_SHELL_CLASS } from "@/components/tools/ToolCard";
+import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
+import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
 import {
   WORKSPACE_HEADER_ADD_MATCH_BTN,
   WORKSPACE_MEMO_TEXTAREA_CLASS,
@@ -27,23 +31,80 @@ import {
   type NoteCategory,
 } from "@/lib/notes-store";
 
-const FILTER_TABS: Array<{ id: "all" | NoteCategory; label: string }> = [
-  { id: "all", label: "전체" },
-  { id: "MVP", label: "MVP" },
-  { id: "강의", label: "강의" },
-  { id: "소설", label: "소설" },
+/** 프로젝트 폴더 칩과 동일 패턴의 고정 카테고리(메모 전용) */
+const MEMO_CATEGORY_FOLDERS: DashboardFolderRecord[] = [
+  { id: "MVP", name: "MVP", emoji: "", iconType: "emoji", color: "#18181b" },
+  { id: "강의", name: "강의", emoji: "🎓", iconType: "emoji", color: "#6366f1" },
+  { id: "소설", name: "소설", emoji: "✍️", iconType: "emoji", color: "#a855f7" },
+  { id: "일반", name: "일반", emoji: "", iconType: "emoji", color: "#64748b" },
 ];
 
 const TITLE_INPUT_CLASS =
   "min-h-9 w-full rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1.5 text-sm leading-snug text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-300 focus:ring-2 focus:ring-zinc-100";
 
-function categoryBadgeClass(cat: NoteCategory) {
-  return cn(
-    "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold",
-    cat === "MVP" && "border-zinc-800 bg-zinc-900 text-white",
-    cat === "강의" && "border-zinc-400 bg-zinc-100 text-zinc-900",
-    cat === "소설" && "border-zinc-300 bg-white text-zinc-800",
-    cat === "일반" && "border-zinc-200 bg-zinc-50 text-zinc-600",
+function IdeaMemoCard({
+  note,
+  onOpenDetail,
+  onPromote,
+}: {
+  note: IdeaNote;
+  onOpenDetail: () => void;
+  onPromote: () => void;
+}) {
+  const converted = note.isConverted;
+  const grayscaleMain = cn(
+    converted && "grayscale opacity-[0.88] [&_svg]:opacity-70 [&_img]:opacity-90",
+  );
+  const tagTone = keywordTagToneClass(normalizeKeyword(note.category));
+
+  return (
+    <article className={TOOL_CARD_SHELL_CLASS}>
+      <div className={grayscaleMain}>
+        <button type="button" onClick={onOpenDetail} className="w-full text-left">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="truncate text-lg font-bold tracking-tight text-zinc-950">
+                {note.title.trim() || "제목 없음"}
+              </span>
+              {converted ? (
+                <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
+                  전환 완료
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-1.5 line-clamp-3 text-sm leading-snug text-zinc-500">
+              {note.content?.trim() || "본문 없음"}
+            </p>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tagTone)}>#{note.category}</span>
+          </div>
+        </button>
+      </div>
+      <div className="mt-6 flex flex-col gap-4 border-t border-zinc-100 pt-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex w-full flex-col gap-3 sm:ml-auto sm:w-auto sm:flex-row sm:justify-end">
+          {!converted ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPromote();
+              }}
+              className={cn(WORKSPACE_HEADER_ADD_MATCH_BTN, "w-full justify-center sm:w-auto")}
+            >
+              이 기획으로 프로젝트 시작하기
+            </button>
+          ) : note.convertedProjectId ? (
+            <Link
+              href={`/workspace?id=${encodeURIComponent(note.convertedProjectId)}`}
+              className={cn(WORKSPACE_HEADER_ADD_MATCH_BTN, "inline-flex w-full justify-center no-underline sm:w-auto")}
+            >
+              워크스페이스 열기
+            </Link>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -172,7 +233,8 @@ function FieldWithGuide({
 export function IdeaMemosView() {
   const router = useRouter();
   const [notes, setNotes] = useState<IdeaNote[]>([]);
-  const [filter, setFilter] = useState<(typeof FILTER_TABS)[number]["id"]>("all");
+  const [activeFolderId, setActiveFolderId] = useState<string>("all");
+  const [search, setSearch] = useState("");
   const [editor, setEditor] = useState<{ mode: "create" | "edit"; note: IdeaNote | null; form: FormState } | null>(
     null,
   );
@@ -188,10 +250,25 @@ export function IdeaMemosView() {
     return () => window.removeEventListener(NOTES_UPDATED_EVENT, onUpd);
   }, [refresh]);
 
-  const filtered = useMemo(() => {
-    if (filter === "all") return notes;
-    return notes.filter((n) => n.category === filter);
-  }, [notes, filter]);
+  const memoFolderBarItems: FolderBarItem[] = useMemo(
+    () =>
+      MEMO_CATEGORY_FOLDERS.map((f) => ({
+        ...f,
+        workflowCount: notes.filter((n) => n.category === f.id).length,
+      })),
+    [notes],
+  );
+
+  const searchFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = activeFolderId === "all" ? notes : notes.filter((n) => n.category === activeFolderId);
+    if (!q) return list;
+    return list.filter((n) => {
+      const metaVals = Object.values((n.metadata ?? {}) as Record<string, string>).join(" ");
+      const hay = `${n.title} ${n.content} ${n.category} ${metaVals}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [notes, activeFolderId, search]);
 
   const templates = useMemo(() => listWorkflowTemplates(), []);
 
@@ -290,14 +367,9 @@ export function IdeaMemosView() {
   return (
     <>
       <AdaptivePageHeader
-        title={
-          <span className="inline-flex items-center gap-2">
-            <Lightbulb className="h-7 w-7 shrink-0 text-zinc-800" aria-hidden />
-            메모
-          </span>
-        }
-        count={filtered.length}
-        description="카테고리별 맞춤 기획을 채운 뒤, 템플릿을 고르고 프로젝트로 승격하세요."
+        title="메모"
+        count={searchFiltered.length}
+        description="폴더로 카테고리를 고르고, 도구 창고와 같은 카드로 기획을 모아두세요."
         rightSlot={
           <button type="button" onClick={openCreate} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
             새 아이디어 기록
@@ -305,75 +377,43 @@ export function IdeaMemosView() {
         }
       />
 
-      <AppMainColumn className="pb-20 text-sm leading-relaxed text-zinc-900">
-        <div className="flex flex-wrap gap-2 border-b border-zinc-200 pb-4" role="tablist" aria-label="카테고리 필터">
-          {FILTER_TABS.map((tab) => {
-            const active = filter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setFilter(tab.id)}
-                className={cn(
-                  "rounded-full px-4 py-2 text-sm font-semibold transition",
-                  active ? "bg-zinc-900 text-white" : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-50",
-                )}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+      <AppMainColumn className="min-w-0 pb-20 text-sm leading-relaxed text-zinc-900">
+        <div className="mb-6 space-y-4">
+          <div className="pb-0">
+            <DashboardFolderBar
+              allWorkflowCount={notes.length}
+              folders={memoFolderBarItems}
+              activeFolderId={activeFolderId}
+              onChange={setActiveFolderId}
+              showAddFolderButton={false}
+            />
+          </div>
+          <PillSearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="제목, 본문, 카테고리, 기획 필드 검색"
+            aria-label="메모 검색"
+          />
         </div>
 
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-          {filtered.length === 0 ? (
-            <li className="col-span-full rounded-2xl border border-dashed border-zinc-200 bg-white p-10 text-center text-zinc-500">
-              메모가 없습니다. 상단에서 새 아이디어를 기록해 보세요.
-            </li>
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          {searchFiltered.length === 0 ? (
+            <div className="col-span-full rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
+              {notes.length === 0
+                ? "메모가 없습니다. 상단에서 새 아이디어를 기록해 보세요."
+                : "조건에 맞는 메모가 없어요."}
+            </div>
           ) : (
-            filtered.map((note) => (
-              <li key={note.id}>
-                <div className="flex h-full flex-col rounded-2xl border border-zinc-200 bg-white shadow-sm ring-1 ring-zinc-100 transition hover:border-zinc-300 hover:ring-zinc-200/80">
-                  <button
-                    type="button"
-                    onClick={() => setDetail(note)}
-                    className="flex-1 p-5 text-left"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className={categoryBadgeClass(note.category)}>{note.category}</span>
-                      {note.isConverted ? (
-                        <span className="text-xs font-medium text-zinc-400">프로젝트 전환됨</span>
-                      ) : null}
-                    </div>
-                    <h3 className="mt-3 line-clamp-2 text-base font-semibold text-zinc-900">
-                      {note.title.trim() || "제목 없음"}
-                    </h3>
-                    <p className="mt-2 line-clamp-3 text-sm text-zinc-600">{note.content || "본문 없음"}</p>
-                  </button>
-                  <div className="border-t border-zinc-100 p-4 pt-3">
-                    <button
-                      type="button"
-                      disabled={note.isConverted}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openTemplatePicker(note);
-                      }}
-                      className={cn(
-                        WORKSPACE_HEADER_ADD_MATCH_BTN,
-                        "w-full",
-                        note.isConverted && "cursor-not-allowed opacity-40",
-                      )}
-                    >
-                      이 기획으로 프로젝트 시작하기
-                    </button>
-                  </div>
-                </div>
-              </li>
+            searchFiltered.map((note) => (
+              <IdeaMemoCard
+                key={note.id}
+                note={note}
+                onOpenDetail={() => setDetail(note)}
+                onPromote={() => openTemplatePicker(note)}
+              />
             ))
           )}
-        </ul>
+        </div>
       </AppMainColumn>
 
       {editor ? (
@@ -646,8 +686,15 @@ export function IdeaMemosView() {
             aria-labelledby="memo-detail-title"
           >
             <div className="border-b border-zinc-100 px-5 py-4">
-              <div className="flex items-center gap-2">
-                <span className={categoryBadgeClass(detail.category)}>{detail.category}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px] font-bold ring-1",
+                    keywordTagToneClass(normalizeKeyword(detail.category)),
+                  )}
+                >
+                  #{detail.category}
+                </span>
                 {detail.isConverted ? (
                   <span className="text-xs text-zinc-400">전환 완료</span>
                 ) : null}
@@ -781,10 +828,7 @@ export function IdeaMemosView() {
                       onClick={() => runPromote(templatePickNote, t.templateId)}
                       className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm hover:bg-zinc-50"
                     >
-                      <span className="font-semibold text-zinc-900">
-                        {t.emoji ? `${t.emoji} ` : ""}
-                        {t.title}
-                      </span>
+                      <span className="font-semibold text-zinc-900">{t.title}</span>
                       <span className="mt-0.5 block text-xs text-zinc-500">{t.subtitle}</span>
                       <span className="mt-1 inline-block text-[10px] font-medium text-zinc-400">
                         {t.categoryLabel} · {t.stepCount}단계

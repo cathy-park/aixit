@@ -148,6 +148,7 @@ export function DashboardFolderBar({
   activeFolderId,
   onChange,
   onAddFolderClick,
+  showAddFolderButton = true,
   variant = "project",
   onFolderOpenEdit,
   onFolderToggleHidden,
@@ -159,6 +160,8 @@ export function DashboardFolderBar({
   activeFolderId: string;
   onChange: (id: string) => void;
   onAddFolderClick?: () => void;
+  /** false면 「폴더 추가」칩 숨김 (메모 등 고정 카테고리만 쓰는 화면) */
+  showAddFolderButton?: boolean;
   variant?: "project" | "template";
   onFolderOpenEdit?: (folder: FolderBarItem, focus?: "name" | "icon" | "color") => void;
   onFolderToggleHidden?: (folder: FolderBarItem) => void;
@@ -301,14 +304,16 @@ export function DashboardFolderBar({
         />
       ) : null}
 
-      <button
-        type="button"
-        onClick={onAddFolderClick}
-        className="inline-flex items-center gap-1 rounded-full border border-dashed border-zinc-300 bg-zinc-50/80 px-3.5 py-2 text-sm font-semibold text-zinc-600 hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-800"
-      >
-        <span aria-hidden>+</span>
-        폴더 추가
-      </button>
+      {showAddFolderButton && onAddFolderClick ? (
+        <button
+          type="button"
+          onClick={onAddFolderClick}
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-zinc-300 bg-zinc-50/80 px-3.5 py-2 text-sm font-semibold text-zinc-600 hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-800"
+        >
+          <span aria-hidden>+</span>
+          폴더 추가
+        </button>
+      ) : null}
     </div>
   );
 }
