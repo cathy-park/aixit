@@ -60,6 +60,7 @@ import {
   setDashboardWorkflowFolder,
 } from "@/lib/workflows-store";
 import { cn } from "@/components/ui/cn";
+import { APP_CARD_GRID_CLASS, APP_CARD_GRID_ITEM_CLASS } from "@/components/cards/app-card-layout";
 
 const FOLDER_INITIAL = 6;
 const FOLDER_CHUNK = 6;
@@ -73,7 +74,6 @@ type FlatWf = {
 function buildGridNodes(
   items: FlatWf[],
   opts: {
-    gridClass: string;
     showFolderBadge: boolean;
     pinnedKeys: Set<string>;
     /** 완료 카드들은 opacity를 약간 낮춰 "가상 완료 그룹"임을 표현 */
@@ -98,14 +98,14 @@ function buildGridNodes(
   const dnd = opts.layoutDnD;
   const endDropKey = dnd && opts.endDropFolderId ? `__end__:${opts.endDropFolderId}` : null;
   return (
-    <div className={cn("grid gap-4", opts.gridClass)}>
+    <div className={APP_CARD_GRID_CLASS}>
       {items.map(({ folder, entry, preview }) => {
         const pinKey = layoutEntryPinKey(entry.kind, entry.id);
         return (
           <div
             key={pinKey}
             className={cn(
-              "min-w-0 w-full max-w-xl justify-self-start",
+              APP_CARD_GRID_ITEM_CLASS,
               dnd && "cursor-grab rounded-[30px] active:cursor-grabbing",
               dnd && dnd.dropTargetKey === pinKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
               opts.dimCompleted && preview.status === "완료" && "opacity-[0.78]",
@@ -664,7 +664,6 @@ export function DashboardExperience() {
                           {nonCompletedItems.length > 0 ? (
                             buildGridNodes(nonCompletedItems, {
                               ...gridOpts,
-                              gridClass: "grid-cols-1 sm:grid-cols-2",
                               showFolderBadge: false,
                               endDropFolderId: folder.id,
                             })
@@ -688,7 +687,6 @@ export function DashboardExperience() {
                                 >
                                   {buildGridNodes(completedItems, {
                                     ...gridOpts,
-                                    gridClass: "grid-cols-1 sm:grid-cols-2",
                                     showFolderBadge: false,
                                     dimCompleted: true,
                                     endDropFolderId: folder.id,
@@ -784,7 +782,6 @@ export function DashboardExperience() {
                         <Fragment>
                           {buildGridNodes(folderShown, {
                             ...gridOpts,
-                            gridClass: "grid-cols-1 xl:grid-cols-3",
                             showFolderBadge: false,
                             endDropFolderId: folder.id,
                           })}
@@ -826,7 +823,6 @@ export function DashboardExperience() {
                             >
                               {buildGridNodes(flatSingleFolderCompleted, {
                                 ...gridOpts,
-                                gridClass: "grid-cols-1 xl:grid-cols-3",
                                 showFolderBadge: false,
                                 dimCompleted: true,
                                 endDropFolderId: folder.id,

@@ -8,6 +8,12 @@ import type { WorkflowTemplateListItem } from "@/lib/aixit-data";
 import { useMergedTools } from "@/hooks/useMergedTools";
 import { getMergedToolById } from "@/lib/user-tools-store";
 import { actionIconButtonClass, IconCopy, IconStarPin, IconTrash } from "@/components/ui/action-icons";
+import {
+  APP_CARD_ACTIONS_COLUMN_CLASS,
+  APP_CARD_SHELL_DASHBOARD_CLASS,
+  APP_CARD_TITLE_TEXT_CLASS,
+  APP_CARD_TITLE_TRACK_CLASS,
+} from "@/components/cards/app-card-layout";
 
 function stopNav(e: MouseEvent) {
   e.preventDefault();
@@ -33,7 +39,7 @@ export function WorkflowTemplateCard({
   const toolById = (id: string) => toolCatalog.find((x) => x.id === id) ?? getMergedToolById(id);
 
   return (
-    <div className="flex rounded-[28px] bg-white p-5 shadow-md shadow-zinc-200/50 ring-1 ring-zinc-200/80">
+    <div className={APP_CARD_SHELL_DASHBOARD_CLASS}>
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-3">
           <Link
@@ -42,10 +48,12 @@ export function WorkflowTemplateCard({
             onDragStart={(e) => e.preventDefault()}
             className="min-w-0 flex-1 rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
           >
-            <div className="flex flex-wrap items-center gap-2 gap-y-1">
-              <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{t.title}</span>
+            <div className={APP_CARD_TITLE_TRACK_CLASS}>
+              <span className={APP_CARD_TITLE_TEXT_CLASS}>{t.title}</span>
             </div>
-            <p className="mt-2 line-clamp-2 text-sm font-medium text-zinc-500">{t.subtitle}</p>
+            {t.subtitle.trim() ? (
+              <p className="mt-2 line-clamp-2 text-sm font-medium text-zinc-500">{t.subtitle.trim()}</p>
+            ) : null}
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <span className="text-xs font-medium text-zinc-500">주요 도구:</span>
@@ -62,7 +70,7 @@ export function WorkflowTemplateCard({
             </div>
           </Link>
 
-          <div className="flex shrink-0 flex-row items-start gap-0.5">
+          <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-start gap-0.5")}>
             {onTogglePin ? (
               <button
                 type="button"

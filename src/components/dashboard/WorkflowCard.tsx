@@ -19,6 +19,12 @@ import {
 import { getDashboardWorkflow, setDashboardProjectLifecycleStatus } from "@/lib/workflows-store";
 import { getMergedToolById } from "@/lib/user-tools-store";
 import { actionIconButtonClass, IconCopy, IconSaveTemplate, IconStarPin, IconTrash } from "@/components/ui/action-icons";
+import {
+  APP_CARD_ACTIONS_COLUMN_CLASS,
+  APP_CARD_SHELL_DASHBOARD_CLASS,
+  APP_CARD_TITLE_TEXT_CLASS,
+  APP_CARD_TITLE_TRACK_CLASS,
+} from "@/components/cards/app-card-layout";
 
 function ClockIcon({ className }: { className?: string }) {
   return (
@@ -231,7 +237,7 @@ export function WorkflowCard({
   };
 
   return (
-    <div className="flex box-border overflow-hidden rounded-[28px] border border-zinc-200/80 bg-white p-5 shadow-md shadow-zinc-200/50">
+    <div className={APP_CARD_SHELL_DASHBOARD_CLASS}>
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-3">
           <Link
@@ -240,14 +246,16 @@ export function WorkflowCard({
             onDragStart={(e) => e.preventDefault()}
             className="min-w-0 flex-1 rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
           >
-            <div className="flex flex-wrap items-center gap-2 gap-y-1">
+            <div className={APP_CARD_TITLE_TRACK_CLASS}>
               {folder ? <FolderGlyph folder={folder} size="md" className="shrink-0" accentColor={folder.color} /> : null}
-              <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{wf.title}</span>
-              <CardProjectLifecycleControl
-                workflowId={wf.id}
-                projectStatus={wf.projectStatus ?? "waiting"}
-                editable={Boolean(liveWorkflow)}
-              />
+              <span className={APP_CARD_TITLE_TEXT_CLASS}>{wf.title}</span>
+              <span className="shrink-0">
+                <CardProjectLifecycleControl
+                  workflowId={wf.id}
+                  projectStatus={wf.projectStatus ?? "waiting"}
+                  editable={Boolean(liveWorkflow)}
+                />
+              </span>
             </div>
             {wf.subtitle.trim() ? (
               <p className="mt-2 line-clamp-2 text-sm font-medium text-zinc-500">{wf.subtitle}</p>
@@ -301,7 +309,7 @@ export function WorkflowCard({
             </div>
           </Link>
 
-          <div className="flex shrink-0 flex-row items-start gap-0">
+          <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-start gap-0")}>
             {onTogglePin ? (
               <button
                 type="button"

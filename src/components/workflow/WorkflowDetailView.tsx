@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { APP_CARD_GRID_CLASS } from "@/components/cards/app-card-layout";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { cn } from "@/components/ui/cn";
 import type { WorkflowDetail, WorkflowStep } from "@/lib/aixit-data";
@@ -66,7 +67,7 @@ export function WorkflowDetailView({ wf }: { wf: WorkflowDetail }) {
       <Card>
         <div className="text-sm font-semibold">연결된 도구</div>
         <p className="mt-1 text-xs text-zinc-500">단계에 사용 중인 도구입니다. 도구 창고와 동일한 카드로 표시돼요.</p>
-        <div className="mt-4 grid gap-5 sm:grid-cols-2">
+        <div className={cn("mt-4", APP_CARD_GRID_CLASS)}>
           {uniqueStepTools.length === 0 ? (
             <div className="col-span-full rounded-2xl bg-zinc-50/80 p-6 text-sm text-zinc-600 ring-1 ring-zinc-200">
               등록된 도구가 없어요.

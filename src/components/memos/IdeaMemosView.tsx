@@ -18,6 +18,14 @@ import { DashboardExposureStatusBar } from "@/components/dashboard/DashboardExpo
 import { PillSearchField } from "@/components/ui/PillSearchField";
 import { TitleCountChip } from "@/components/ui/TitleCountChip";
 import { cn } from "@/components/ui/cn";
+import {
+  APP_CARD_ACTIONS_COLUMN_CLASS,
+  APP_CARD_GRID_CLASS,
+  APP_CARD_GRID_ITEM_CLASS,
+  APP_CARD_SHELL_DASHBOARD_CLASS,
+  APP_CARD_TITLE_TEXT_CLASS,
+  APP_CARD_TITLE_TRACK_CLASS,
+} from "@/components/cards/app-card-layout";
 import { EditableLifecycleStatusControl } from "@/components/dashboard/WorkflowCard";
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
@@ -151,7 +159,7 @@ function IdeaMemoCard({
   return (
     <div
       className={cn(
-        "min-w-0 w-full max-w-xl justify-self-start",
+        APP_CARD_GRID_ITEM_CLASS,
         dnd && "cursor-grab rounded-[30px] active:cursor-grabbing",
         dnd && dropTargetKey === pinKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
         dimCompleted && "opacity-[0.78]",
@@ -163,7 +171,7 @@ function IdeaMemoCard({
       onDrop={dnd ? (e) => dnd.onDrop(e, note.id) : undefined}
       onDragEnd={dnd ? dnd.onDragEnd : undefined}
     >
-      <div className="flex box-border overflow-hidden rounded-[28px] border border-zinc-200/80 bg-white p-5 shadow-md shadow-zinc-200/50">
+      <div className={APP_CARD_SHELL_DASHBOARD_CLASS}>
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-3">
             <button
@@ -172,26 +180,28 @@ function IdeaMemoCard({
               className="min-w-0 flex-1 rounded-2xl text-left outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
             >
               <div className={grayscaleMain}>
-                <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                <div className={APP_CARD_TITLE_TRACK_CLASS}>
                   <FolderGlyph folder={folder} size="md" className="shrink-0" accentColor={folder.color} />
-                  <span className="truncate text-lg font-bold tracking-tight text-zinc-950">
+                  <span className={APP_CARD_TITLE_TEXT_CLASS}>
                     {note.title.trim() || "제목 없음"}
                   </span>
-                  <EditableLifecycleStatusControl
-                    status={note.projectStatus ?? "waiting"}
-                    editable={!converted}
-                    ariaLabelEntity="아이디어"
-                    onChange={(next) => updateNote(note.id, { projectStatus: next })}
-                  />
+                  <span className="shrink-0">
+                    <EditableLifecycleStatusControl
+                      status={note.projectStatus ?? "waiting"}
+                      editable={!converted}
+                      ariaLabelEntity="아이디어"
+                      onChange={(next) => updateNote(note.id, { projectStatus: next })}
+                    />
+                  </span>
                   {converted ? (
                     <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
                       전환 완료
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-2 line-clamp-3 text-sm font-medium leading-snug text-zinc-500">
-                  {note.content?.trim() || "본문 없음"}
-                </p>
+                {note.content?.trim() ? (
+                  <p className="mt-2 line-clamp-3 text-sm font-medium leading-snug text-zinc-500">{note.content.trim()}</p>
+                ) : null}
                 <div className="mt-5 flex flex-wrap gap-2">
                   <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tagTone)}>
                     #{note.category}
@@ -211,7 +221,7 @@ function IdeaMemoCard({
               </div>
             </button>
 
-            <div className="flex shrink-0 flex-row items-start gap-0">
+            <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-start gap-0")}>
               <button
                 type="button"
                 draggable={false}
@@ -593,7 +603,7 @@ export function IdeaMemosView() {
     endDropFolderId: string,
     dimCompleted?: boolean,
   ) => (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className={APP_CARD_GRID_CLASS}>
       {items.map((note) => (
         <IdeaMemoCard
           key={note.id}

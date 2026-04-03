@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { APP_CARD_GRID_CLASS } from "@/components/cards/app-card-layout";
 import { InspirationSiteCard } from "@/components/inspiration/InspirationSiteCard";
 import { WarehouseKeywordsRow } from "@/components/warehouse/WarehouseKeywordsRow";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 import { PillSearchField } from "@/components/ui/PillSearchField";
+import { cn } from "@/components/ui/cn";
 import { InspirationSiteFormModal } from "@/components/inspiration/InspirationSiteFormModal";
 import {
   addInspirationSite,
@@ -125,7 +127,7 @@ export function InspirationWarehouseView() {
         <WarehouseKeywordsRow keywords={warehouseKeywords} onKeywordClick={(d) => setSearch(d)} />
       </div>
 
-      <ul className="mt-5 grid gap-5 sm:grid-cols-2">
+      <ul className={cn("mt-5 list-none p-0", APP_CARD_GRID_CLASS)}>
         {filtered.length === 0 ? (
           <li className="col-span-full rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
             검색 결과가 없어요.

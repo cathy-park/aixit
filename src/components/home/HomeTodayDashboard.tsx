@@ -323,7 +323,7 @@ export function HomeTodayDashboard() {
               {todayProjects.map(({ entry, folder, preview }) => (
                 <div
                   key={layoutEntryPinKey(entry.kind, entry.id)}
-                  className="w-[min(100%,22rem)] shrink-0 snap-start sm:w-[22rem]"
+                  className="w-[560px] min-w-[560px] shrink-0 snap-start"
                 >
                   <WorkflowCard
                     wf={preview}

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { isToolEffectivelyActive, type Tool } from "@/lib/tools";
+import { APP_CARD_GRID_CLASS } from "@/components/cards/app-card-layout";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { useMergedTools } from "@/hooks/useMergedTools";
 import { PillSearchField } from "@/components/ui/PillSearchField";
@@ -113,7 +114,7 @@ export function ToolPickerModal({
         </div>
 
           <div className="mt-6 max-h-[55vh] overflow-auto px-1 pt-2">
-          <div className="grid grid-cols-2 gap-5">
+          <div className={APP_CARD_GRID_CLASS}>
             {filtered.map((tool) => (
               <ToolCard
                 key={tool.id}

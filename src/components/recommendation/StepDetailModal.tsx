@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/components/ui/cn";
+import { APP_CARD_GRID_CLASS } from "@/components/cards/app-card-layout";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { useMergedTools } from "@/hooks/useMergedTools";
 
@@ -67,17 +68,19 @@ export function StepDetailModal({
         </div>
 
         <div className="mt-5 space-y-4">
-          <div>
-            <div className="text-xs font-semibold text-zinc-500">이 단계에서 하는 일</div>
-            <div className="mt-2 text-sm text-zinc-700">
-              {description ?? "이 단계에서 해야 할 일을 정리해볼게요."}
+          {description?.trim() ? (
+            <div>
+              <div className="text-xs font-semibold text-zinc-500">이 단계에서 하는 일</div>
+              <div className="mt-2 text-sm text-zinc-700">{description.trim()}</div>
             </div>
-          </div>
+          ) : null}
 
           <div>
             <div className="text-xs font-semibold text-zinc-500">추천 도구</div>
-            <div className="mt-3 flex flex-col gap-4">
-              {toolList.length === 0 ? <div className="text-sm text-zinc-500">—</div> : null}
+            <div className={cn("mt-3", APP_CARD_GRID_CLASS)}>
+              {toolList.length === 0 ? (
+                <div className="col-span-full text-sm text-zinc-500">연결된 도구가 없어요.</div>
+              ) : null}
               {toolList.map((tool) => (
                 <ToolCard key={tool.id} mode="warehouse" tool={tool} />
               ))}

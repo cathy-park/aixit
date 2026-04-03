@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { APP_CARD_GRID_CLASS } from "@/components/cards/app-card-layout";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { ToolFormModal } from "@/components/tools/ToolFormModal";
 import { WarehouseKeywordsRow } from "@/components/warehouse/WarehouseKeywordsRow";
@@ -142,7 +143,7 @@ export function ToolsWarehouseView() {
         />
         <WarehouseKeywordsRow keywords={warehouseKeywords} onKeywordClick={(d) => setSearch(d)} />
       </div>
-      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+      <div className={APP_CARD_GRID_CLASS}>
         {filteredTools.length === 0 ? (
           <div className="col-span-full rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
             검색 결과가 없어요.

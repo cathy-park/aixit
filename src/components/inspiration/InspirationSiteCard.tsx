@@ -8,6 +8,12 @@ import type { InspirationSite } from "@/lib/inspiration-store";
 import { incrementInspirationShortcut } from "@/lib/inspiration-store";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
+import {
+  APP_CARD_ACTIONS_COLUMN_CLASS,
+  APP_CARD_SHELL_WAREHOUSE_CLASS,
+  APP_CARD_TITLE_TEXT_CLASS,
+  APP_CARD_TITLE_TRACK_CLASS,
+} from "@/components/cards/app-card-layout";
 
 function MemoNoteIcon({ className }: { className?: string }) {
   return (
@@ -37,12 +43,8 @@ export function InspirationSiteCard({
   const hasMemo = Boolean(site.memo.trim());
 
   return (
-    <div
-      className={cn(
-        "w-full rounded-[22px] bg-white p-6 text-left shadow-sm ring-1 ring-zinc-200/90",
-      )}
-    >
-      <div className="flex gap-4">
+    <div className={APP_CARD_SHELL_WAREHOUSE_CLASS}>
+      <div className="flex min-w-0 gap-4">
         <div
           className={cn(
             "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-extrabold text-white ring-1 ring-zinc-200/80",
@@ -57,47 +59,44 @@ export function InspirationSiteCard({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="truncate text-lg font-bold tracking-tight text-zinc-950">{site.name}</div>
-                {hasMemo ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setNoteOpen(true);
-                    }}
-                    className="inline-flex shrink-0 items-center justify-center rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-                    aria-label="메모 보기"
-                    title="메모 보기"
-                  >
-                    <MemoNoteIcon className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-              <p className="mt-1.5 text-sm leading-snug text-zinc-500">{site.description || site.category}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className={cn(APP_CARD_TITLE_TRACK_CLASS, "min-w-0")}>
+              <span className={APP_CARD_TITLE_TEXT_CLASS}>{site.name}</span>
+              {hasMemo ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setNoteOpen(true);
+                  }}
+                  className="inline-flex shrink-0 items-center justify-center rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+                  aria-label="메모 보기"
+                  title="메모 보기"
+                >
+                  <MemoNoteIcon className="h-4 w-4" />
+                </button>
+              ) : null}
             </div>
-              <div className="flex shrink-0 items-start gap-0.5">
-                {onTogglePinned ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onTogglePinned();
-                    }}
-                    className={cn(
-                      actionIconButtonClass,
-                      pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
-                    )}
-                    aria-pressed={Boolean(pinned)}
-                    title={pinned ? "상단 고정 해제" : "상단 고정"}
-                  >
-                    <IconStarPin active={Boolean(pinned)} />
-                  </button>
-                ) : null}
+            <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-center gap-0.5")}>
+              {onTogglePinned ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onTogglePinned();
+                  }}
+                  className={cn(
+                    actionIconButtonClass,
+                    pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                  )}
+                  aria-pressed={Boolean(pinned)}
+                  title={pinned ? "상단 고정 해제" : "상단 고정"}
+                >
+                  <IconStarPin active={Boolean(pinned)} />
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={onEdit}
@@ -118,20 +117,25 @@ export function InspirationSiteCard({
               </button>
             </div>
           </div>
+          {site.description?.trim() ? (
+            <p className="mt-1.5 text-sm leading-snug text-zinc-500">{site.description.trim()}</p>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        {site.tags.map((t, i) => {
-          const raw = t.startsWith("#") ? t.slice(1) : t;
-          const tone = keywordTagToneClass(normalizeKeyword(raw));
-          return (
-            <span key={`${t}-${i}`} className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tone)}>
-              {t.startsWith("#") ? t : `#${t}`}
-            </span>
-          );
-        })}
-      </div>
+      {site.tags.length > 0 ? (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {site.tags.map((t, i) => {
+            const raw = t.startsWith("#") ? t.slice(1) : t;
+            const tone = keywordTagToneClass(normalizeKeyword(raw));
+            return (
+              <span key={`${t}-${i}`} className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tone)}>
+                {t.startsWith("#") ? t : `#${t}`}
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
 
       <div className="mt-6 flex flex-col gap-4 border-t border-zinc-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2 text-sm">

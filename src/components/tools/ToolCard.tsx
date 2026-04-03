@@ -9,12 +9,17 @@ import { isToolEffectivelyActive, type Tool, type ToolCredential } from "@/lib/t
 import { CredentialProviderMark } from "@/components/tools/CredentialProviderMarks";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { IosCardToggle } from "@/components/ui/IosCardToggle";
+import {
+  APP_CARD_ACTIONS_COLUMN_CLASS,
+  APP_CARD_SHELL_WAREHOUSE_CLASS,
+  APP_CARD_TITLE_TEXT_CLASS,
+  APP_CARD_TITLE_TRACK_CLASS,
+} from "@/components/cards/app-card-layout";
 
 export type ToolCardMode = "warehouse" | "workflow" | "picker";
 
-/** 도구 카드 외곽선·그림자·모서리·내부 여백 — 메모 카드 등과 통일용 */
-export const TOOL_CARD_SHELL_CLASS =
-  "w-full rounded-[22px] bg-white p-6 text-left shadow-sm ring-1 ring-zinc-200/90";
+/** 도구 카드 외곽 — 앱 공통 창고형 카드 셸 */
+export const TOOL_CARD_SHELL_CLASS = APP_CARD_SHELL_WAREHOUSE_CLASS;
 
 function IconEye({ className }: { className?: string }) {
   return (
@@ -243,47 +248,51 @@ export function ToolCard({
             }}
           />
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="truncate text-lg font-bold tracking-tight text-zinc-950">{tool.name}</span>
-                  {tool.userDisabled ? (
-                    <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
-                      창고 비활성화
-                    </span>
-                  ) : null}
-                  {!effectiveActive && tool.userDisabled !== true && tool.active === false ? (
-                    <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200/90 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-amber-900">
-                      미결제·한도
-                    </span>
-                  ) : null}
-                  {tool.subscriptionLabel ? (
-                    <span className="inline-flex shrink-0 items-center rounded-full border border-sky-200/90 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-sky-800">
-                      {tool.subscriptionLabel}
-                    </span>
-                  ) : null}
-                  {hasNote ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setNoteOpen(true);
-                      }}
-                      className={cn(
-                        "inline-flex items-center justify-center rounded-full p-1 text-zinc-400",
-                        effectiveActive
-                          ? "transition-colors hover:bg-zinc-100 hover:text-zinc-700"
-                          : "hover:bg-zinc-200/80",
-                      )}
-                      aria-label="메모 보기"
-                      title="메모 보기"
-                    >
-                      <MemoNoteIcon className="h-4 w-4" />
-                    </button>
-                  ) : null}
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className={cn(APP_CARD_TITLE_TRACK_CLASS, "items-center")}>
+                  <span className={APP_CARD_TITLE_TEXT_CLASS}>{tool.name}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {tool.userDisabled ? (
+                      <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
+                        창고 비활성화
+                      </span>
+                    ) : null}
+                    {!effectiveActive && tool.userDisabled !== true && tool.active === false ? (
+                      <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200/90 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-amber-900">
+                        미결제·한도
+                      </span>
+                    ) : null}
+                    {tool.subscriptionLabel ? (
+                      <span className="inline-flex shrink-0 items-center rounded-full border border-sky-200/90 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-sky-800">
+                        {tool.subscriptionLabel}
+                      </span>
+                    ) : null}
+                    {hasNote ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setNoteOpen(true);
+                        }}
+                        className={cn(
+                          "inline-flex items-center justify-center rounded-full p-1 text-zinc-400",
+                          effectiveActive
+                            ? "transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                            : "hover:bg-zinc-200/80",
+                        )}
+                        aria-label="메모 보기"
+                        title="메모 보기"
+                      >
+                        <MemoNoteIcon className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </span>
                 </div>
-                <p className="mt-1.5 text-sm leading-snug text-zinc-500">{tool.description ?? tool.category}</p>
+                {tool.description?.trim() ? (
+                  <p className="mt-1.5 text-sm leading-snug text-zinc-500">{tool.description.trim()}</p>
+                ) : null}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-2">
                 {showDisconnect ? (
@@ -305,7 +314,7 @@ export function ToolCard({
                   </button>
                 ) : null}
                 {showWarehouseActions ? (
-                  <div className="flex items-start gap-0">
+                  <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-start gap-0")}>
                     {mode === "warehouse" && onTogglePinned ? (
                       <button
                         type="button"
@@ -363,17 +372,19 @@ export function ToolCard({
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          {displayTags.map((t, i) => {
-            const rawLabel = t.label.startsWith("#") ? t.label.slice(1) : t.label;
-            const tone = keywordTagToneClass(normalizeKeyword(rawLabel));
-            return (
-              <span key={`${t.label}-${i}`} className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tone)}>
-                {t.label.startsWith("#") ? t.label : `#${t.label}`}
-              </span>
-            );
-          })}
-        </div>
+        {displayTags.length > 0 ? (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {displayTags.map((t, i) => {
+              const rawLabel = t.label.startsWith("#") ? t.label.slice(1) : t.label;
+              const tone = keywordTagToneClass(normalizeKeyword(rawLabel));
+              return (
+                <span key={`${t.label}-${i}`} className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tone)}>
+                  {t.label.startsWith("#") ? t.label : `#${t.label}`}
+                </span>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       <div

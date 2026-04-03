@@ -7,6 +7,7 @@ import type { WorkflowDetail, WorkflowPreview } from "@/lib/aixit-data";
 import { appendUserLayoutEntry } from "@/lib/dashboard-layout-store";
 import { loadDashboardFolders, pickDefaultProjectFolderId } from "@/lib/dashboard-folders-store";
 import { WorkflowNavigatorBar, type NavigatorStatus } from "@/components/recommendation/WorkflowNavigatorBar";
+import { APP_CARD_GRID_CLASS } from "@/components/cards/app-card-layout";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { useMergedTools } from "@/hooks/useMergedTools";
 import {
@@ -26,6 +27,7 @@ import {
   WorkspaceWorkflowCommonMemosSection,
 } from "@/components/workspace/WorkspaceLinksMemosSections";
 import { DetailPageWrapper } from "@/components/layout/DetailPageWrapper";
+import { cn } from "@/components/ui/cn";
 
 function makeTplRowId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -239,9 +241,9 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
             <span className="text-xs font-semibold text-zinc-500">{currentTools.length}개</span>
           </div>
 
-          <div className="mt-3 grid gap-5 sm:grid-cols-2">
+          <div className={cn("mt-3", APP_CARD_GRID_CLASS)}>
             {currentTools.length === 0 ? (
-              <div className="rounded-2xl bg-zinc-50/80 p-6 text-sm text-zinc-600 ring-1 ring-zinc-200 sm:col-span-2">
+              <div className="col-span-full rounded-2xl bg-zinc-50/80 p-6 text-sm text-zinc-600 ring-1 ring-zinc-200">
                 이 단계에 매핑된 도구가 없어요.
               </div>
             ) : (

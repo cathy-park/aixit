@@ -24,6 +24,7 @@ import { runStatusToProjectLifecycle } from "@/lib/project-lifecycle-status";
 import { WORKFLOW_STATUS_OPTIONS } from "@/lib/workflow-run-status";
 import type { WorkspaceLinkItem, WorkspaceMemoItem } from "@/lib/workspace-store";
 import { WorkflowNavigatorBar, type NavigatorStatus } from "@/components/recommendation/WorkflowNavigatorBar";
+import { APP_CARD_GRID_CLASS } from "@/components/cards/app-card-layout";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { useMergedTools } from "@/hooks/useMergedTools";
 import { ToolPickerModal } from "@/components/tools/ToolPickerModal";
@@ -575,9 +576,9 @@ export function WorkspaceView() {
             </div>
           </div>
 
-          <div className="mt-3 grid gap-5 sm:grid-cols-2">
+          <div className={cn("mt-3", APP_CARD_GRID_CLASS)}>
             {currentTools.length === 0 ? (
-              <div className="space-y-4 sm:col-span-2">
+              <div className="col-span-full space-y-4">
                 <div className="rounded-2xl bg-zinc-50/80 p-6 text-sm text-zinc-600 ring-1 ring-zinc-200">
                   이 STEP에 연결된 도구가 없어요. 도구 추가로 연결하거나, 아래에서 내비게이터에 보일 아이콘을 정할 수 있어요.
                 </div>

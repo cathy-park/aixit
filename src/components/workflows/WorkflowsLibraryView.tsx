@@ -38,6 +38,7 @@ import {
   TEMPLATE_CATEGORY_OVERRIDE_EVENT,
 } from "@/lib/workflow-template-category-override-store";
 import { createProjectFromTemplate } from "@/lib/workflows-store";
+import { APP_CARD_GRID_CLASS, APP_CARD_GRID_ITEM_CLASS } from "@/components/cards/app-card-layout";
 import { WorkflowTemplateCard } from "@/components/workflows/WorkflowTemplateCard";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
@@ -418,14 +419,15 @@ export function WorkflowsLibraryView() {
 
     const endDropKey = `__tpl_end__:${sectionFolderId}`;
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={APP_CARD_GRID_CLASS}>
         {items.map((t) => {
           const cellKey = `tplcell:${t.templateId}`;
           return (
             <div
               key={t.templateId}
               className={cn(
-                "min-w-0 w-full justify-self-start cursor-grab rounded-[30px] active:cursor-grabbing",
+                APP_CARD_GRID_ITEM_CLASS,
+                "cursor-grab rounded-[30px] active:cursor-grabbing",
                 d.dropTargetKey === cellKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
               )}
               draggable
