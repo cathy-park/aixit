@@ -8,6 +8,7 @@ import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 import { PillSearchField } from "@/components/ui/PillSearchField";
 import { cn } from "@/components/ui/cn";
+import { FloatingAddButton } from "@/components/ui/FloatingAddButton";
 import { InspirationSiteFormModal } from "@/components/inspiration/InspirationSiteFormModal";
 import {
   addInspirationSite,
@@ -105,6 +106,7 @@ export function InspirationWarehouseView() {
         title="영감 창고"
         count={filtered.length}
         description="레퍼런스·포트폴리오·아이디어를 카드로 모아두는 공간이에요."
+        hideOnMobile
         rightSlot={
           <button
             type="button"
@@ -116,7 +118,7 @@ export function InspirationWarehouseView() {
         }
       />
 
-      <AppMainColumn className="pb-20">
+      <AppMainColumn className="pb-24">
       <div className="mt-0">
         <PillSearchField
           value={search}
@@ -153,6 +155,7 @@ export function InspirationWarehouseView() {
         )}
       </ul>
       </AppMainColumn>
+      <FloatingAddButton onClick={() => setModal({ mode: "create", initial: null })} label="추가" />
 
       <InspirationSiteFormModal
         open={modal != null}

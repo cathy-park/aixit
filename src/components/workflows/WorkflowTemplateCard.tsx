@@ -8,8 +8,8 @@ import type { WorkflowTemplateListItem } from "@/lib/aixit-data";
 import { useMergedTools } from "@/hooks/useMergedTools";
 import { getMergedToolById } from "@/lib/user-tools-store";
 import { actionIconButtonClass, IconCopy, IconStarPin, IconTrash } from "@/components/ui/action-icons";
+import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
 import {
-  APP_CARD_ACTIONS_COLUMN_CLASS,
   APP_CARD_SHELL_DASHBOARD_CLASS,
   APP_CARD_TITLE_TEXT_CLASS,
   APP_CARD_TITLE_TRACK_CLASS,
@@ -70,25 +70,50 @@ export function WorkflowTemplateCard({
             </div>
           </Link>
 
-          <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-start gap-0.5")}>
-            {onTogglePin ? (
-              <button
-                type="button"
-                draggable={false}
-                onClick={(e) => {
-                  stopNav(e);
-                  onTogglePin();
-                }}
-                className={cn(
-                  actionIconButtonClass,
-                  pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
-                )}
-                aria-pressed={Boolean(pinned)}
-                title={pinned ? "상단 고정 해제" : "상단 고정"}
-              >
-                <IconStarPin active={Boolean(pinned)} />
-              </button>
-            ) : null}
+          <CardActionsOverflow
+            className="items-start gap-0.5"
+            menuAriaLabel="템플릿 작업"
+            desktopLeading={
+              onTogglePin ? (
+                <button
+                  type="button"
+                  draggable={false}
+                  onClick={(e) => {
+                    stopNav(e);
+                    onTogglePin();
+                  }}
+                  className={cn(
+                    actionIconButtonClass,
+                    pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                  )}
+                  aria-pressed={Boolean(pinned)}
+                  title={pinned ? "상단 고정 해제" : "상단 고정"}
+                >
+                  <IconStarPin active={Boolean(pinned)} />
+                </button>
+              ) : null
+            }
+            mobileLeading={
+              onTogglePin ? (
+                <button
+                  type="button"
+                  draggable={false}
+                  onClick={(e) => {
+                    stopNav(e);
+                    onTogglePin();
+                  }}
+                  className={cn(
+                    actionIconButtonClass,
+                    pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                  )}
+                  aria-pressed={Boolean(pinned)}
+                  title={pinned ? "상단 고정 해제" : "상단 고정"}
+                >
+                  <IconStarPin active={Boolean(pinned)} />
+                </button>
+              ) : null
+            }
+          >
             {onCopy ? (
               <button
                 type="button"
@@ -121,7 +146,7 @@ export function WorkflowTemplateCard({
                 <IconTrash />
               </button>
             ) : null}
-          </div>
+          </CardActionsOverflow>
         </div>
       </div>
     </div>

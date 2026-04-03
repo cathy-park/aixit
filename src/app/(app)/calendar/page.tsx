@@ -7,7 +7,7 @@ import { MonthlyCalendarView } from "@/components/calendar/MonthlyCalendarView";
 export default function CalendarPage() {
   return (
     <>
-      <AdaptivePageHeader title="캘린더" />
+      <AdaptivePageHeader title="캘린더" hideOnMobile />
       <AppMainColumn>
         <div className="mt-2">
           <MonthlyCalendarView />

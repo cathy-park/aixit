@@ -12,6 +12,7 @@ import {
   type ProjectLifecycleStatus,
 } from "@/lib/project-lifecycle-status";
 import { getTodayIsoLocal } from "@/lib/today-project-filter";
+import { mergeWorkflowDetailWithBuiltinOverrides } from "@/lib/builtin-template-links-memos-store";
 
 export type DashboardWorkflow = WorkspaceWorkflow & {
   updatedAt: number;
@@ -352,7 +353,13 @@ export function setDashboardWorkflowRunStatus(workflowId: string, status: Workfl
 /** 카드 칩(대기/진행중/완료)에서 상태 변경 */
 export function setDashboardProjectLifecycleStatus(workflowId: string, ps: ProjectLifecycleStatus): boolean {
   if (typeof window === "undefined") return false;
-  const w = getDashboardWorkflow(workflowId);
+  let w = getDashboardWorkflow(workflowId);
+  // 홈/추천 등 "미리보기 카드"에서 상태를 바꿀 때 아직 워크플로우가 시드되지 않았을 수 있어요.
+  // 내장 템플릿 id라면 한 번 시드한 뒤 다시 시도합니다.
+  if (!w) {
+    seedBuiltinDashboardWorkflow(workflowId);
+    w = getDashboardWorkflow(workflowId);
+  }
   if (!w) return false;
   const status = projectLifecycleToRunStatus(ps);
   const completedAt = ps === "completed" ? (w.completedAt ?? getTodayIsoLocal()) : undefined;
@@ -378,6 +385,8 @@ export function createProjectFromTemplate(templateCatalogId: string, folderId: s
   const preview = workflows.find((w) => w.id === templateCatalogId);
   const detail = workflowDetails.find((w) => w.id === templateCatalogId);
   if (!preview || !detail) return null;
+
+  const detailEffective = mergeWorkflowDetailWithBuiltinOverrides(detail);
 
   const steps = templateDetailToWorkspaceSteps(detail).map((s, idx) => ({
     ...s,
@@ -407,9 +416,9 @@ export function createProjectFromTemplate(templateCatalogId: string, folderId: s
     emoji: preview.emoji,
     startDate: undefined,
     endDate: undefined,
-    // 미리보기에서 노출되는 링크/메모를 그대로 복제합니다.
-    relatedLinks: detail.links.map((l) => ({ id: makeSeedId(), label: l.label, url: l.href })),
-    workflowMemos: detail.memo.map((text) => ({ id: makeSeedId(), text })),
+    // 미리보기·상세에서 편집한 링크/메모(내장 템플릿 로컬 오버라이드 포함)를 복제합니다.
+    relatedLinks: detailEffective.links.map((l) => ({ id: makeSeedId(), label: l.label, url: l.href })),
+    workflowMemos: detailEffective.memo.map((text) => ({ id: makeSeedId(), text })),
   });
 
   addDashboardWorkflow(wf);

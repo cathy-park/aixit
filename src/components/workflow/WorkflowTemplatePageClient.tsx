@@ -10,16 +10,24 @@ import {
   userWorkflowTemplateToPreview,
   USER_WORKFLOW_TEMPLATES_EVENT,
 } from "@/lib/user-workflow-templates-store";
+import { BUILTIN_TEMPLATE_LINKS_MEMOS_EVENT, mergeWorkflowDetailWithBuiltinOverrides } from "@/lib/builtin-template-links-memos-store";
 import { TemplateWorkspaceReadonly } from "@/components/workflow/TemplateWorkspaceReadonly";
 
 export function WorkflowTemplatePageClient({ slug }: { slug: string }) {
   const router = useRouter();
   const [userTick, setUserTick] = useState(0);
+  const [builtinLmTick, setBuiltinLmTick] = useState(0);
 
   useEffect(() => {
     const on = () => setUserTick((n) => n + 1);
     window.addEventListener(USER_WORKFLOW_TEMPLATES_EVENT, on);
     return () => window.removeEventListener(USER_WORKFLOW_TEMPLATES_EVENT, on);
+  }, []);
+
+  useEffect(() => {
+    const on = () => setBuiltinLmTick((n) => n + 1);
+    window.addEventListener(BUILTIN_TEMPLATE_LINKS_MEMOS_EVENT, on);
+    return () => window.removeEventListener(BUILTIN_TEMPLATE_LINKS_MEMOS_EVENT, on);
   }, []);
 
   useEffect(() => {
@@ -30,11 +38,18 @@ export function WorkflowTemplatePageClient({ slug }: { slug: string }) {
 
   const resolved = useMemo(() => {
     void userTick;
+    void builtinLmTick;
     if (isDashboardProjectInstanceId(slug)) return null;
     const builtinDetail = getWorkflowDetail(slug);
     if (builtinDetail) {
       const preview = workflows.find((w) => w.id === builtinDetail.id);
-      if (preview) return { kind: "builtin" as const, detail: builtinDetail, preview };
+      if (preview) {
+        return {
+          kind: "builtin" as const,
+          detail: mergeWorkflowDetailWithBuiltinOverrides(builtinDetail),
+          preview,
+        };
+      }
     }
     const userRec = getUserWorkflowTemplateBySlug(slug);
     if (userRec) {

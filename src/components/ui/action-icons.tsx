@@ -53,6 +53,17 @@ export function IconCopy({ className }: { className?: string }) {
   );
 }
 
+/** 세로 점 세 개 — 카드 액션 오버플로 메뉴 트리거 */
+export function IconMoreVertical({ className }: { className?: string }) {
+  return (
+    <svg className={cn("h-[18px] w-[18px]", className)} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <circle cx="12" cy="6" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="12" cy="18" r="1.5" />
+    </svg>
+  );
+}
+
 const STAR_PATH = "M12 2.5l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2.5z";
 
 /** 상단 고정: 꺼짐은 회색 라인, 켜짐은 채운 별(부모 `text-amber-500` 등으로 색 지정) */

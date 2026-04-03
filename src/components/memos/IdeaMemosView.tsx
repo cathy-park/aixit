@@ -18,8 +18,9 @@ import { DashboardExposureStatusBar } from "@/components/dashboard/DashboardExpo
 import { PillSearchField } from "@/components/ui/PillSearchField";
 import { TitleCountChip } from "@/components/ui/TitleCountChip";
 import { cn } from "@/components/ui/cn";
+import { FloatingAddButton } from "@/components/ui/FloatingAddButton";
+import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
 import {
-  APP_CARD_ACTIONS_COLUMN_CLASS,
   APP_CARD_GRID_CLASS,
   APP_CARD_GRID_ITEM_CLASS,
   APP_CARD_SHELL_DASHBOARD_CLASS,
@@ -174,71 +175,102 @@ function IdeaMemoCard({
       <div className={APP_CARD_SHELL_DASHBOARD_CLASS}>
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-3">
-            <button
-              type="button"
-              onClick={onOpenModal}
-              className="min-w-0 flex-1 rounded-2xl text-left outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
-            >
-              <div className={grayscaleMain}>
-                <div className={APP_CARD_TITLE_TRACK_CLASS}>
-                  <FolderGlyph folder={folder} size="md" className="shrink-0" accentColor={folder.color} />
-                  <span className={APP_CARD_TITLE_TEXT_CLASS}>
-                    {note.title.trim() || "제목 없음"}
+            <div className="min-w-0 flex-1">
+              <div className={cn(APP_CARD_TITLE_TRACK_CLASS, grayscaleMain)}>
+                <FolderGlyph folder={folder} size="md" className="shrink-0" accentColor={folder.color} />
+                <button
+                  type="button"
+                  onClick={onOpenModal}
+                  className="min-w-0 flex-1 overflow-hidden rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-zinc-200"
+                >
+                  <span className={APP_CARD_TITLE_TEXT_CLASS}>{note.title.trim() || "제목 없음"}</span>
+                </button>
+                <span className="shrink-0">
+                  <EditableLifecycleStatusControl
+                    status={note.projectStatus ?? "waiting"}
+                    editable={!converted}
+                    ariaLabelEntity="아이디어"
+                    onChange={(next) => updateNote(note.id, { projectStatus: next })}
+                  />
+                </span>
+                {converted ? (
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
+                    전환 완료
                   </span>
-                  <span className="shrink-0">
-                    <EditableLifecycleStatusControl
-                      status={note.projectStatus ?? "waiting"}
-                      editable={!converted}
-                      ariaLabelEntity="아이디어"
-                      onChange={(next) => updateNote(note.id, { projectStatus: next })}
-                    />
-                  </span>
-                  {converted ? (
-                    <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
-                      전환 완료
-                    </span>
-                  ) : null}
-                </div>
-                {note.content?.trim() ? (
-                  <p className="mt-2 line-clamp-3 text-sm font-medium leading-snug text-zinc-500">{note.content.trim()}</p>
                 ) : null}
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tagTone)}>
-                    #{note.category}
-                  </span>
-                  {(note.tags ?? []).map((tag) => (
-                    <span
-                      key={`${note.id}:${tag}`}
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-[11px] font-bold ring-1",
-                        keywordTagToneClass(normalizeKeyword(tag)),
-                      )}
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
               </div>
-            </button>
 
-            <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-start gap-0")}>
               <button
                 type="button"
-                draggable={false}
-                onClick={(e) => {
-                  stopCardNav(e);
-                  onTogglePin();
-                }}
-                className={cn(
-                  actionIconButtonClass,
-                  "h-8 w-8",
-                  pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
-                )}
-                aria-pressed={Boolean(pinned)}
-                title={pinned ? "상단 고정 해제" : "상단 고정"}
+                onClick={onOpenModal}
+                className="mt-0 block min-w-0 rounded-2xl text-left outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
               >
-                <IconStarPin active={Boolean(pinned)} />
+                <div className={grayscaleMain}>
+                  {note.content?.trim() ? (
+                    <p className="mt-2 line-clamp-3 text-sm font-medium leading-snug text-zinc-500">{note.content.trim()}</p>
+                  ) : null}
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tagTone)}>
+                      #{note.category}
+                    </span>
+                    {(note.tags ?? []).map((tag) => (
+                      <span
+                        key={`${note.id}:${tag}`}
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-[11px] font-bold ring-1",
+                          keywordTagToneClass(normalizeKeyword(tag)),
+                        )}
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </button>
+            </div>
+
+            <CardActionsOverflow
+              className="items-start gap-0"
+              menuAriaLabel="메모 작업"
+              desktopLeading={
+                <button
+                  type="button"
+                  draggable={false}
+                  onClick={(e) => {
+                    stopCardNav(e);
+                    onTogglePin();
+                  }}
+                  className={cn(
+                    actionIconButtonClass,
+                    "h-8 w-8",
+                    pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                  )}
+                  aria-pressed={Boolean(pinned)}
+                  title={pinned ? "상단 고정 해제" : "상단 고정"}
+                >
+                  <IconStarPin active={Boolean(pinned)} />
+                </button>
+              }
+              mobileLeading={
+                <button
+                  type="button"
+                  draggable={false}
+                  onClick={(e) => {
+                    stopCardNav(e);
+                    onTogglePin();
+                  }}
+                  className={cn(
+                    actionIconButtonClass,
+                    "h-8 w-8",
+                    pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                  )}
+                  aria-pressed={Boolean(pinned)}
+                  title={pinned ? "상단 고정 해제" : "상단 고정"}
+                >
+                  <IconStarPin active={Boolean(pinned)} />
+                </button>
+              }
+            >
               <button
                 type="button"
                 draggable={false}
@@ -265,7 +297,7 @@ function IdeaMemoCard({
               >
                 <IconTrash />
               </button>
-            </div>
+            </CardActionsOverflow>
           </div>
 
           {converted && note.convertedProjectId ? (
@@ -647,14 +679,15 @@ export function IdeaMemosView() {
         title="메모"
         count={headerCount}
         description="메모 전용 폴더로 정리하고, 노출 상태에 맞춰 목록을 볼 수 있어요. (프로젝트 폴더와 데이터는 분리됩니다.)"
+        hideOnMobile
         rightSlot={
           <button type="button" onClick={openCreate} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
-            새 아이디어 기록
+            추가
           </button>
         }
       />
 
-      <AppMainColumn className="min-w-0 pb-20 text-sm leading-relaxed text-zinc-900">
+      <AppMainColumn className="min-w-0 pb-24 text-sm leading-relaxed text-zinc-900">
         <div className="mb-6 space-y-4">
           <DashboardPageHeader
             allWorkflowCount={allVisibleMemoCount}
@@ -890,6 +923,7 @@ export function IdeaMemosView() {
           )}
         </div>
       </AppMainColumn>
+      <FloatingAddButton onClick={() => openCreate()} label="추가" />
 
       <FolderFormModal
         open={folderModal != null}

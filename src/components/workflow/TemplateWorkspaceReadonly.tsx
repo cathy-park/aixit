@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WorkflowDetail, WorkflowPreview } from "@/lib/aixit-data";
 import { appendUserLayoutEntry } from "@/lib/dashboard-layout-store";
 import { loadDashboardFolders, pickDefaultProjectFolderId } from "@/lib/dashboard-folders-store";
@@ -19,8 +19,10 @@ import {
 import {
   createProjectFromUserTemplate,
   isUserWorkflowTemplateId,
+  updateUserWorkflowTemplateMeta,
   updateUserWorkflowTemplateLinksAndMemos,
 } from "@/lib/user-workflow-templates-store";
+import { setBuiltinTemplateLinksMemosOverride } from "@/lib/builtin-template-links-memos-store";
 import type { WorkspaceLinkItem, WorkspaceMemoItem } from "@/lib/workspace-store";
 import {
   WorkspaceRelatedLinksSection,
@@ -34,10 +36,28 @@ function makeTplRowId() {
   return `tpl_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
 
-/** 내 워크플로 템플릿: 관련 링크·공통 메모를 프로젝트 워크스페이스와 동일하게 편집·저장 */
-function UserTemplateLinksMemosEditor({ templateId, detail }: { templateId: string; detail: WorkflowDetail }) {
-  const linksSig = JSON.stringify(detail.links);
-  const memosSig = JSON.stringify(detail.memo);
+type TemplateLinksMemosSavePayload = { links: Array<{ label: string; href: string }>; memos: string[] };
+
+/** 템플릿 상세: 관련 링크·공통 메모 — 내 템플릿·내장 템플릿 공통 UI */
+function TemplateLinksMemosEditor({
+  hydrateKey,
+  initialLinks,
+  initialMemos,
+  onSave,
+  linksDescription,
+  memosDescription,
+}: {
+  hydrateKey: string;
+  initialLinks: Array<{ label: string; href: string }>;
+  initialMemos: string[];
+  onSave: (payload: TemplateLinksMemosSavePayload) => void;
+  linksDescription: string;
+  memosDescription: string;
+}) {
+  const linksSig = JSON.stringify(initialLinks);
+  const memosSig = JSON.stringify(initialMemos);
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
 
   const [linkRows, setLinkRows] = useState<WorkspaceLinkItem[]>([]);
   const [memoRows, setMemoRows] = useState<WorkspaceMemoItem[]>([]);
@@ -47,31 +67,31 @@ function UserTemplateLinksMemosEditor({ templateId, detail }: { templateId: stri
 
   useEffect(() => {
     setLinkRows(
-      detail.links.map((l) => ({
+      initialLinks.map((l) => ({
         id: makeTplRowId(),
         label: l.label,
         url: l.href,
       })),
     );
     setMemoRows(
-      detail.memo.map((text) => ({
+      initialMemos.map((text) => ({
         id: makeTplRowId(),
         text,
       })),
     );
     setHydrated(true);
-  }, [templateId, linksSig, memosSig]);
+  }, [hydrateKey, linksSig, memosSig]);
 
   useEffect(() => {
     if (!hydrated) return;
     const t = window.setTimeout(() => {
-      updateUserWorkflowTemplateLinksAndMemos(templateId, {
+      onSaveRef.current({
         links: linkRows.map((l) => ({ label: l.label, href: l.url })),
         memos: memoRows.map((m) => m.text),
       });
     }, 400);
     return () => window.clearTimeout(t);
-  }, [linkRows, memoRows, templateId, hydrated]);
+  }, [linkRows, memoRows, hydrateKey, hydrated]);
 
   const removeLinkRow = (id: string) => setLinkRows((rows) => rows.filter((r) => r.id !== id));
   const removeMemoRow = (id: string) => setMemoRows((rows) => rows.filter((r) => r.id !== id));
@@ -106,7 +126,7 @@ function UserTemplateLinksMemosEditor({ templateId, detail }: { templateId: stri
         onUpdateLink={(id, patch) =>
           setLinkRows((rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)))
         }
-        description="이 템플릿에 저장됩니다. 여기서 바꾼 내용은 이후「프로젝트 생성」 시 그대로 복사돼요."
+        description={linksDescription}
       />
       <WorkspaceWorkflowCommonMemosSection
         mode="editable"
@@ -118,7 +138,7 @@ function UserTemplateLinksMemosEditor({ templateId, detail }: { templateId: stri
         onUpdateMemo={(id, text) =>
           setMemoRows((rows) => rows.map((r) => (r.id === id ? { ...r, text } : r)))
         }
-        description="이 템플릿에 저장됩니다. 프로젝트 워크스페이스의 공통 메모와 같은 역할이에요."
+        description={memosDescription}
       />
     </>
   );
@@ -129,6 +149,9 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
   const { tools: toolCatalog } = useMergedTools();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [linkedProjects, setLinkedProjects] = useState<DashboardWorkflow[]>([]);
+  const [metaHydrated, setMetaHydrated] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [subtitleDraft, setSubtitleDraft] = useState("");
 
   const refreshLinked = useCallback(() => {
     setLinkedProjects(listDashboardWorkflowsByTemplateId(detail.id));
@@ -172,8 +195,32 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
       .filter((t): t is NonNullable<typeof t> => Boolean(t));
   }, [currentStep, toolCatalog]);
 
-  const relatedLinks = wf.relatedLinks ?? [];
-  const workflowMemos = wf.workflowMemos ?? [];
+  const saveBuiltinLinksMemos = useCallback(
+    (payload: TemplateLinksMemosSavePayload) => {
+      setBuiltinTemplateLinksMemosOverride(detail.id, payload);
+    },
+    [detail.id],
+  );
+
+  const isUserTemplate = isUserWorkflowTemplateId(detail.id);
+  const metaSig = `${detail.id}:${detail.title}:${preview.subtitle}`;
+  useEffect(() => {
+    setTitleDraft(detail.title);
+    setSubtitleDraft(preview.subtitle ?? "");
+    setMetaHydrated(true);
+  }, [metaSig]);
+
+  useEffect(() => {
+    if (!isUserTemplate) return;
+    if (!metaHydrated) return;
+    const t = window.setTimeout(() => {
+      updateUserWorkflowTemplateMeta(detail.id, {
+        title: titleDraft.trim() || "내 템플릿",
+        subtitle: subtitleDraft.trim(),
+      });
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [detail.id, isUserTemplate, metaHydrated, titleDraft, subtitleDraft]);
 
   const handleCreateProject = () => {
     const fid = pickDefaultProjectFolderId(loadDashboardFolders());
@@ -197,14 +244,34 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
         </Link>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <label className="block min-w-0 flex-1">
-            <span className="sr-only">워크플로우 템플릿 제목</span>
-            <input
-              value={wf.name}
-              readOnly
-              className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
-            />
-          </label>
+          <div className="block min-w-0 flex-1">
+            <label className="block">
+              <span className="sr-only">워크플로우 템플릿 제목</span>
+              <input
+                value={isUserTemplate ? titleDraft : wf.name}
+                readOnly={!isUserTemplate}
+                onChange={isUserTemplate ? (e) => setTitleDraft(e.target.value) : undefined}
+                className={cn(
+                  "w-full max-w-2xl rounded-xl border bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100",
+                  isUserTemplate ? "border-zinc-200" : "border-zinc-200",
+                )}
+              />
+            </label>
+            <label className="mt-2 block max-w-2xl">
+              <span className="sr-only">워크플로우 템플릿 설명</span>
+              <textarea
+                value={isUserTemplate ? subtitleDraft : preview.subtitle}
+                readOnly={!isUserTemplate}
+                onChange={isUserTemplate ? (e) => setSubtitleDraft(e.target.value) : undefined}
+                rows={2}
+                placeholder={isUserTemplate ? "설명을 적어보세요" : undefined}
+                className={cn(
+                  "w-full resize-y rounded-xl border bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100",
+                  isUserTemplate ? "border-zinc-200" : "border-zinc-200",
+                )}
+              />
+            </label>
+          </div>
           <button
             type="button"
             onClick={handleCreateProject}
@@ -260,12 +327,23 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
 
         <div className="grid gap-6 lg:grid-cols-2">
           {isUserWorkflowTemplateId(detail.id) ? (
-            <UserTemplateLinksMemosEditor templateId={detail.id} detail={detail} />
+            <TemplateLinksMemosEditor
+              hydrateKey={detail.id}
+              initialLinks={detail.links}
+              initialMemos={detail.memo}
+              onSave={(payload) => updateUserWorkflowTemplateLinksAndMemos(detail.id, payload)}
+              linksDescription="이 템플릿에 저장됩니다. 여기서 바꾼 내용은 이후「프로젝트 생성」 시 그대로 복사돼요."
+              memosDescription="이 템플릿에 저장됩니다. 프로젝트 워크스페이스의 공통 메모와 같은 역할이에요."
+            />
           ) : (
-            <>
-              <WorkspaceRelatedLinksSection mode="readonly" links={relatedLinks} />
-              <WorkspaceWorkflowCommonMemosSection mode="readonly" memos={workflowMemos} />
-            </>
+            <TemplateLinksMemosEditor
+              hydrateKey={detail.id}
+              initialLinks={detail.links}
+              initialMemos={detail.memo}
+              onSave={saveBuiltinLinksMemos}
+              linksDescription="이 기기 브라우저에 저장됩니다. 바꾼 링크는「프로젝트 생성」 시 그대로 복사돼요."
+              memosDescription="이 기기 브라우저에 저장됩니다. 프로젝트 워크스페이스의 공통 메모와 같이 새 프로젝트에 복사돼요."
+            />
           )}
         </div>
       </main>

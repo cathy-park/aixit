@@ -18,6 +18,7 @@ import { SaveAsTemplateModal } from "@/components/dashboard/SaveAsTemplateModal"
 import { WorkflowCard } from "@/components/dashboard/WorkflowCard";
 import { PillSearchField } from "@/components/ui/PillSearchField";
 import { TitleCountChip } from "@/components/ui/TitleCountChip";
+import { cn } from "@/components/ui/cn";
 import { workflows, type WorkflowPreview } from "@/lib/aixit-data";
 import {
   collectFilteredWorkflowItems,
@@ -59,7 +60,6 @@ import {
   removeDashboardWorkflow,
   setDashboardWorkflowFolder,
 } from "@/lib/workflows-store";
-import { cn } from "@/components/ui/cn";
 import { APP_CARD_GRID_CLASS, APP_CARD_GRID_ITEM_CLASS } from "@/components/cards/app-card-layout";
 
 const FOLDER_INITIAL = 6;
@@ -560,6 +560,7 @@ export function DashboardExperience() {
         title="프로젝트"
         count={activeFolderId === "all" ? flatAllNonCompletedWorkflows.length : flatSingleFolder.length}
         description="폴더로 묶어 정리하고, 노출 상태에 맞춰 오늘 끝낼 작업을 관리하세요."
+        hideOnMobile
         rightSlot={
           <ProjectAddMenu targetFolderId={newProjectTargetFolderId} onLayoutChange={handleProjectLayoutRefresh} />
         }
@@ -840,6 +841,16 @@ export function DashboardExperience() {
         )}
       </div>
       </AppMainColumn>
+      <div
+        className="lg:hidden fixed right-5 z-[85]"
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
+      >
+        <ProjectAddMenu
+          targetFolderId={newProjectTargetFolderId}
+          onLayoutChange={handleProjectLayoutRefresh}
+          variant="fab"
+        />
+      </div>
 
       <FolderFormModal
         open={folderModal != null}

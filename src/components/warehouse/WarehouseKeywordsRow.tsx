@@ -15,7 +15,7 @@ export function WarehouseKeywordsRow({
   if (keywords.length === 0) return null;
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
+    <div className="mt-3 mb-5 flex flex-wrap items-center gap-2">
       <span className="w-full text-xs font-semibold text-zinc-500 sm:mr-1 sm:w-auto">사용 중인 키워드</span>
       <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-1">
         {keywords.map(({ normalized, display }) => {

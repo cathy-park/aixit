@@ -8,6 +8,7 @@ import { WarehouseKeywordsRow } from "@/components/warehouse/WarehouseKeywordsRo
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 import { PillSearchField } from "@/components/ui/PillSearchField";
+import { FloatingAddButton } from "@/components/ui/FloatingAddButton";
 import { useMergedTools } from "@/hooks/useMergedTools";
 import { normalizeKeyword } from "@/lib/keyword-tag-styles";
 import type { Tool } from "@/lib/tools";
@@ -123,6 +124,7 @@ export function ToolsWarehouseView() {
         title="도구 창고"
         count={filteredTools.length}
         description="등록된 도구를 한곳에서 살펴보세요."
+        hideOnMobile
         rightSlot={
           <button
             type="button"
@@ -133,7 +135,7 @@ export function ToolsWarehouseView() {
           </button>
         }
       />
-      <AppMainColumn className="pb-20">
+      <AppMainColumn className="pb-24">
       <div className="mt-0">
         <PillSearchField
           value={search}
@@ -170,6 +172,7 @@ export function ToolsWarehouseView() {
         )}
       </div>
       </AppMainColumn>
+      <FloatingAddButton onClick={openCreate} label="추가" />
 
       <ToolFormModal
         open={modal != null}

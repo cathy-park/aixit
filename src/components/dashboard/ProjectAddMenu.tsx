@@ -11,11 +11,13 @@ import { createBlankProject } from "@/lib/workflows-store";
 export function ProjectAddMenu({
   targetFolderId,
   onLayoutChange,
+  variant = "pill",
 }: {
   /** 새 프로젝트가 들어갈 폴더 id */
   targetFolderId: string;
   /** 레이아웃 state 갱신 (ensureLayoutMerged 등) */
   onLayoutChange: () => void;
+  variant?: "pill" | "fab";
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -51,9 +53,30 @@ export function ProjectAddMenu({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="inline-flex h-10 min-h-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-bold leading-none text-white shadow-sm hover:bg-zinc-800"
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center bg-zinc-900 font-bold leading-none text-white shadow-sm hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-200",
+          variant === "pill" && "h-10 min-h-10 rounded-full px-5 text-sm",
+          variant === "fab" &&
+            "h-14 w-14 rounded-full text-sm shadow-lg shadow-zinc-900/20 ring-1 ring-zinc-950/10",
+        )}
       >
-        추가
+        {variant === "fab" ? (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className="h-6 w-6"
+          >
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+        ) : (
+          "추가"
+        )}
       </button>
       {open ? (
         <div

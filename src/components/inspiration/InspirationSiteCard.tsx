@@ -8,8 +8,8 @@ import type { InspirationSite } from "@/lib/inspiration-store";
 import { incrementInspirationShortcut } from "@/lib/inspiration-store";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
+import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
 import {
-  APP_CARD_ACTIONS_COLUMN_CLASS,
   APP_CARD_SHELL_WAREHOUSE_CLASS,
   APP_CARD_TITLE_TEXT_CLASS,
   APP_CARD_TITLE_TRACK_CLASS,
@@ -78,25 +78,50 @@ export function InspirationSiteCard({
                 </button>
               ) : null}
             </div>
-            <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-center gap-0.5")}>
-              {onTogglePinned ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onTogglePinned();
-                  }}
-                  className={cn(
-                    actionIconButtonClass,
-                    pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
-                  )}
-                  aria-pressed={Boolean(pinned)}
-                  title={pinned ? "상단 고정 해제" : "상단 고정"}
-                >
-                  <IconStarPin active={Boolean(pinned)} />
-                </button>
-              ) : null}
+            <CardActionsOverflow
+              className="items-center gap-0.5"
+              menuAriaLabel="참고 사이트 작업"
+              desktopLeading={
+                onTogglePinned ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onTogglePinned();
+                    }}
+                    className={cn(
+                      actionIconButtonClass,
+                      pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                    )}
+                    aria-pressed={Boolean(pinned)}
+                    title={pinned ? "상단 고정 해제" : "상단 고정"}
+                  >
+                    <IconStarPin active={Boolean(pinned)} />
+                  </button>
+                ) : null
+              }
+              mobileLeading={
+                onTogglePinned ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onTogglePinned();
+                    }}
+                    className={cn(
+                      actionIconButtonClass,
+                      pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                    )}
+                    aria-pressed={Boolean(pinned)}
+                    title={pinned ? "상단 고정 해제" : "상단 고정"}
+                  >
+                    <IconStarPin active={Boolean(pinned)} />
+                  </button>
+                ) : null
+              }
+            >
               <button
                 type="button"
                 onClick={onEdit}
@@ -115,13 +140,14 @@ export function InspirationSiteCard({
               >
                 <IconTrash />
               </button>
-            </div>
+            </CardActionsOverflow>
           </div>
-          {site.description?.trim() ? (
-            <p className="mt-1.5 text-sm leading-snug text-zinc-500">{site.description.trim()}</p>
-          ) : null}
         </div>
       </div>
+
+      {site.description?.trim() ? (
+        <p className="mt-1.5 w-full min-w-0 text-sm leading-snug text-zinc-500">{site.description.trim()}</p>
+      ) : null}
 
       {site.tags.length > 0 ? (
         <div className="mt-5 flex flex-wrap gap-2">

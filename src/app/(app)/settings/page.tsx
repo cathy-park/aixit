@@ -15,6 +15,7 @@ export default function SettingsPage() {
       <AdaptivePageHeader
         title="설정"
         description="앱 환경과 계정 관련 옵션을 여기서 다룰 수 있어요."
+        hideOnMobile
       />
       <AppMainColumn>
         <div className="mt-4 space-y-4">

@@ -218,14 +218,14 @@ export function HomeTodayDashboard() {
   return (
     <>
       <AdaptivePageHeader
+        className="border-transparent !bg-transparent shadow-none"
         title={(compact) => (
-          <div className={cn("flex flex-row items-center", compact ? "gap-3" : "gap-4")}>
+          <div className={cn("flex w-full min-w-0 flex-row items-center", compact ? "gap-3" : "gap-4")}>
             <HeroCharacterIllustration
               className={cn("shrink-0", compact ? "h-20 w-20" : "h-24 w-24 sm:h-28 sm:w-28")}
             />
-            <div className="flex flex-col min-w-0">
-              {/* title row: 호칭/텍스트 + badge */}
-              <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   {greetEdit ? (
                     <input
                       autoFocus
@@ -293,16 +293,13 @@ export function HomeTodayDashboard() {
                     className={cn(compact && "text-[10px]")}
                   />
               </div>
-
-              {/* description line (title block 안에 포함) */}
-              <p className={cn("mt-1 text-sm text-zinc-600", compact ? "mt-0.5" : "mt-1")}>
+              <p className="text-sm font-normal leading-snug text-zinc-600">
                 오늘 일정이 포함된 프로젝트만 모아서 보여드립니다.
               </p>
             </div>
           </div>
         )}
         count={null}
-        description={null}
       />
 
       <AppMainColumn className="min-w-0 pb-12">
@@ -493,12 +490,12 @@ export function HomeTodayDashboard() {
               addTodo();
             }}
             placeholder="할 일을 입력하세요"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
+            className="min-h-12 h-12 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-4 text-base leading-normal text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 sm:h-11 sm:min-h-0 sm:text-sm"
           />
           <button
             type="button"
             onClick={addTodo}
-            className="h-11 shrink-0 rounded-full bg-zinc-900 px-6 text-sm font-bold text-white hover:bg-zinc-800"
+            className="min-h-12 h-12 shrink-0 rounded-full bg-zinc-900 px-6 text-sm font-bold text-white hover:bg-zinc-800 sm:h-11 sm:min-h-0"
           >
             추가
           </button>

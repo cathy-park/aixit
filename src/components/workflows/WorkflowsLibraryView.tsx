@@ -44,6 +44,7 @@ import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 import { TitleCountChip } from "@/components/ui/TitleCountChip";
 import { PillSearchField } from "@/components/ui/PillSearchField";
+import { FloatingAddButton } from "@/components/ui/FloatingAddButton";
 import { DashboardFolderBar } from "@/components/dashboard/DashboardFolderBar";
 import { FolderFormModal } from "@/components/dashboard/FolderFormModal";
 import { FolderGlyph } from "@/components/dashboard/FolderGlyph";
@@ -465,6 +466,7 @@ export function WorkflowsLibraryView() {
             관리됩니다.
           </>
         }
+        hideOnMobile
         rightSlot={
           <Link
             href="/recommendation?intent=template"
@@ -475,7 +477,7 @@ export function WorkflowsLibraryView() {
         }
       />
 
-      <AppMainColumn className="min-w-0 pb-10">
+      <AppMainColumn className="min-w-0 pb-24">
       {/* 프로젝트 목록과 동일: 폴더·숨김 ↔ 검색 = space-y-4, 본문 전 mb-6 */}
       <div className="mb-6 space-y-4">
         <div className="min-w-0">
@@ -604,6 +606,7 @@ export function WorkflowsLibraryView() {
         )}
       </div>
       </AppMainColumn>
+      <FloatingAddButton href="/recommendation?intent=template" label="추가" />
 
       <FolderFormModal
         open={folderModal != null}

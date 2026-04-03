@@ -9,12 +9,8 @@ import { isToolEffectivelyActive, type Tool, type ToolCredential } from "@/lib/t
 import { CredentialProviderMark } from "@/components/tools/CredentialProviderMarks";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { IosCardToggle } from "@/components/ui/IosCardToggle";
-import {
-  APP_CARD_ACTIONS_COLUMN_CLASS,
-  APP_CARD_SHELL_WAREHOUSE_CLASS,
-  APP_CARD_TITLE_TEXT_CLASS,
-  APP_CARD_TITLE_TRACK_CLASS,
-} from "@/components/cards/app-card-layout";
+import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
+import { APP_CARD_SHELL_WAREHOUSE_CLASS } from "@/components/cards/app-card-layout";
 
 export type ToolCardMode = "warehouse" | "workflow" | "picker";
 
@@ -250,9 +246,11 @@ export function ToolCard({
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <div className={cn(APP_CARD_TITLE_TRACK_CLASS, "items-center")}>
-                  <span className={APP_CARD_TITLE_TEXT_CLASS}>{tool.name}</span>
-                  <span className="flex shrink-0 items-center gap-2">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 overflow-hidden">
+                  <span className="min-w-0 shrink truncate text-lg font-bold tracking-tight text-zinc-950">
+                    {tool.name}
+                  </span>
+                  <span className="flex shrink-0 flex-wrap items-center gap-2">
                     {tool.userDisabled ? (
                       <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
                         창고 비활성화
@@ -290,9 +288,6 @@ export function ToolCard({
                     ) : null}
                   </span>
                 </div>
-                {tool.description?.trim() ? (
-                  <p className="mt-1.5 text-sm leading-snug text-zinc-500">{tool.description.trim()}</p>
-                ) : null}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-2">
                 {showDisconnect ? (
@@ -314,27 +309,54 @@ export function ToolCard({
                   </button>
                 ) : null}
                 {showWarehouseActions ? (
-                  <div className={cn(APP_CARD_ACTIONS_COLUMN_CLASS, "items-start gap-0")}>
-                    {mode === "warehouse" && onTogglePinned ? (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onTogglePinned();
-                        }}
-                        className={cn(
-                          actionIconButtonClass,
-                          "h-8 w-8",
-                          effectiveActive && pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
-                          (!effectiveActive || !pinned) && "text-[#9da2b0] hover:bg-zinc-100 hover:text-zinc-600",
-                        )}
-                        aria-pressed={Boolean(pinned)}
-                        title={pinned ? "상단 고정 해제" : "상단 고정"}
-                      >
-                        <IconStarPin active={Boolean(pinned) && effectiveActive} />
-                      </button>
-                    ) : null}
+                  <CardActionsOverflow
+                    className="items-start gap-0"
+                    menuAriaLabel="도구 작업"
+                    desktopLeading={
+                      mode === "warehouse" && onTogglePinned ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onTogglePinned();
+                          }}
+                          className={cn(
+                            actionIconButtonClass,
+                            "h-8 w-8",
+                            effectiveActive && pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                            (!effectiveActive || !pinned) && "text-[#9da2b0] hover:bg-zinc-100 hover:text-zinc-600",
+                          )}
+                          aria-pressed={Boolean(pinned)}
+                          title={pinned ? "상단 고정 해제" : "상단 고정"}
+                        >
+                          <IconStarPin active={Boolean(pinned) && effectiveActive} />
+                        </button>
+                      ) : null
+                    }
+                    mobileLeading={
+                      mode === "warehouse" && onTogglePinned ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onTogglePinned();
+                          }}
+                          className={cn(
+                            actionIconButtonClass,
+                            "h-8 w-8",
+                            effectiveActive && pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                            (!effectiveActive || !pinned) && "text-[#9da2b0] hover:bg-zinc-100 hover:text-zinc-600",
+                          )}
+                          aria-pressed={Boolean(pinned)}
+                          title={pinned ? "상단 고정 해제" : "상단 고정"}
+                        >
+                          <IconStarPin active={Boolean(pinned) && effectiveActive} />
+                        </button>
+                      ) : null
+                    }
+                  >
                     {onEdit ? (
                       <button
                         type="button"
@@ -365,12 +387,16 @@ export function ToolCard({
                         <IconTrash />
                       </button>
                     ) : null}
-                  </div>
+                  </CardActionsOverflow>
                 ) : null}
               </div>
             </div>
           </div>
         </div>
+
+        {tool.description?.trim() ? (
+          <p className="mt-1.5 w-full min-w-0 text-sm leading-snug text-zinc-500">{tool.description.trim()}</p>
+        ) : null}
 
         {displayTags.length > 0 ? (
           <div className="mt-5 flex flex-wrap gap-2">
