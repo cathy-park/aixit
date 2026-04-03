@@ -2,11 +2,11 @@
 export const APP_CARD_MIN_WIDTH_PX = 560;
 
 /**
- * 공통 카드 그리드: 최대 2열, 좁으면 1열로만 줄바꿈 (overflow-x·우측 잘림 없음).
- * `min-[1140px]` ≈ 카드 최소 목표 560px × 2 + gap-4(16px).
+ * 공통 카드 그리드: 최대 2열. 열 전환은 뷰포트가 아니라 가장 가까운 `@container`(앱 본문) 너비 기준.
+ * 앱 레이아웃 `AppChrome`에 `container-type:inline-size`가 있어, 사이드바가 넓어도 본문이 좁으면 1열.
  */
 export const APP_CARD_GRID_CLASS =
-  "grid w-full grid-flow-row gap-4 grid-cols-1 min-[1140px]:grid-cols-2";
+  "grid w-full grid-flow-row gap-4 grid-cols-1 @min-[1140px]:grid-cols-2";
 
 /** 그리드 셀 래퍼 — 셀 안에서만 줄어들도록 `min-w-0`, 행마다 wrap */
 export const APP_CARD_GRID_ITEM_CLASS = "w-full min-w-0 max-w-full justify-self-stretch";

@@ -49,7 +49,7 @@ export function StepDetailModal({
         aria-label="모달 닫기"
       />
 
-      <div className="relative w-full max-w-xl rounded-3xl bg-white p-6 shadow-xl ring-1 ring-zinc-200">
+      <div className="@container relative w-full max-w-xl rounded-3xl bg-white p-6 shadow-xl ring-1 ring-zinc-200 [container-type:inline-size]">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="text-xs font-semibold text-zinc-500">STEP {stepNumber}</div>

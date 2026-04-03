@@ -82,7 +82,7 @@ export function ToolPickerModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="도구 선택">
       <button type="button" onClick={onClose} className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm" aria-label="닫기" />
 
-      <div className="relative w-full max-w-3xl rounded-3xl bg-white p-6 shadow-xl ring-1 ring-zinc-200">
+      <div className="@container relative w-full max-w-3xl rounded-3xl bg-white p-6 shadow-xl ring-1 ring-zinc-200 [container-type:inline-size]">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="text-lg font-semibold tracking-tight">도구 추가</div>
