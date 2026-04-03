@@ -19,6 +19,13 @@ import {
   ensureMemoFolderForCategoryKey,
 } from "@/lib/memo-folders-store";
 import { isProjectLifecycleStatus, type ProjectLifecycleStatus } from "@/lib/project-lifecycle-status";
+import {
+  buildSectionSetsFromRawMetadata,
+  getEffectivePlanTemplate,
+  getSectionsForStructure,
+  inferMemoPlanTemplateForStorage,
+  sectionSetsToStoredMetadata,
+} from "@/lib/structured-memo-sections";
 
 /** 메모 폴더와 1:1 — `memoFolderCategoryKey(folder)`와 항상 동일 */
 export type NoteCategory = string;
@@ -29,10 +36,6 @@ export type NoteStructureKey = (typeof NOTE_STRUCTURE_KEYS)[number];
 
 /** @deprecated NOTE_STRUCTURE_KEYS / structureTypeFromMemoCategoryLabel 사용 */
 export const NOTE_CATEGORIES = NOTE_STRUCTURE_KEYS;
-
-function str(v: unknown): string {
-  return typeof v === "string" ? v : "";
-}
 
 /** MVP — Problem / Hypothesis / Experience / Features */
 export type MvpNoteMetadata = {
@@ -114,33 +117,10 @@ function deriveNoteProjectStatus(n: Pick<IdeaNote, "isConverted" | "projectStatu
 
 /** 로컬에 남은 구버전 키를 신규 스키마로 합칩니다. (`category`는 메모 폴더 키 = slug || name) */
 export function migrateMetadataForCategory(category: NoteCategory, raw: unknown): IdeaNote["metadata"] {
-  const structure = structureTypeFromMemoCategoryLabel(category);
   const m = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-  switch (structure) {
-    case "MVP":
-      return {
-        problem: str(m.problem ?? m.problemDefinition),
-        hypothesis: str(m.hypothesis ?? m.coreHypothesis),
-        criticalExperience: str(m.criticalExperience ?? m.coreExperience),
-        features: str(m.features ?? m.coreFeatures),
-      };
-    case "강의":
-      return {
-        target: str(m.target ?? m.targetLearners),
-        goal: str(m.goal ?? m.learningGoals),
-        curriculum: str(m.curriculum ?? m.curriculumSummary),
-        assignment: str(m.assignment),
-      };
-    case "소설":
-      return {
-        logline: str(m.logline),
-        worldview: str(m.worldview ?? m.worldbuildingNotes),
-        characters: str(m.characters ?? m.characterSheet),
-        plot: str(m.plot),
-      };
-    default:
-      return m;
-  }
+  const sets = buildSectionSetsFromRawMetadata(m);
+  const plan = inferMemoPlanTemplateForStorage(m, category, sets);
+  return sectionSetsToStoredMetadata(sets, plan) as IdeaNote["metadata"];
 }
 
 function reconcileMemoFolderAndCategory(
@@ -228,31 +208,18 @@ export function reassignMemoNotesFromFolder(fromFolderId: string, toFolderId: st
 
 /** 승격·저장 전 카테고리별 필수 입력 검사 (한글 메시지). */
 export function validateStructuredNote(note: Pick<IdeaNote, "category" | "metadata">): string | null {
-  const st = structureTypeFromMemoCategoryLabel(note.category);
+  const meta = note.metadata as Record<string, unknown>;
+  const st = getEffectivePlanTemplate(meta, note.category);
   if (st === "일반") return null;
-  if (st === "MVP") {
-    const m = note.metadata as MvpNoteMetadata;
-    if (!m.problem?.trim()) return "Problem(문제 정의)를 입력해 주세요.";
-    if (!m.hypothesis?.trim()) return "Hypothesis(핵심 가설)를 입력해 주세요.";
-    if (!m.criticalExperience?.trim()) return "Experience(핵심 경험)를 입력해 주세요.";
-    if (!m.features?.trim()) return "Features(MVP 최소 기능)를 입력해 주세요.";
-    return null;
+  const sections = getSectionsForStructure(meta, st);
+  if (sections.length === 0) {
+    return "구조형 메모에 섹션을 한 개 이상 두고, 각 섹션 내용을 입력해 주세요.";
   }
-  if (st === "강의") {
-    const m = note.metadata as LectureNoteMetadata;
-    if (!m.target?.trim()) return "Target(누구에게 무엇을)을 입력해 주세요.";
-    if (!m.goal?.trim()) return "Goal(수강생의 변화)를 입력해 주세요.";
-    if (!m.curriculum?.trim()) return "Curriculum(목차)를 입력해 주세요.";
-    if (!m.assignment?.trim()) return "Assignment(실습 과제)를 입력해 주세요.";
-    return null;
-  }
-  if (st === "소설") {
-    const m = note.metadata as NovelNoteMetadata;
-    if (!m.logline?.trim()) return "Logline(한 줄 요약)을 입력해 주세요.";
-    if (!m.worldview?.trim()) return "Worldview(세계관·규칙)을 입력해 주세요.";
-    if (!m.characters?.trim()) return "Characters(결핍·목표)를 입력해 주세요.";
-    if (!m.plot?.trim()) return "Plot(갈등·기승전결)을 입력해 주세요.";
-    return null;
+  for (const s of sections) {
+    if (!s.value.trim()) {
+      const head = [s.title, s.subtitle].filter(Boolean).join(" · ") || s.key;
+      return `「${head}」내용을 입력해 주세요.`;
+    }
   }
   return null;
 }

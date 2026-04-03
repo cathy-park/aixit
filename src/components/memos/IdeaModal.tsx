@@ -85,7 +85,7 @@ export function IdeaModal({
   );
 
   const copyAll = async () => {
-    const text = buildIdeaCopyText(form, memoFolders);
+    const text = buildIdeaCopyText(form);
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -95,7 +95,7 @@ export function IdeaModal({
   };
 
   const save = () => {
-    const metadata = formMetadataFromState(form, memoFolders);
+    const metadata = formMetadataFromState(form);
     const folder = memoFolders.find((f) => f.id === form.folderId);
     const category = folder ? memoFolderCategoryKey(folder) : "";
     const err = validateStructuredNote({ category, metadata });

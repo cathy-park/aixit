@@ -5,14 +5,13 @@ import {
   getDashboardWorkflow,
   saveDashboardWorkflow,
 } from "@/lib/workflows-store";
-import type {
-  IdeaNote,
-  LectureNoteMetadata,
-  MvpNoteMetadata,
-  NovelNoteMetadata,
-  NoteStructureKey,
-} from "@/lib/notes-store";
-import { structureTypeFromMemoCategoryLabel } from "@/lib/notes-store";
+import type { IdeaNote, NoteStructureKey } from "@/lib/notes-store";
+import {
+  getEffectivePlanTemplate,
+  getSectionsForStructure,
+  structuredSectionsToMemoBlocks,
+  structuredSectionsToStepTitlesAndBodies,
+} from "@/lib/structured-memo-sections";
 import { appendTodayTodos } from "@/lib/today-todos-store";
 
 function newMemoId() {
@@ -45,27 +44,31 @@ function firstLine(s?: string): string {
 }
 
 /** 프로젝트 카드·워크스페이스 상단에 보이는 한 줄 설명(설명 영역). */
+function planForNote(note: IdeaNote): NoteStructureKey {
+  return getEffectivePlanTemplate(note.metadata as Record<string, unknown>, note.category) as NoteStructureKey;
+}
+
 function buildProjectSubtitle(note: IdeaNote, templateFallback: string): string {
   const join = (a: string, b: string) => {
     const out = [a, b].filter(Boolean).join(" · ");
     return out.length > 180 ? `${out.slice(0, 177)}…` : out;
   };
-  switch (structureTypeFromMemoCategoryLabel(note.category)) {
-    case "MVP": {
-      const m = note.metadata as MvpNoteMetadata;
-      return join(firstLine(m.problem), firstLine(m.hypothesis)) || firstLine(note.content) || templateFallback;
-    }
-    case "강의": {
-      const m = note.metadata as LectureNoteMetadata;
-      return join(firstLine(m.target), firstLine(m.goal)) || templateFallback;
-    }
-    case "소설": {
-      const m = note.metadata as NovelNoteMetadata;
-      return firstLine(m.logline) || templateFallback;
-    }
-    default:
-      return firstLine(note.content) || templateFallback;
+  const st = planForNote(note);
+  if (st === "일반") {
+    return firstLine(note.content) || templateFallback;
   }
+  const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
+  const filled = sections.map((s) => s.value.trim()).filter(Boolean);
+  if (st === "MVP") {
+    return join(firstLine(filled[0]), firstLine(filled[1])) || firstLine(note.content) || templateFallback;
+  }
+  if (st === "강의") {
+    return join(firstLine(filled[0]), firstLine(filled[1])) || templateFallback;
+  }
+  if (st === "소설") {
+    return firstLine(filled[0]) || templateFallback;
+  }
+  return firstLine(note.content) || templateFallback;
 }
 
 function workflowMemosFromNote(note: IdeaNote): WorkspaceMemoItem[] {
@@ -73,62 +76,27 @@ function workflowMemosFromNote(note: IdeaNote): WorkspaceMemoItem[] {
   if (note.content.trim()) {
     out.push(memoItem(`[자유 메모]\n${note.content.trim()}`));
   }
-  const meta = note.metadata as Record<string, unknown>;
-  const labelMap: Record<string, string> = {
-    problem: "Problem · 문제 정의",
-    hypothesis: "Hypothesis · 핵심 가설",
-    criticalExperience: "Experience · 핵심 경험",
-    features: "Features · MVP 최소 기능",
-    target: "Target · 대상·주제",
-    goal: "Goal · 수강생 변화",
-    curriculum: "Curriculum · 목차",
-    assignment: "Assignment · 실습 과제",
-    logline: "Logline · 한 줄 요약",
-    worldview: "Worldview · 세계관·규칙",
-    characters: "Characters · 결핍·목표",
-    plot: "Plot · 갈등·기승전결",
-  };
-  for (const [k, label] of Object.entries(labelMap)) {
-    const v = meta[k];
-    if (typeof v === "string" && v.trim()) {
-      out.push(memoItem(`[${label}]\n${v.trim()}`));
+  const st = planForNote(note);
+  if (st !== "일반") {
+    const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
+    for (const { label, value } of structuredSectionsToMemoBlocks(sections)) {
+      out.push(memoItem(`[${label}]\n${value}`));
     }
   }
   return out;
 }
 
 function stepsForCategory(note: IdeaNote): WorkspaceStep[] {
-  switch (structureTypeFromMemoCategoryLabel(note.category)) {
-    case "MVP": {
-      const m = note.metadata as MvpNoteMetadata;
-      return [
-        stepWithMemo("문제 정의 (Problem)", m.problem ?? ""),
-        stepWithMemo("핵심 가설 (Hypothesis)", m.hypothesis ?? ""),
-        stepWithMemo("핵심 경험 (Critical Experience)", m.criticalExperience ?? ""),
-        stepWithMemo("MVP 최소 기능 (Features)", m.features ?? ""),
-      ];
-    }
-    case "강의": {
-      const m = note.metadata as LectureNoteMetadata;
-      return [
-        stepWithMemo("대상·주제 (Target)", m.target ?? ""),
-        stepWithMemo("학습 후 변화 (Goal)", m.goal ?? ""),
-        stepWithMemo("커리큘럼 (Curriculum)", m.curriculum ?? ""),
-        stepWithMemo("실습 과제 (Assignment)", m.assignment ?? ""),
-      ];
-    }
-    case "소설": {
-      const m = note.metadata as NovelNoteMetadata;
-      return [
-        stepWithMemo("로그라인 (Logline)", m.logline ?? ""),
-        stepWithMemo("세계관·규칙 (Worldview)", m.worldview ?? ""),
-        stepWithMemo("캐릭터 결핍·목표 (Characters)", m.characters ?? ""),
-        stepWithMemo("갈등·기승전결 (Plot)", m.plot ?? ""),
-      ];
-    }
-    default:
-      return [stepWithMemo("메모", note.content)];
+  const st = planForNote(note);
+  if (st === "일반") {
+    return [stepWithMemo("메모", note.content)];
   }
+  const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
+  const pairs = structuredSectionsToStepTitlesAndBodies(sections);
+  if (pairs.length === 0) {
+    return [stepWithMemo("메모", note.content)];
+  }
+  return pairs.map(({ title, body }) => stepWithMemo(title, body));
 }
 
 function emojiForCategory(category: NoteStructureKey): string {
@@ -153,13 +121,20 @@ function splitTodoLines(raw: string, max: number): string[] {
 }
 
 /** 홈「이번 주 할 일」에 넣을 초기 태스크(줄 단위 분할 우선). */
+function sectionBodyByKey(note: IdeaNote, st: NoteStructureKey, key: string): string {
+  if (st === "일반") return "";
+  const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
+  return sections.find((s) => s.key === key)?.value ?? "";
+}
+
 export function buildInitialTodosFromNote(note: IdeaNote): { text: string }[] {
   const title = note.title.trim() || "프로젝트";
   const prefix = `[${title}]`;
-  switch (structureTypeFromMemoCategoryLabel(note.category)) {
+  const st = planForNote(note);
+  switch (st) {
     case "MVP": {
-      const m = note.metadata as MvpNoteMetadata;
-      const lines = splitTodoLines(m.features ?? "", 12);
+      const raw = sectionBodyByKey(note, st, "features");
+      const lines = splitTodoLines(raw, 12);
       if (lines.length) return lines.map((t) => ({ text: `${prefix} ${t}` }));
       return [
         { text: `${prefix} 가설 검증 계획 수립` },
@@ -167,8 +142,8 @@ export function buildInitialTodosFromNote(note: IdeaNote): { text: string }[] {
       ];
     }
     case "강의": {
-      const m = note.metadata as LectureNoteMetadata;
-      const lines = splitTodoLines(m.assignment ?? "", 12);
+      const raw = sectionBodyByKey(note, st, "assignment");
+      const lines = splitTodoLines(raw, 12);
       if (lines.length) return lines.map((t) => ({ text: `${prefix} ${t}` }));
       return [
         { text: `${prefix} 커리큘럼 차시별 상세안 작성` },
@@ -226,7 +201,7 @@ export function promoteNoteToProject(
           projectStatus: "waiting" as const,
           currentStepIndex: 0,
           completedAt: undefined,
-          emoji: emojiForCategory(structureTypeFromMemoCategoryLabel(note.category)),
+          emoji: emojiForCategory(planForNote(note)),
           workflowMemos: mergedMemos,
           steps: stepsForCategory(note),
           origin: "idea" as const,
@@ -240,7 +215,7 @@ export function promoteNoteToProject(
           projectStatus: "waiting" as const,
           currentStepIndex: 0,
           completedAt: undefined,
-          emoji: emojiForCategory(structureTypeFromMemoCategoryLabel(note.category)),
+          emoji: emojiForCategory(planForNote(note)),
           workflowMemos: mergedMemos,
           origin: "idea" as const,
           originIdeaId: note.id,

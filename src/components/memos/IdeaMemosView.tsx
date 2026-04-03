@@ -59,6 +59,7 @@ import {
   updateNote,
   type IdeaNote,
 } from "@/lib/notes-store";
+import { metadataAllSectionsSearchText } from "@/lib/structured-memo-sections";
 
 function orderedNotesForFolder(
   notes: IdeaNote[],
@@ -91,8 +92,9 @@ function partitionPinned(list: IdeaNote[], pinned: Set<string>): IdeaNote[] {
 function noteMatchesSearch(n: IdeaNote, q: string, folderName: string): boolean {
   const t = q.trim().toLowerCase();
   if (!t) return true;
-  const metaVals = Object.values((n.metadata ?? {}) as Record<string, string>).join(" ");
-  const hay = `${n.title} ${n.content} ${n.category} ${metaVals} ${folderName}`.toLowerCase();
+  const meta = (n.metadata ?? {}) as Record<string, unknown>;
+  const sectionHay = metadataAllSectionsSearchText(meta);
+  const hay = `${n.title} ${n.content} ${n.category} ${sectionHay} ${folderName}`.toLowerCase();
   return hay.includes(t);
 }
 

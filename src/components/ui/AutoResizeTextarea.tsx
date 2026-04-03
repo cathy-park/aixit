@@ -17,8 +17,10 @@ export function AutoResizeTextarea({ className, minHeightPx = 72, value, onChang
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const scrollTop = el.scrollTop;
     el.style.height = "auto";
     el.style.height = `${Math.max(minHeightPx, el.scrollHeight)}px`;
+    el.scrollTop = scrollTop;
   }, [value, minHeightPx]);
 
   return (
