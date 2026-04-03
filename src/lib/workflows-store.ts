@@ -154,6 +154,8 @@ export function normalizeDashboardWorkflow(wf: DashboardWorkflow): DashboardWork
     relatedLinks: Array.isArray(wf.relatedLinks) ? wf.relatedLinks : [],
     workflowMemos: Array.isArray(wf.workflowMemos) ? wf.workflowMemos : [],
     templateId: typeof wf.templateId === "string" ? wf.templateId : undefined,
+    origin: typeof wf.origin === "string" && wf.origin.trim() ? wf.origin.trim() : undefined,
+    originIdeaId: typeof wf.originIdeaId === "string" && wf.originIdeaId.trim() ? wf.originIdeaId.trim() : undefined,
   };
 }
 

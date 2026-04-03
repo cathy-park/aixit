@@ -1,3 +1,14 @@
+import {
+  appendMemoLayoutEntry,
+  loadMemoLayout,
+  migrateAllMemoEntriesFromFolder,
+  removeMemoLayoutEntry,
+  remapMemoLayoutUnknownFolders,
+  saveMemoLayout,
+  updateMemoEntryFolder,
+} from "@/lib/memo-layout-store";
+import { loadDashboardFolders, pickDefaultProjectFolderId } from "@/lib/dashboard-folders-store";
+
 export const NOTE_CATEGORIES = ["MVP", "강의", "소설", "일반"] as const;
 export type NoteCategory = (typeof NOTE_CATEGORIES)[number];
 
@@ -37,6 +48,8 @@ export type IdeaNote = {
   content: string;
   category: NoteCategory;
   metadata: MvpNoteMetadata | LectureNoteMetadata | NovelNoteMetadata | GeneralNoteMetadata;
+  /** 대시보드 폴더 id (프로젝트와 동일 스토어) */
+  folderId: string;
   isConverted: boolean;
   convertedProjectId?: string;
   createdAt: number;
@@ -59,6 +72,14 @@ function safeParse<T>(raw: string | null): T | null {
 function makeId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `note_${Date.now().toString(16)}`;
+}
+
+function resolveFolderId(raw: unknown): string {
+  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  if (typeof window !== "undefined") {
+    return pickDefaultProjectFolderId(loadDashboardFolders());
+  }
+  return "ddokdi";
 }
 
 /** 로컬에 남은 구버전 키를 신규 스키마로 합칩니다. */
@@ -94,17 +115,47 @@ export function migrateMetadataForCategory(category: NoteCategory, raw: unknown)
 function normalizeNote(n: IdeaNote): IdeaNote {
   const category = NOTE_CATEGORIES.includes(n.category as NoteCategory) ? n.category : "일반";
   const metadata = migrateMetadataForCategory(category, n.metadata);
+  const folderId = resolveFolderId((n as { folderId?: unknown }).folderId);
   return {
     ...n,
     title: typeof n.title === "string" ? n.title : "",
     content: typeof n.content === "string" ? n.content : "",
     category,
     metadata,
+    folderId,
     isConverted: Boolean(n.isConverted),
     convertedProjectId: typeof n.convertedProjectId === "string" ? n.convertedProjectId : undefined,
     createdAt: typeof n.createdAt === "number" ? n.createdAt : Date.now(),
     updatedAt: typeof n.updatedAt === "number" ? n.updatedAt : Date.now(),
   };
+}
+
+/** 폴더 id 변경·삭제 후 메모 folderId·레이아웃 보정 (프로젝트 페이지와 동기) */
+export function syncMemoNotesToDashboardFolders() {
+  if (typeof window === "undefined") return;
+  const folders = loadDashboardFolders();
+  const validIds = folders.map((f) => f.id);
+  const fallback = pickDefaultProjectFolderId(folders);
+  const list = loadNotes();
+  const next = list.map((n) =>
+    validIds.includes(n.folderId) ? n : normalizeNote({ ...n, folderId: fallback }),
+  );
+  writeAll(next);
+  let layout = loadMemoLayout() ?? [];
+  layout = remapMemoLayoutUnknownFolders(layout, validIds, fallback);
+  saveMemoLayout(layout);
+}
+
+/** 폴더 삭제 시 프로젝트와 동일하게 메모·레이아웃 이동 */
+export function reassignMemoNotesFromFolder(fromFolderId: string, toFolderId: string) {
+  if (typeof window === "undefined") return;
+  const list = loadNotes().map((n) =>
+    n.folderId === fromFolderId ? normalizeNote({ ...n, folderId: toFolderId, updatedAt: Date.now() }) : n,
+  );
+  writeAll(list);
+  let layout = loadMemoLayout() ?? [];
+  layout = migrateAllMemoEntriesFromFolder(layout, fromFolderId, toFolderId);
+  saveMemoLayout(layout);
 }
 
 /** 승격·저장 전 카테고리별 필수 입력 검사 (한글 메시지). */
@@ -141,7 +192,7 @@ export function loadNotes(): IdeaNote[] {
   if (typeof window === "undefined") return [];
   const raw = safeParse<IdeaNote[]>(window.localStorage.getItem(KEY));
   if (!raw || !Array.isArray(raw)) return [];
-  return raw.map(normalizeNote);
+  return raw.map((x) => normalizeNote(x as IdeaNote));
 }
 
 function writeAll(notes: IdeaNote[]) {
@@ -154,17 +205,26 @@ export function saveNotes(notes: IdeaNote[]) {
   writeAll(notes.map(normalizeNote));
 }
 
-export function addNote(input: Omit<IdeaNote, "id" | "createdAt" | "updatedAt" | "isConverted"> & { isConverted?: boolean }) {
+export function addNote(
+  input: Omit<IdeaNote, "id" | "createdAt" | "updatedAt" | "isConverted" | "folderId"> & {
+    isConverted?: boolean;
+    folderId?: string;
+  },
+) {
   const now = Date.now();
+  const folderId = input.folderId?.trim() || pickDefaultProjectFolderId(loadDashboardFolders());
   const note: IdeaNote = normalizeNote({
     ...input,
+    folderId,
     id: makeId(),
     isConverted: input.isConverted ?? false,
     createdAt: now,
     updatedAt: now,
-  });
+  } as IdeaNote);
   const list = loadNotes();
   writeAll([note, ...list.filter((x) => x.id !== note.id)]);
+  const layout = loadMemoLayout() ?? [];
+  saveMemoLayout(appendMemoLayoutEntry(layout, note.id, note.folderId));
   return note;
 }
 
@@ -189,11 +249,16 @@ export function updateNote(id: string, patch: Partial<Omit<IdeaNote, "id" | "cre
   const copy = [...list];
   copy[idx] = next;
   writeAll(copy);
+  if (patch.folderId !== undefined && patch.folderId !== prev.folderId) {
+    const layout = loadMemoLayout() ?? [];
+    saveMemoLayout(updateMemoEntryFolder(layout, id, next.folderId));
+  }
   return next;
 }
 
 export function removeNote(id: string) {
   writeAll(loadNotes().filter((x) => x.id !== id));
+  saveMemoLayout(removeMemoLayoutEntry(loadMemoLayout() ?? [], id));
 }
 
 export function getNote(id: string): IdeaNote | null {

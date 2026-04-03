@@ -227,6 +227,8 @@ export function promoteNoteToProject(
           emoji: emojiForCategory(note.category),
           workflowMemos: mergedMemos,
           steps: stepsForCategory(note),
+          origin: "idea" as const,
+          originIdeaId: note.id,
         }
       : {
           ...base,
@@ -237,6 +239,8 @@ export function promoteNoteToProject(
           completedAt: undefined,
           emoji: emojiForCategory(note.category),
           workflowMemos: mergedMemos,
+          origin: "idea" as const,
+          originIdeaId: note.id,
         };
 
   saveDashboardWorkflow(next);

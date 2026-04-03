@@ -28,6 +28,8 @@ export const AIXIT_LOCAL_STORAGE_KEYS = [
   "aixit.dismissedBuiltinWorkflows.v1",
   "aixit.dashboardLayout.v1",
   "aixit.ideaNotes.v1",
+  "aixit.memoLayout.v1",
+  "aixit.pinnedIdeaNoteIds.v1",
 ] as const;
 
 const AUTO_MIGRATION_MARKER_PREFIX = "aixit.storageMigration.autoApplied.v1.";

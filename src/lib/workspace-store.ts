@@ -54,6 +54,10 @@ export type WorkspaceWorkflow = {
   relatedLinks?: WorkspaceLinkItem[];
   /** workflow 전체 공통 메모 */
   workflowMemos?: WorkspaceMemoItem[];
+  /** 프로젝트 출처 (예: 메모 승격 시 "idea") */
+  origin?: string;
+  /** 승격 원본 아이디어(메모) id */
+  originIdeaId?: string;
 };
 
 const KEY = "aixit.activeWorkflow.v1";
