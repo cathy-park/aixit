@@ -1,15 +1,15 @@
-/** 카드 최소 가로폭(px) — 그리드·아이템 래퍼와 동일 기준 */
+/** 카드 트랙 최소 목표(px) — 한 열에 들어갈 때 `min(100%, …)`와 함께 쓰여 잘림·가로 스크롤 없이 줄바꿈 */
 export const APP_CARD_MIN_WIDTH_PX = 560;
 
 /**
- * 앱 공통 카드 그리드: `minmax(560px,1fr)`로 카드가 560px 미만으로 줄지 않음.
- * 좁은 뷰포트에서는 열 수가 줄고, 필요 시 가로 스크롤.
+ * 공통 카드 그리드: 최대 2열, 좁으면 1열로만 줄바꿈 (overflow-x·우측 잘림 없음).
+ * `min-[1140px]` ≈ 카드 최소 목표 560px × 2 + gap-4(16px).
  */
 export const APP_CARD_GRID_CLASS =
-  "grid w-full gap-4 [grid-template-columns:repeat(auto-fill,minmax(560px,1fr))]";
+  "grid w-full grid-flow-row gap-4 grid-cols-1 min-[1140px]:grid-cols-2";
 
-/** 그리드 안 카드 래퍼(DnD·정렬용) — max-w 제한 없음 */
-export const APP_CARD_GRID_ITEM_CLASS = "w-full min-w-[560px] max-w-none justify-self-stretch";
+/** 그리드 셀 래퍼 — 셀 안에서만 줄어들도록 `min-w-0`, 행마다 wrap */
+export const APP_CARD_GRID_ITEM_CLASS = "w-full min-w-0 max-w-full justify-self-stretch";
 
 /** 대시보드·메모·프로젝트형 카드 외곽 (WorkflowCard·메모 등) */
 export const APP_CARD_SHELL_DASHBOARD_CLASS =

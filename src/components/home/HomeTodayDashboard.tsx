@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { APP_CARD_GRID_CLASS, APP_CARD_GRID_ITEM_CLASS } from "@/components/cards/app-card-layout";
 import { WorkflowCard } from "@/components/dashboard/WorkflowCard";
 import { workflows as templateCatalog } from "@/lib/aixit-data";
 import { dashboardWorkflowToPreview } from "@/lib/dashboard-workflow-preview";
@@ -318,22 +319,17 @@ export function HomeTodayDashboard() {
             에서 전체 목록을 확인하거나 일정을 맞춰 보세요.
           </div>
         ) : (
-          <div className="snap-x snap-mandatory overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex w-max gap-4">
-              {todayProjects.map(({ entry, folder, preview }) => (
-                <div
-                  key={layoutEntryPinKey(entry.kind, entry.id)}
-                  className="w-[560px] min-w-[560px] shrink-0 snap-start"
-                >
-                  <WorkflowCard
-                    wf={preview}
-                    folder={folder}
-                    pinned={pinnedKeys.has(layoutEntryPinKey(entry.kind, entry.id))}
-                    onTogglePin={() => togglePin(entry)}
-                  />
-                </div>
-              ))}
-            </div>
+          <div className={APP_CARD_GRID_CLASS}>
+            {todayProjects.map(({ entry, folder, preview }) => (
+              <div key={layoutEntryPinKey(entry.kind, entry.id)} className={APP_CARD_GRID_ITEM_CLASS}>
+                <WorkflowCard
+                  wf={preview}
+                  folder={folder}
+                  pinned={pinnedKeys.has(layoutEntryPinKey(entry.kind, entry.id))}
+                  onTogglePin={() => togglePin(entry)}
+                />
+              </div>
+            ))}
           </div>
         )}
       </section>
