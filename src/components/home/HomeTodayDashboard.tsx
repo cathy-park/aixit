@@ -218,7 +218,7 @@ export function HomeTodayDashboard() {
   return (
     <>
       <AdaptivePageHeader
-        className="border-transparent !bg-transparent shadow-none"
+        className="border-zinc-200 bg-[#fafafa] shadow-none"
         title={(compact) => (
           <div className={cn("flex w-full min-w-0 flex-row items-center", compact ? "gap-3" : "gap-4")}>
             <HeroCharacterIllustration
