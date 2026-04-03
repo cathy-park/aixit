@@ -10,6 +10,8 @@ import { FolderSectionAccordionHeader } from "@/components/dashboard/FolderSecti
 import { FolderSectionToolbar } from "@/components/dashboard/FolderSectionToolbar";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
+import { DashboardCompletedRevealSection } from "@/components/dashboard/DashboardCompletedRevealSection";
+import { DashboardExposureStatusBar } from "@/components/dashboard/DashboardExposureStatusBar";
 import { DashboardPageHeader } from "@/components/dashboard/DashboardPageHeader";
 import { ProjectAddMenu } from "@/components/dashboard/ProjectAddMenu";
 import { SaveAsTemplateModal } from "@/components/dashboard/SaveAsTemplateModal";
@@ -20,7 +22,6 @@ import { workflows, type WorkflowPreview } from "@/lib/aixit-data";
 import {
   collectFilteredWorkflowItems,
   DEFAULT_STATUS_VISIBILITY,
-  STATUS_ORDER,
   type StatusVisibilityFilter,
 } from "@/lib/dashboard-workflow-filters";
 import { dashboardWorkflowToPreview } from "@/lib/dashboard-workflow-preview";
@@ -52,8 +53,6 @@ import {
   removePinnedWorkflowKey,
   togglePinnedWorkflowKey,
 } from "@/lib/pinned-workflows-store";
-import type { WorkflowRunStatus } from "@/lib/workflow-run-status";
-import { statusSectionSignalClass } from "@/lib/workflow-run-status";
 import {
   duplicateDashboardWorkflowAsUser,
   ensureDashboardWorkflow,
@@ -64,24 +63,6 @@ import { cn } from "@/components/ui/cn";
 
 const FOLDER_INITIAL = 6;
 const FOLDER_CHUNK = 6;
-
-function statusVisibilityPillClass(status: WorkflowRunStatus, on: boolean) {
-  if (!on) return "bg-zinc-100 text-zinc-400 ring-zinc-200";
-  switch (status) {
-    case "진행중":
-      return "bg-sky-50 text-sky-800 ring-sky-200";
-    case "보류":
-      return "bg-orange-50 text-orange-800 ring-orange-200";
-    case "중단":
-      return "bg-rose-50 text-rose-800 ring-rose-200";
-    case "준비중":
-      return "bg-zinc-100 text-zinc-800 ring-zinc-200";
-    case "완료":
-      return "bg-emerald-50 text-emerald-800 ring-emerald-200";
-    default:
-      return "bg-zinc-100 text-zinc-800 ring-zinc-200";
-  }
-}
 
 type FlatWf = {
   folder: DashboardFolderRecord;
@@ -613,49 +594,14 @@ export function DashboardExperience() {
           aria-label="프로젝트 검색"
         />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="w-full text-xs font-semibold text-zinc-500 sm:mr-1 sm:w-auto">노출 상태</span>
-          {STATUS_ORDER.map((s) => (
-            // 완료는 가상 그룹으로 분리되므로 메인 노출 상태에서 제외
-            s === "완료" ? null : (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setStatusVisibility((p) => ({ ...p, [s]: !p[s] }))}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition hover:opacity-90",
-                statusVisibilityPillClass(s, statusVisibility[s]),
-              )}
-              aria-pressed={statusVisibility[s]}
-            >
-              <span className={cn("text-sm leading-none", statusSectionSignalClass(s))} aria-hidden>
-                ⏺
-              </span>
-              {s}
-            </button>
-            )
-          ))}
-          {activeFolderId === "all" ? (
-            <button
-              type="button"
-              onClick={() => setIncludeCompletedInAllView((v) => !v)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition hover:opacity-90",
-                includeCompletedInAllView
-                  ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-                  : "bg-zinc-100 text-zinc-400 ring-zinc-200",
-              )}
-              aria-pressed={includeCompletedInAllView}
-              title="완료 프로젝트를 기본 접힘 상태에서 펼쳐서 보여요"
-            >
-              <span className="text-sm leading-none" aria-hidden>
-                ✓
-              </span>
-              완료 포함 보기
-            </button>
-          ) : null}
-          <span className="w-full text-[11px] text-zinc-400 sm:ml-2 sm:w-auto">켜진 상태의 프로젝트만 메인 리스트에 보여요.</span>
-        </div>
+        <DashboardExposureStatusBar
+          statusVisibility={statusVisibility}
+          setStatusVisibility={setStatusVisibility}
+          showIncludeCompletedToggle={activeFolderId === "all"}
+          includeCompletedInAllView={includeCompletedInAllView}
+          setIncludeCompletedInAllView={setIncludeCompletedInAllView}
+          entityLabel="프로젝트"
+        />
       </div>
 
       <div className="min-w-0 pb-10">
@@ -725,65 +671,31 @@ export function DashboardExperience() {
                           ) : null}
 
                           {completedItems.length > 0 ? (
-                            <div className="space-y-3">
-                              {(() => {
-                                const explicit = completedExpandedByFolder[folder.id];
-                                const expanded = explicit ?? includeCompletedInAllView;
-                                return (
-                                  <>
-                                    <div className="mt-2 border-t border-zinc-200/50 pt-1.5">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setCompletedExpandedByFolder((prev) => ({
-                                            ...prev,
-                                            [folder.id]: !(expanded ?? false),
-                                          }));
-                                        }}
-                                        className="flex w-full items-center justify-between gap-2 rounded-md px-0.5 py-1 text-left text-xs text-zinc-500 transition hover:bg-zinc-100/50 hover:text-zinc-700"
-                                        aria-expanded={expanded}
-                                      >
-                                        <span className="min-w-0 truncate">
-                                          완료 보기{" "}
-                                          <span className="tabular-nums text-zinc-500">{completedItems.length}</span>개
-                                        </span>
-                                        <svg
-                                          width={14}
-                                          height={14}
-                                          viewBox="0 0 24 24"
-                                          fill="none"
-                                          className={cn(
-                                            "shrink-0 text-slate-500 transition-transform duration-200 ease-out",
-                                            !expanded && "rotate-180",
-                                          )}
-                                          aria-hidden
-                                        >
-                                          <path
-                                            d="M18 15l-6-6-6 6"
-                                            stroke="currentColor"
-                                            strokeWidth={2}
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                          />
-                                        </svg>
-                                      </button>
-                                    </div>
-
-                                    {expanded ? (
-                                      <div className="mt-0.5">
-                                        {buildGridNodes(completedItems, {
-                                          ...gridOpts,
-                                          gridClass: "grid-cols-1 sm:grid-cols-2",
-                                          showFolderBadge: false,
-                                          dimCompleted: true,
-                                          endDropFolderId: folder.id,
-                                        })}
-                                      </div>
-                                    ) : null}
-                                  </>
-                                );
-                              })()}
-                            </div>
+                            (() => {
+                              const explicit = completedExpandedByFolder[folder.id];
+                              const expanded = explicit ?? includeCompletedInAllView;
+                              const open = expanded ?? false;
+                              return (
+                                <DashboardCompletedRevealSection
+                                  count={completedItems.length}
+                                  expanded={open}
+                                  onToggle={() => {
+                                    setCompletedExpandedByFolder((prev) => ({
+                                      ...prev,
+                                      [folder.id]: !open,
+                                    }));
+                                  }}
+                                >
+                                  {buildGridNodes(completedItems, {
+                                    ...gridOpts,
+                                    gridClass: "grid-cols-1 sm:grid-cols-2",
+                                    showFolderBadge: false,
+                                    dimCompleted: true,
+                                    endDropFolderId: folder.id,
+                                  })}
+                                </DashboardCompletedRevealSection>
+                              );
+                            })()
                           ) : null}
 
                           {nonCompletedItems.length === 0 && completedItems.length === 0 ? (
@@ -898,65 +810,30 @@ export function DashboardExperience() {
                       ) : null}
 
                       {flatSingleFolderCompleted.length > 0 ? (
-                        <div className="space-y-3">
-                          {(() => {
-                            const explicit = completedExpandedByFolder[folder.id];
-                            const expanded = explicit ?? false;
-                            return (
-                              <>
-                                <div className="mt-2 border-t border-zinc-200/50 pt-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setCompletedExpandedByFolder((prev) => ({
-                                        ...prev,
-                                        [folder.id]: !expanded,
-                                      }));
-                                    }}
-                                    className="flex w-full items-center justify-between gap-2 rounded-md px-0.5 py-1 text-left text-xs text-zinc-500 transition hover:bg-zinc-100/50 hover:text-zinc-700"
-                                    aria-expanded={expanded}
-                                  >
-                                    <span className="min-w-0 truncate">
-                                      완료 보기{" "}
-                                      <span className="tabular-nums text-zinc-500">{flatSingleFolderCompleted.length}</span>개
-                                    </span>
-                                    <svg
-                                      width={14}
-                                      height={14}
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      className={cn(
-                                        "shrink-0 text-slate-500 transition-transform duration-200 ease-out",
-                                        !expanded && "rotate-180",
-                                      )}
-                                      aria-hidden
-                                    >
-                                      <path
-                                        d="M18 15l-6-6-6 6"
-                                        stroke="currentColor"
-                                        strokeWidth={2}
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
-                                  </button>
-                                </div>
-
-                                {expanded ? (
-                                  <div className="mt-0.5">
-                                    {buildGridNodes(flatSingleFolderCompleted, {
-                                      ...gridOpts,
-                                      gridClass: "grid-cols-1 xl:grid-cols-3",
-                                      showFolderBadge: false,
-                                      dimCompleted: true,
-                                      endDropFolderId: folder.id,
-                                    })}
-                                  </div>
-                                ) : null}
-                              </>
-                            );
-                          })()}
-                        </div>
+                        (() => {
+                          const explicit = completedExpandedByFolder[folder.id];
+                          const expanded = explicit ?? false;
+                          return (
+                            <DashboardCompletedRevealSection
+                              count={flatSingleFolderCompleted.length}
+                              expanded={expanded}
+                              onToggle={() => {
+                                setCompletedExpandedByFolder((prev) => ({
+                                  ...prev,
+                                  [folder.id]: !expanded,
+                                }));
+                              }}
+                            >
+                              {buildGridNodes(flatSingleFolderCompleted, {
+                                ...gridOpts,
+                                gridClass: "grid-cols-1 xl:grid-cols-3",
+                                showFolderBadge: false,
+                                dimCompleted: true,
+                                endDropFolderId: folder.id,
+                              })}
+                            </DashboardCompletedRevealSection>
+                          );
+                        })()
                       ) : null}
                     </>
                   )}

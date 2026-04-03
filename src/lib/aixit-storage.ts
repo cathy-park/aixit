@@ -20,6 +20,7 @@ export const AIXIT_LOCAL_STORAGE_KEYS = [
   "aixit.dashboardFolders.v1",
   "aixit.memoFolders.v1",
   "aixit.memoFolderDomainSplit.v1",
+  "aixit.memoCategoryFolderSync.v1",
   "aixit.workflowTemplateDisplayOrder.v1",
   "aixit.removedWorkflowTemplateIds.v1",
   "aixit.homeGreetingName.v1",

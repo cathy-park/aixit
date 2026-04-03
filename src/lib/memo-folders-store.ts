@@ -111,3 +111,42 @@ export function pickDefaultMemoFolderId(folders: DashboardFolderRecord[]): strin
 
 export const createMemoFolder = addMemoFolder;
 export const deleteMemoFolder = removeMemoFolder;
+
+/** `note.category`와 동기화되는 폴더 식별 문자열: slug 우선, 없으면 name */
+export function memoFolderCategoryKey(f: DashboardFolderRecord): string {
+  const s = typeof f.slug === "string" ? f.slug.trim() : "";
+  if (s) return s;
+  return (f.name || "").trim() || "이름 없음";
+}
+
+export function findMemoFolderByCategoryKey(
+  folders: DashboardFolderRecord[],
+  key: string,
+): DashboardFolderRecord | undefined {
+  const k = key.trim();
+  if (!k) return undefined;
+  const bySlug = folders.find((f) => (f.slug?.trim() ?? "") === k);
+  if (bySlug) return bySlug;
+  return folders.find((f) => (f.name || "").trim() === k);
+}
+
+const DEFAULT_NEW_MEMO_FOLDER_PROPS = {
+  emoji: "",
+  iconType: "lucide" as const,
+  lucideIcon: "FolderOpen" as const,
+  imageDataUrl: null as string | null,
+  color: "#64748b",
+  hidden: false,
+};
+
+/** category 키에 맞는 폴더가 없으면 생성해 id를 반환합니다. */
+export function ensureMemoFolderForCategoryKey(categoryKey: string): DashboardFolderRecord {
+  const k = categoryKey.trim();
+  const folders = loadMemoFolders();
+  const hit = findMemoFolderByCategoryKey(folders, k);
+  if (hit) return hit;
+  return addMemoFolder({
+    ...DEFAULT_NEW_MEMO_FOLDER_PROPS,
+    name: k || "이름 없음",
+  });
+}

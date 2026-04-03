@@ -7,12 +7,28 @@ import {
   saveMemoLayout,
   updateMemoEntryFolder,
 } from "@/lib/memo-layout-store";
+import { ensureMemoCategoryFolderSync } from "@/lib/memo-category-folder-sync";
 import { ensureMemoFolderDomainSplit } from "@/lib/memo-folder-migration";
-import { loadMemoFolders, pickDefaultMemoFolderId } from "@/lib/memo-folders-store";
+import {
+  findMemoFolderByCategoryKey,
+  getMemoFolder,
+  loadMemoFolders,
+  MEMO_FOLDER_SEED,
+  memoFolderCategoryKey,
+  pickDefaultMemoFolderId,
+  ensureMemoFolderForCategoryKey,
+} from "@/lib/memo-folders-store";
 import { isProjectLifecycleStatus, type ProjectLifecycleStatus } from "@/lib/project-lifecycle-status";
 
-export const NOTE_CATEGORIES = ["MVP", "강의", "소설", "일반"] as const;
-export type NoteCategory = (typeof NOTE_CATEGORIES)[number];
+/** 메모 폴더와 1:1 — `memoFolderCategoryKey(folder)`와 항상 동일 */
+export type NoteCategory = string;
+
+/** 기획 필드(MVP/강의/소설) 분기용; 폴더 이름·slug가 이 값이면 해당 템플릿 검증·UI */
+export const NOTE_STRUCTURE_KEYS = ["MVP", "강의", "소설", "일반"] as const;
+export type NoteStructureKey = (typeof NOTE_STRUCTURE_KEYS)[number];
+
+/** @deprecated NOTE_STRUCTURE_KEYS / structureTypeFromMemoCategoryLabel 사용 */
+export const NOTE_CATEGORIES = NOTE_STRUCTURE_KEYS;
 
 function str(v: unknown): string {
   return typeof v === "string" ? v : "";
@@ -65,6 +81,15 @@ export const NOTES_UPDATED_EVENT = "aixit-notes-updated";
 const KEY = "aixit.ideaNotes.v1";
 
 let memoFolderSplitEnsured = false;
+let memoCategoryFolderSyncEnsured = false;
+
+export function structureTypeFromMemoCategoryLabel(label: string): NoteStructureKey {
+  const t = label.trim();
+  if (t === "MVP") return "MVP";
+  if (t === "강의") return "강의";
+  if (t === "소설") return "소설";
+  return "일반";
+}
 
 function safeParse<T>(raw: string | null): T | null {
   if (!raw) return null;
@@ -87,18 +112,11 @@ function deriveNoteProjectStatus(n: Pick<IdeaNote, "isConverted" | "projectStatu
   return "waiting";
 }
 
-function resolveMemoFolderId(raw: unknown): string {
-  if (typeof raw === "string" && raw.trim()) return raw.trim();
-  if (typeof window !== "undefined") {
-    return pickDefaultMemoFolderId(loadMemoFolders());
-  }
-  return "memo-folder-s1";
-}
-
-/** 로컬에 남은 구버전 키를 신규 스키마로 합칩니다. */
+/** 로컬에 남은 구버전 키를 신규 스키마로 합칩니다. (`category`는 메모 폴더 키 = slug || name) */
 export function migrateMetadataForCategory(category: NoteCategory, raw: unknown): IdeaNote["metadata"] {
+  const structure = structureTypeFromMemoCategoryLabel(category);
   const m = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-  switch (category) {
+  switch (structure) {
     case "MVP":
       return {
         problem: str(m.problem ?? m.problemDefinition),
@@ -125,10 +143,35 @@ export function migrateMetadataForCategory(category: NoteCategory, raw: unknown)
   }
 }
 
+function reconcileMemoFolderAndCategory(
+  n: Pick<IdeaNote, "folderId" | "category">,
+  folders: ReturnType<typeof loadMemoFolders>,
+): { folderId: string; category: NoteCategory } {
+  const rawId = typeof n.folderId === "string" ? n.folderId.trim() : "";
+  const rawCat = typeof n.category === "string" ? n.category.trim() : "";
+  const byId = (id: string) => folders.find((f) => f.id === id);
+  const folderFromId = rawId ? byId(rawId) : undefined;
+
+  if (folderFromId) {
+    return { folderId: folderFromId.id, category: memoFolderCategoryKey(folderFromId) };
+  }
+
+  const fromKey = rawCat ? findMemoFolderByCategoryKey(folders, rawCat) : undefined;
+  if (fromKey) {
+    return { folderId: fromKey.id, category: memoFolderCategoryKey(fromKey) };
+  }
+
+  const fallbackId = pickDefaultMemoFolderId(folders);
+  const fb = byId(fallbackId) ?? folders[0];
+  if (fb) return { folderId: fb.id, category: memoFolderCategoryKey(fb) };
+  return { folderId: "memo-folder-s1", category: "똑디" };
+}
+
 function normalizeNote(n: IdeaNote): IdeaNote {
-  const category = NOTE_CATEGORIES.includes(n.category as NoteCategory) ? n.category : "일반";
+  const folders: ReturnType<typeof loadMemoFolders> =
+    typeof window !== "undefined" ? loadMemoFolders() : [...MEMO_FOLDER_SEED];
+  const { folderId, category } = reconcileMemoFolderAndCategory(n, folders);
   const metadata = migrateMetadataForCategory(category, n.metadata);
-  const folderId = resolveMemoFolderId((n as { folderId?: unknown }).folderId);
   const projectStatus = deriveNoteProjectStatus({
     isConverted: Boolean(n.isConverted),
     projectStatus: (n as { projectStatus?: ProjectLifecycleStatus }).projectStatus,
@@ -156,7 +199,9 @@ export function syncMemoNotesToMemoFolders() {
   const fallback = pickDefaultMemoFolderId(folders);
   const list = loadNotes();
   const next = list.map((n) =>
-    validIds.includes(n.folderId) ? n : normalizeNote({ ...n, folderId: fallback }),
+    normalizeNote(
+      validIds.includes(n.folderId) ? n : { ...n, folderId: fallback, updatedAt: Date.now() },
+    ),
   );
   writeAll(next);
   let layout = loadMemoLayout() ?? [];
@@ -183,8 +228,9 @@ export function reassignMemoNotesFromFolder(fromFolderId: string, toFolderId: st
 
 /** 승격·저장 전 카테고리별 필수 입력 검사 (한글 메시지). */
 export function validateStructuredNote(note: Pick<IdeaNote, "category" | "metadata">): string | null {
-  if (note.category === "일반") return null;
-  if (note.category === "MVP") {
+  const st = structureTypeFromMemoCategoryLabel(note.category);
+  if (st === "일반") return null;
+  if (st === "MVP") {
     const m = note.metadata as MvpNoteMetadata;
     if (!m.problem?.trim()) return "Problem(문제 정의)를 입력해 주세요.";
     if (!m.hypothesis?.trim()) return "Hypothesis(핵심 가설)를 입력해 주세요.";
@@ -192,7 +238,7 @@ export function validateStructuredNote(note: Pick<IdeaNote, "category" | "metada
     if (!m.features?.trim()) return "Features(MVP 최소 기능)를 입력해 주세요.";
     return null;
   }
-  if (note.category === "강의") {
+  if (st === "강의") {
     const m = note.metadata as LectureNoteMetadata;
     if (!m.target?.trim()) return "Target(누구에게 무엇을)을 입력해 주세요.";
     if (!m.goal?.trim()) return "Goal(수강생의 변화)를 입력해 주세요.";
@@ -200,7 +246,7 @@ export function validateStructuredNote(note: Pick<IdeaNote, "category" | "metada
     if (!m.assignment?.trim()) return "Assignment(실습 과제)를 입력해 주세요.";
     return null;
   }
-  if (note.category === "소설") {
+  if (st === "소설") {
     const m = note.metadata as NovelNoteMetadata;
     if (!m.logline?.trim()) return "Logline(한 줄 요약)을 입력해 주세요.";
     if (!m.worldview?.trim()) return "Worldview(세계관·규칙)을 입력해 주세요.";
@@ -217,9 +263,23 @@ export function loadNotes(): IdeaNote[] {
     memoFolderSplitEnsured = true;
     ensureMemoFolderDomainSplit();
   }
+  if (!memoCategoryFolderSyncEnsured) {
+    memoCategoryFolderSyncEnsured = true;
+    ensureMemoCategoryFolderSync();
+  }
   const raw = safeParse<IdeaNote[]>(window.localStorage.getItem(KEY));
   if (!raw || !Array.isArray(raw)) return [];
   return raw.map((x) => normalizeNote(x as IdeaNote));
+}
+
+/** 메모 폴더 이름·slug 변경 후 해당 폴더 메모의 `category`를 폴더 키와 맞춥니다. */
+export function syncMemoNoteCategoriesForMemoFolder(folderId: string) {
+  if (typeof window === "undefined") return;
+  const f = getMemoFolder(folderId);
+  if (!f) return;
+  const list = loadNotes();
+  const next = list.map((n) => (n.folderId === folderId ? normalizeNote(n) : n));
+  writeAll(next);
 }
 
 function writeAll(notes: IdeaNote[]) {
@@ -233,17 +293,41 @@ export function saveNotes(notes: IdeaNote[]) {
 }
 
 export function addNote(
-  input: Omit<IdeaNote, "id" | "createdAt" | "updatedAt" | "isConverted" | "folderId"> & {
+  input: Omit<IdeaNote, "id" | "createdAt" | "updatedAt" | "isConverted" | "folderId" | "category"> & {
     isConverted?: boolean;
     folderId?: string;
+    /** 생략 시 `folderId`로부터 파생 */
+    category?: NoteCategory;
     projectStatus?: ProjectLifecycleStatus;
   },
 ) {
   const now = Date.now();
-  const folderId = input.folderId?.trim() || pickDefaultMemoFolderId(loadMemoFolders());
+  const folders = loadMemoFolders();
+  let folderId = "";
+  let categorySeed = typeof input.category === "string" ? input.category : "";
+  const fidIn = input.folderId?.trim();
+  if (fidIn) {
+    const hit = getMemoFolder(fidIn);
+    if (hit) {
+      folderId = hit.id;
+      categorySeed = memoFolderCategoryKey(hit);
+    } else {
+      folderId = fidIn;
+    }
+  } else if (categorySeed.trim()) {
+    const ensured = ensureMemoFolderForCategoryKey(categorySeed);
+    folderId = ensured.id;
+    categorySeed = memoFolderCategoryKey(ensured);
+  } else {
+    const fb = pickDefaultMemoFolderId(folders);
+    const hit = getMemoFolder(fb) ?? folders[0];
+    folderId = hit?.id ?? fb;
+    categorySeed = hit ? memoFolderCategoryKey(hit) : categorySeed;
+  }
   const note: IdeaNote = normalizeNote({
     ...input,
     folderId,
+    category: categorySeed,
     id: makeId(),
     isConverted: input.isConverted ?? false,
     projectStatus: input.projectStatus ?? "waiting",
@@ -262,14 +346,38 @@ export function updateNote(id: string, patch: Partial<Omit<IdeaNote, "id" | "cre
   const idx = list.findIndex((x) => x.id === id);
   if (idx < 0) return null;
   const prev = list[idx];
-  const mergedCategory = patch.category ?? prev.category;
+  const folders = loadMemoFolders();
+
+  let workingFolderId = prev.folderId;
+  let workingCategory = prev.category;
+  const pFolder = patch.folderId !== undefined;
+  const pCat = patch.category !== undefined;
+
+  if (pFolder && pCat) {
+    workingFolderId = patch.folderId!.trim();
+    const f = getMemoFolder(workingFolderId);
+    workingCategory = f ? memoFolderCategoryKey(f) : prev.category;
+  } else if (pFolder) {
+    workingFolderId = patch.folderId!.trim();
+    const f = getMemoFolder(workingFolderId);
+    workingCategory = f
+      ? memoFolderCategoryKey(f)
+      : reconcileMemoFolderAndCategory({ folderId: workingFolderId, category: prev.category }, folders).category;
+  } else if (pCat) {
+    const ensured = ensureMemoFolderForCategoryKey(patch.category!);
+    workingFolderId = ensured.id;
+    workingCategory = memoFolderCategoryKey(ensured);
+  }
+
   const mergedMeta =
     patch.metadata !== undefined
-      ? migrateMetadataForCategory(mergedCategory, patch.metadata)
+      ? migrateMetadataForCategory(workingCategory, patch.metadata)
       : prev.metadata;
   const next = normalizeNote({
     ...prev,
     ...patch,
+    folderId: workingFolderId,
+    category: workingCategory,
     metadata: mergedMeta,
     id: prev.id,
     createdAt: prev.createdAt,
@@ -278,7 +386,7 @@ export function updateNote(id: string, patch: Partial<Omit<IdeaNote, "id" | "cre
   const copy = [...list];
   copy[idx] = next;
   writeAll(copy);
-  if (patch.folderId !== undefined && patch.folderId !== prev.folderId) {
+  if (next.folderId !== prev.folderId) {
     const layout = loadMemoLayout() ?? [];
     saveMemoLayout(updateMemoEntryFolder(layout, id, next.folderId));
   }

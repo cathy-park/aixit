@@ -3,7 +3,10 @@
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { cn } from "@/components/ui/cn";
 import { WORKSPACE_MEMO_TEXTAREA_CLASS } from "@/components/workspace/WorkspaceLinksMemosSections";
-import type { IdeaNote, NoteCategory } from "@/lib/notes-store";
+import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
+import { memoFolderCategoryKey } from "@/lib/memo-folders-store";
+import type { IdeaNote, NoteStructureKey } from "@/lib/notes-store";
+import { structureTypeFromMemoCategoryLabel } from "@/lib/notes-store";
 
 export const TITLE_INPUT_CLASS =
   "min-h-9 w-full rounded-lg border border-zinc-200/90 bg-white px-2.5 py-1.5 text-sm leading-snug text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-300 focus:ring-2 focus:ring-zinc-100";
@@ -11,7 +14,8 @@ export const TITLE_INPUT_CLASS =
 export type IdeaFormState = {
   title: string;
   content: string;
-  category: NoteCategory;
+  /** 메모 폴더 id — `note.category`는 해당 폴더의 slug||name과 동기화 */
+  folderId: string;
   mvp: {
     problem: string;
     hypothesis: string;
@@ -32,11 +36,11 @@ export type IdeaFormState = {
   };
 };
 
-export function emptyIdeaFormState(): IdeaFormState {
+export function emptyIdeaFormState(defaultFolderId: string): IdeaFormState {
   return {
     title: "",
     content: "",
-    category: "MVP",
+    folderId: defaultFolderId,
     mvp: { problem: "", hypothesis: "", criticalExperience: "", features: "" },
     lecture: { target: "", goal: "", curriculum: "", assignment: "" },
     novel: { logline: "", worldview: "", characters: "", plot: "" },
@@ -48,7 +52,7 @@ export function noteToFormState(note: IdeaNote): IdeaFormState {
   return {
     title: note.title,
     content: note.content,
-    category: note.category,
+    folderId: note.folderId,
     mvp: {
       problem: String(m.problem ?? ""),
       hypothesis: String(m.hypothesis ?? ""),
@@ -70,8 +74,13 @@ export function noteToFormState(note: IdeaNote): IdeaFormState {
   };
 }
 
-export function formMetadataFromState(form: IdeaFormState): IdeaNote["metadata"] {
-  switch (form.category) {
+export function formMetadataFromState(
+  form: IdeaFormState,
+  memoFolders: DashboardFolderRecord[],
+): IdeaNote["metadata"] {
+  const folder = memoFolders.find((f) => f.id === form.folderId);
+  const st = structureTypeFromMemoCategoryLabel(folder ? memoFolderCategoryKey(folder) : "");
+  switch (st) {
     case "MVP":
       return {
         problem: form.mvp.problem,
@@ -99,23 +108,25 @@ export function formMetadataFromState(form: IdeaFormState): IdeaNote["metadata"]
 }
 
 /** 클립보드용 전체 복사 텍스트 (카테고리별 라벨) */
-export function buildIdeaCopyText(form: IdeaFormState): string {
+export function buildIdeaCopyText(form: IdeaFormState, memoFolders: DashboardFolderRecord[]): string {
+  const folder = memoFolders.find((f) => f.id === form.folderId);
+  const st = structureTypeFromMemoCategoryLabel(folder ? memoFolderCategoryKey(folder) : "");
   const lines: string[] = [`제목:\n${form.title}`, `본문:\n${form.content}`];
-  if (form.category === "MVP") {
+  if (st === "MVP") {
     lines.push(
       `Problem (문제):\n${form.mvp.problem}`,
       `Hypothesis (가설):\n${form.mvp.hypothesis}`,
       `Experience (핵심 경험):\n${form.mvp.criticalExperience}`,
       `Features (최소 기능):\n${form.mvp.features}`,
     );
-  } else if (form.category === "강의") {
+  } else if (st === "강의") {
     lines.push(
       `Target:\n${form.lecture.target}`,
       `Goal:\n${form.lecture.goal}`,
       `Curriculum:\n${form.lecture.curriculum}`,
       `Assignment:\n${form.lecture.assignment}`,
     );
-  } else if (form.category === "소설") {
+  } else if (st === "소설") {
     lines.push(
       `Logline:\n${form.novel.logline}`,
       `Worldview:\n${form.novel.worldview}`,
@@ -126,7 +137,7 @@ export function buildIdeaCopyText(form: IdeaFormState): string {
   return lines.join("\n\n");
 }
 
-const GUIDE_SECTION_LABEL: Record<NoteCategory, string> = {
+const GUIDE_SECTION_LABEL: Record<NoteStructureKey, string> = {
   MVP: "MVP 기획 (Lean Start)",
   강의: "강의 기획 (Curriculum)",
   소설: "소설 기획 (Plotting)",
@@ -170,33 +181,46 @@ function FieldWithGuide({
 }
 
 export function IdeaFormFields({
+  memoFolders,
   form,
   setForm,
 }: {
+  memoFolders: DashboardFolderRecord[];
   form: IdeaFormState;
   setForm: (patch: Partial<IdeaFormState> | ((prev: IdeaFormState) => IdeaFormState)) => void;
 }) {
-  const onCategoryChange = (category: NoteCategory) => {
-    setForm((prev) => ({ ...prev, category }));
+  const selectedFolder = memoFolders.find((f) => f.id === form.folderId);
+  const structureKey = structureTypeFromMemoCategoryLabel(
+    selectedFolder ? memoFolderCategoryKey(selectedFolder) : "",
+  );
+
+  const onFolderPick = (folderId: string) => {
+    setForm((prev) => ({ ...prev, folderId }));
   };
 
   return (
     <div className="space-y-4">
-      <label className="block text-xs font-semibold text-zinc-500">카테고리</label>
+      <label className="block text-xs font-semibold text-zinc-500">메모 폴더</label>
+      <p className="-mt-2 text-[11px] leading-snug text-zinc-500">
+        폴더 선택 = 메모 분류(category)와 동일합니다. 이름이 MVP·강의·소설이면 해당 기획 필드가 열립니다.
+      </p>
       <div className="flex flex-wrap gap-2">
-        {(["MVP", "강의", "소설", "일반"] as const).map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => onCategoryChange(c)}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-semibold transition",
-              form.category === c ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/80",
-            )}
-          >
-            {c}
-          </button>
-        ))}
+        {memoFolders.map((f) => {
+          const label = memoFolderCategoryKey(f);
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => onFolderPick(f.id)}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                form.folderId === f.id ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/80",
+              )}
+            >
+              {f.hidden ? `${label} (숨김)` : label}
+            </button>
+          );
+        })}
       </div>
 
       <label className="block text-xs font-semibold text-zinc-500">제목</label>
@@ -216,11 +240,11 @@ export function IdeaFormFields({
         placeholder="생각을 풀어 쓰기…"
       />
 
-      {form.category !== "일반" ? (
+      {structureKey !== "일반" ? (
         <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">{GUIDE_SECTION_LABEL[form.category]}</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">{GUIDE_SECTION_LABEL[structureKey]}</p>
 
-          {form.category === "MVP" ? (
+          {structureKey === "MVP" ? (
             <div className="mt-3 space-y-4">
               <FieldWithGuide
                 label="Problem · 문제 정의"
@@ -282,7 +306,7 @@ export function IdeaFormFields({
             </div>
           ) : null}
 
-          {form.category === "강의" ? (
+          {structureKey === "강의" ? (
             <div className="mt-3 space-y-4">
               <FieldWithGuide label="Target · 누구에게 무엇을" hint="대상·주제·범위." tooltip="페르소나·수준.">
                 <AutoResizeTextarea
@@ -327,7 +351,7 @@ export function IdeaFormFields({
             </div>
           ) : null}
 
-          {form.category === "소설" ? (
+          {structureKey === "소설" ? (
             <div className="mt-3 space-y-4">
               <FieldWithGuide label="Logline · 한 줄 요약" hint="이야기 한 줄." tooltip="" highlight>
                 <AutoResizeTextarea

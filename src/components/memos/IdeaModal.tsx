@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { loadMemoFolders, memoFolderCategoryKey } from "@/lib/memo-folders-store";
 import {
   buildIdeaCopyText,
   emptyIdeaFormState,
@@ -44,23 +45,25 @@ export function IdeaModal({
   onSaved?: () => void;
 }) {
   const router = useRouter();
-  const [form, setForm] = useState<IdeaFormState>(emptyIdeaFormState);
+  const [form, setForm] = useState<IdeaFormState>(() => emptyIdeaFormState("memo-folder-s1"));
   const [resolvedNoteId, setResolvedNoteId] = useState<string | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const templates = useMemo(() => listWorkflowTemplates(), []);
 
   const effectiveNoteId = resolvedNoteId ?? noteId;
 
+  const memoFolders = useMemo(() => (open ? loadMemoFolders() : []), [open]);
+
   const resetFromProps = useCallback(() => {
     if (mode === "create") {
-      setForm(emptyIdeaFormState());
+      setForm(emptyIdeaFormState(folderIdForCreate));
       setResolvedNoteId(null);
     } else if (noteId) {
       const n = getNote(noteId);
-      setForm(n ? noteToFormState(n) : emptyIdeaFormState());
+      setForm(n ? noteToFormState(n) : emptyIdeaFormState(folderIdForCreate));
       setResolvedNoteId(null);
     }
-  }, [mode, noteId]);
+  }, [mode, noteId, folderIdForCreate]);
 
   useEffect(() => {
     if (!open) return;
@@ -82,7 +85,7 @@ export function IdeaModal({
   );
 
   const copyAll = async () => {
-    const text = buildIdeaCopyText(form);
+    const text = buildIdeaCopyText(form, memoFolders);
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -92,8 +95,10 @@ export function IdeaModal({
   };
 
   const save = () => {
-    const metadata = formMetadataFromState(form);
-    const err = validateStructuredNote({ category: form.category, metadata });
+    const metadata = formMetadataFromState(form, memoFolders);
+    const folder = memoFolders.find((f) => f.id === form.folderId);
+    const category = folder ? memoFolderCategoryKey(folder) : "";
+    const err = validateStructuredNote({ category, metadata });
     if (err) {
       window.alert(err);
       return;
@@ -102,9 +107,8 @@ export function IdeaModal({
       const note = addNote({
         title: form.title,
         content: form.content,
-        category: form.category,
         metadata,
-        folderId: folderIdForCreate,
+        folderId: form.folderId,
       });
       setResolvedNoteId(note.id);
       onSaved?.();
@@ -115,7 +119,7 @@ export function IdeaModal({
     updateNote(id, {
       title: form.title,
       content: form.content,
-      category: form.category,
+      folderId: form.folderId,
       metadata,
     });
     onSaved?.();
@@ -184,7 +188,7 @@ export function IdeaModal({
                 {headerTitle}
               </h2>
               <p className="mt-1 text-sm text-zinc-500">
-                카테고리를 바꿔도 다른 모드에 적어 둔 내용은 유지됩니다.
+                폴더를 바꿔도 다른 기획 필드에 적어 둔 내용은 유지됩니다.
               </p>
             </div>
             <button
@@ -198,7 +202,7 @@ export function IdeaModal({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-            <IdeaFormFields form={form} setForm={setFormPatch} />
+            <IdeaFormFields memoFolders={memoFolders} form={form} setForm={setFormPatch} />
           </div>
 
           <div className="flex flex-col gap-3 border-t border-zinc-100 px-5 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">

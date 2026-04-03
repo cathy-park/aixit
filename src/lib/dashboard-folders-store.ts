@@ -3,6 +3,8 @@ export type DashboardFolderIconType = "emoji" | "lucide" | "image_url" | "image_
 export type DashboardFolderRecord = {
   id: string;
   name: string;
+  /** 메모 폴더·노트 category 매칭용; 있으면 `note.category`는 이 값과 동기화 (없으면 name) */
+  slug?: string | null;
   emoji: string;
   iconType: DashboardFolderIconType;
   imageDataUrl?: string | null;
@@ -103,9 +105,13 @@ export function normalizeDashboardFolderRecord(f: DashboardFolderRecord): Dashbo
         ? ""
         : f.emoji || "📁";
 
+  const slugRaw = typeof f.slug === "string" ? f.slug.trim() : "";
+  const slug = slugRaw.length > 0 ? slugRaw : undefined;
+
   return {
     id: f.id,
     name: f.name || "이름 없음",
+    ...(slug ? { slug } : {}),
     emoji,
     iconType,
     imageDataUrl,

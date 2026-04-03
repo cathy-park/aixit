@@ -10,8 +10,9 @@ import type {
   LectureNoteMetadata,
   MvpNoteMetadata,
   NovelNoteMetadata,
-  NoteCategory,
+  NoteStructureKey,
 } from "@/lib/notes-store";
+import { structureTypeFromMemoCategoryLabel } from "@/lib/notes-store";
 import { appendTodayTodos } from "@/lib/today-todos-store";
 
 function newMemoId() {
@@ -49,7 +50,7 @@ function buildProjectSubtitle(note: IdeaNote, templateFallback: string): string 
     const out = [a, b].filter(Boolean).join(" · ");
     return out.length > 180 ? `${out.slice(0, 177)}…` : out;
   };
-  switch (note.category) {
+  switch (structureTypeFromMemoCategoryLabel(note.category)) {
     case "MVP": {
       const m = note.metadata as MvpNoteMetadata;
       return join(firstLine(m.problem), firstLine(m.hypothesis)) || firstLine(note.content) || templateFallback;
@@ -97,7 +98,7 @@ function workflowMemosFromNote(note: IdeaNote): WorkspaceMemoItem[] {
 }
 
 function stepsForCategory(note: IdeaNote): WorkspaceStep[] {
-  switch (note.category) {
+  switch (structureTypeFromMemoCategoryLabel(note.category)) {
     case "MVP": {
       const m = note.metadata as MvpNoteMetadata;
       return [
@@ -130,7 +131,7 @@ function stepsForCategory(note: IdeaNote): WorkspaceStep[] {
   }
 }
 
-function emojiForCategory(category: NoteCategory): string {
+function emojiForCategory(category: NoteStructureKey): string {
   switch (category) {
     case "MVP":
       return "🚀";
@@ -155,7 +156,7 @@ function splitTodoLines(raw: string, max: number): string[] {
 export function buildInitialTodosFromNote(note: IdeaNote): { text: string }[] {
   const title = note.title.trim() || "프로젝트";
   const prefix = `[${title}]`;
-  switch (note.category) {
+  switch (structureTypeFromMemoCategoryLabel(note.category)) {
     case "MVP": {
       const m = note.metadata as MvpNoteMetadata;
       const lines = splitTodoLines(m.features ?? "", 12);
@@ -225,7 +226,7 @@ export function promoteNoteToProject(
           projectStatus: "waiting" as const,
           currentStepIndex: 0,
           completedAt: undefined,
-          emoji: emojiForCategory(note.category),
+          emoji: emojiForCategory(structureTypeFromMemoCategoryLabel(note.category)),
           workflowMemos: mergedMemos,
           steps: stepsForCategory(note),
           origin: "idea" as const,
@@ -239,7 +240,7 @@ export function promoteNoteToProject(
           projectStatus: "waiting" as const,
           currentStepIndex: 0,
           completedAt: undefined,
-          emoji: emojiForCategory(note.category),
+          emoji: emojiForCategory(structureTypeFromMemoCategoryLabel(note.category)),
           workflowMemos: mergedMemos,
           origin: "idea" as const,
           originIdeaId: note.id,

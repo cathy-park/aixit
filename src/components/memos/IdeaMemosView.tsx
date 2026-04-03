@@ -13,7 +13,10 @@ import { FolderSectionToolbar } from "@/components/dashboard/FolderSectionToolba
 import { DashboardPageHeader } from "@/components/dashboard/DashboardPageHeader";
 import type { FolderBarItem } from "@/components/dashboard/DashboardFolderBar";
 import { IdeaModal, type IdeaModalMode } from "@/components/memos/IdeaModal";
+import { DashboardCompletedRevealSection } from "@/components/dashboard/DashboardCompletedRevealSection";
+import { DashboardExposureStatusBar } from "@/components/dashboard/DashboardExposureStatusBar";
 import { PillSearchField } from "@/components/ui/PillSearchField";
+import { TitleCountChip } from "@/components/ui/TitleCountChip";
 import { cn } from "@/components/ui/cn";
 import { EditableLifecycleStatusControl } from "@/components/dashboard/WorkflowCard";
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
@@ -44,11 +47,14 @@ import {
   PINNED_IDEA_NOTES_UPDATED_EVENT,
   togglePinnedIdeaNoteId,
 } from "@/lib/pinned-idea-notes-store";
+import { DEFAULT_STATUS_VISIBILITY, type StatusVisibilityFilter } from "@/lib/dashboard-workflow-filters";
+import { partitionMemoDisplayByExposure } from "@/lib/memo-exposure-filters";
 import {
   loadNotes,
   NOTES_UPDATED_EVENT,
   removeNote,
   reassignMemoNotesFromFolder,
+  syncMemoNoteCategoriesForMemoFolder,
   syncMemoNotesToMemoFolders,
   updateNote,
   type IdeaNote,
@@ -108,6 +114,7 @@ function IdeaMemoCard({
   pinned,
   dropTargetKey,
   memoDnD,
+  dimCompleted,
   onOpenModal,
   onTogglePin,
   onEdit,
@@ -118,6 +125,8 @@ function IdeaMemoCard({
   pinned: boolean;
   dropTargetKey: string | null;
   memoDnD: MemoLayoutDnD | null;
+  /** 완료 가상 그룹(프로젝트 카드와 동일 톤) */
+  dimCompleted?: boolean;
   onOpenModal: () => void;
   onTogglePin: () => void;
   onEdit: () => void;
@@ -142,6 +151,7 @@ function IdeaMemoCard({
         "min-w-0 w-full max-w-xl justify-self-start",
         dnd && "cursor-grab rounded-[30px] active:cursor-grabbing",
         dnd && dropTargetKey === pinKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+        dimCompleted && "opacity-[0.78]",
       )}
       draggable={Boolean(dnd)}
       onDragStart={dnd ? (e) => dnd.onDragStart(e, note.id) : undefined}
@@ -281,6 +291,12 @@ export function IdeaMemosView() {
     noteId: string | null;
   }>({ open: false, mode: "create", noteId: null });
   const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>({});
+  const [statusVisibility, setStatusVisibility] = useState<StatusVisibilityFilter>(() => ({
+    ...DEFAULT_STATUS_VISIBILITY,
+    완료: false,
+  }));
+  const [includeCompletedInAllView, setIncludeCompletedInAllView] = useState(false);
+  const [completedExpandedByFolder, setCompletedExpandedByFolder] = useState<Record<string, boolean>>({});
 
   const refreshFolders = useCallback(() => {
     setFolderRecords(loadMemoFolders());
@@ -367,23 +383,39 @@ export function IdeaMemosView() {
   const q = search.trim();
   const memoSectionsAll = useMemo(() => {
     return visibleFolderRecords.map((folder) => {
-      const items = buildDisplayList(folder.id, folder.name, notes, memoLayout, q, pinnedIds);
+      const displayList = buildDisplayList(folder.id, folder.name, notes, memoLayout, q, pinnedIds);
+      const { mainItems, completedItems } = partitionMemoDisplayByExposure(displayList, statusVisibility);
       const entriesCount = notes.filter((n) => n.folderId === folder.id).length;
-      return { folder, items, entriesCount };
-    }).filter((x) => x.entriesCount === 0 || x.items.length > 0);
-  }, [visibleFolderRecords, notes, memoLayout, q, pinnedIds]);
+      return { folder, mainItems, completedItems, entriesCount };
+    }).filter((x) => x.entriesCount === 0 || x.mainItems.length > 0 || x.completedItems.length > 0);
+  }, [visibleFolderRecords, notes, memoLayout, q, pinnedIds, statusVisibility]);
 
-  const singleFolderDisplay = useMemo(() => {
-    if (activeFolderId === "all") return [];
+  const singleFolderPartition = useMemo(() => {
+    if (activeFolderId === "all") {
+      return { mainItems: [] as IdeaNote[], completedItems: [] as IdeaNote[], entriesCount: 0 };
+    }
     const folder = folderRecords.find((f) => f.id === activeFolderId);
-    if (!folder || folder.hidden) return [];
-    return buildDisplayList(folder.id, folder.name, notes, memoLayout, q, pinnedIds);
-  }, [activeFolderId, folderRecords, notes, memoLayout, q, pinnedIds]);
+    if (!folder || folder.hidden) {
+      return { mainItems: [] as IdeaNote[], completedItems: [] as IdeaNote[], entriesCount: 0 };
+    }
+    const displayList = buildDisplayList(folder.id, folder.name, notes, memoLayout, q, pinnedIds);
+    const { mainItems, completedItems } = partitionMemoDisplayByExposure(displayList, statusVisibility);
+    const entriesCount = notes.filter((n) => n.folderId === folder.id).length;
+    return { mainItems, completedItems, entriesCount };
+  }, [activeFolderId, folderRecords, notes, memoLayout, q, pinnedIds, statusVisibility]);
+
+  const flatAllMemosAny = useMemo(
+    () => memoSectionsAll.reduce((acc, s) => acc + s.mainItems.length + s.completedItems.length, 0),
+    [memoSectionsAll],
+  );
+
+  const flatAllNonCompletedMemos = useMemo(
+    () => memoSectionsAll.reduce((acc, s) => acc + s.mainItems.length, 0),
+    [memoSectionsAll],
+  );
 
   const headerCount =
-    activeFolderId === "all"
-      ? memoSectionsAll.reduce((acc, s) => acc + s.items.length, 0)
-      : singleFolderDisplay.length;
+    activeFolderId === "all" ? flatAllNonCompletedMemos : singleFolderPartition.mainItems.length;
 
   const isSectionExpanded = useCallback(
     (id: string) => sectionExpanded[id] !== false,
@@ -540,7 +572,12 @@ export function IdeaMemosView() {
     />
   );
 
-  const renderMemoGrid = (items: IdeaNote[], sectionFolder: DashboardFolderRecord, endDropFolderId: string) => (
+  const renderMemoGrid = (
+    items: IdeaNote[],
+    sectionFolder: DashboardFolderRecord,
+    endDropFolderId: string,
+    dimCompleted?: boolean,
+  ) => (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {items.map((note) => (
         <IdeaMemoCard
@@ -550,6 +587,7 @@ export function IdeaMemosView() {
           pinned={pinnedIds.has(note.id)}
           dropTargetKey={memoDnD.dropTargetKey}
           memoDnD={memoDnD}
+          dimCompleted={dimCompleted}
           onOpenModal={() => openEdit(note)}
           onTogglePin={() => togglePin(note.id)}
           onEdit={() => openEdit(note)}
@@ -583,7 +621,7 @@ export function IdeaMemosView() {
       <AdaptivePageHeader
         title="메모"
         count={headerCount}
-        description="메모 전용 폴더로 정리하고, 카드를 끌어 순서·폴더를 바꿀 수 있어요. (프로젝트 폴더와 데이터는 분리됩니다.)"
+        description="메모 전용 폴더로 정리하고, 노출 상태에 맞춰 목록을 볼 수 있어요. (프로젝트 폴더와 데이터는 분리됩니다.)"
         rightSlot={
           <button type="button" onClick={openCreate} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
             새 아이디어 기록
@@ -620,21 +658,30 @@ export function IdeaMemosView() {
             placeholder="메모 제목·본문·카테고리·폴더 이름 검색"
             aria-label="메모 검색"
           />
+
+          <DashboardExposureStatusBar
+            statusVisibility={statusVisibility}
+            setStatusVisibility={setStatusVisibility}
+            showIncludeCompletedToggle={activeFolderId === "all"}
+            includeCompletedInAllView={includeCompletedInAllView}
+            setIncludeCompletedInAllView={setIncludeCompletedInAllView}
+            entityLabel="메모"
+          />
         </div>
 
         <div className="min-w-0 pb-10">
           {activeFolderId === "all" ? (
             <div className="space-y-4">
-              {memoSectionsAll.length === 0 ? (
+              {flatAllMemosAny === 0 ? (
                 <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
                   조건에 맞는 메모가 없어요.
                 </div>
               ) : (
-                memoSectionsAll.map(({ folder, items, entriesCount }) => (
+                memoSectionsAll.map(({ folder, mainItems, completedItems, entriesCount }) => (
                   <section key={folder.id} className="space-y-3">
                     <FolderSectionAccordionHeader
                       folder={folder}
-                      count={items.length}
+                      count={mainItems.length}
                       showHiddenBadge={folder.hidden}
                       expanded={isSectionExpanded(folder.id)}
                       onToggle={() => toggleSection(folder.id)}
@@ -654,21 +701,67 @@ export function IdeaMemosView() {
                         >
                           이 폴더에 메모가 없어요. 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
                         </div>
-                      ) : items.length === 0 ? (
-                        <div
-                          className={cn(
-                            "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
-                            memoDnD.dropTargetKey === `__end__:${folder.id}` &&
-                              "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
-                          )}
-                          onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
-                          onDragLeave={memoDnD.onDragLeave}
-                          onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
-                        >
-                          검색 조건에 맞는 메모가 없어요.
-                        </div>
                       ) : (
-                        renderMemoGrid(items, folder, folder.id)
+                        <div className="space-y-3">
+                          {(() => {
+                            const explicit = completedExpandedByFolder[folder.id];
+                            const expanded = explicit ?? includeCompletedInAllView;
+                            const open = expanded ?? false;
+                            const onlyCompletedCollapsed =
+                              mainItems.length === 0 && completedItems.length > 0 && !open;
+                            return onlyCompletedCollapsed ? (
+                              <div
+                                className={cn(
+                                  "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                                  memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                    "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                                )}
+                                onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                                onDragLeave={memoDnD.onDragLeave}
+                                onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                              >
+                                지금 노출 설정으로 이 폴더에 바로 보이는 메모가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                                폴더에서 카드를 끌어다 놓을 수 있어요.
+                              </div>
+                            ) : null;
+                          })()}
+                          {mainItems.length > 0 ? renderMemoGrid(mainItems, folder, folder.id) : null}
+                          {completedItems.length > 0 ? (
+                            (() => {
+                              const explicit = completedExpandedByFolder[folder.id];
+                              const expanded = explicit ?? includeCompletedInAllView;
+                              const open = expanded ?? false;
+                              return (
+                                <DashboardCompletedRevealSection
+                                  count={completedItems.length}
+                                  expanded={open}
+                                  onToggle={() => {
+                                    setCompletedExpandedByFolder((prev) => ({
+                                      ...prev,
+                                      [folder.id]: !open,
+                                    }));
+                                  }}
+                                >
+                                  {renderMemoGrid(completedItems, folder, folder.id, true)}
+                                </DashboardCompletedRevealSection>
+                              );
+                            })()
+                          ) : null}
+                          {mainItems.length === 0 && completedItems.length === 0 ? (
+                            <div
+                              className={cn(
+                                "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                                memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                  "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                              )}
+                              onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                              onDragLeave={memoDnD.onDragLeave}
+                              onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                            >
+                              선택한 조건에 맞는 메모가 없어요. 필터를 바꿔 보거나, 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
+                            </div>
+                          ) : null}
+                        </div>
                       )
                     ) : null}
                   </section>
@@ -676,43 +769,99 @@ export function IdeaMemosView() {
               )}
             </div>
           ) : (
-            foldersToRender.map((folder, folderIdx) => (
-              <div key={folder.id} className={cn("space-y-4 rounded-2xl", folderIdx > 0 && "mt-4")}>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 flex-1 items-center gap-3 py-1.5 pl-1">
-                    <FolderGlyph folder={folder} size="md" accentColor={folder.color} />
-                    <span className="flex min-w-0 items-center gap-2">
-                      <span className="truncate text-base font-bold text-zinc-950">{folder.name}</span>
-                      {folder.hidden ? (
-                        <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">
-                          숨김
-                        </span>
-                      ) : null}
-                    </span>
-                  </div>
-                  {memoSectionToolbar(folder)}
-                </div>
+            foldersToRender.map((folder, folderIdx) => {
+              const { mainItems, completedItems, entriesCount } = singleFolderPartition;
+              const explicit = completedExpandedByFolder[folder.id];
+              const completedOpen = explicit ?? false;
+              const onlyCompletedCollapsed =
+                mainItems.length === 0 && completedItems.length > 0 && !completedOpen;
 
-                {singleFolderDisplay.length === 0 ? (
-                  <div
-                    className={cn(
-                      "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
-                      memoDnD.dropTargetKey === `__end__:${folder.id}` &&
-                        "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
-                    )}
-                    onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
-                    onDragLeave={memoDnD.onDragLeave}
-                    onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
-                  >
-                    {notes.filter((n) => n.folderId === folder.id).length === 0
-                      ? "이 폴더에 메모가 없어요. 새 아이디어를 기록하거나 다른 폴더에서 카드를 끌어다 놓아 보세요."
-                      : "조건에 맞는 메모가 없어요."}
+              return (
+                <div key={folder.id} className={cn("space-y-4 rounded-2xl", folderIdx > 0 && "mt-4")}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3 py-1.5 pl-1">
+                      <FolderGlyph folder={folder} size="md" accentColor={folder.color} />
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-base font-bold text-zinc-950">{folder.name}</span>
+                        {folder.hidden ? (
+                          <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">
+                            숨김
+                          </span>
+                        ) : null}
+                        <TitleCountChip count={mainItems.length} />
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-0.5">{memoSectionToolbar(folder)}</div>
                   </div>
-                ) : (
-                  renderMemoGrid(singleFolderDisplay, folder, folder.id)
-                )}
-              </div>
-            ))
+
+                  <div className="space-y-4">
+                    {entriesCount === 0 ? (
+                      <div
+                        className={cn(
+                          "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                          memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                            "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                        )}
+                        onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                        onDragLeave={memoDnD.onDragLeave}
+                        onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                      >
+                        이 폴더에 메모가 없어요. 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
+                      </div>
+                    ) : (
+                      <>
+                        {onlyCompletedCollapsed ? (
+                          <div
+                            className={cn(
+                              "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                              memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                            )}
+                            onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                            onDragLeave={memoDnD.onDragLeave}
+                            onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                          >
+                            지금 노출 설정으로 이 폴더에 바로 보이는 메모가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                            폴더에서 카드를 끌어다 놓을 수 있어요.
+                          </div>
+                        ) : null}
+                        {mainItems.length > 0 ? renderMemoGrid(mainItems, folder, folder.id) : null}
+
+                        {mainItems.length === 0 && completedItems.length === 0 ? (
+                          <div
+                            className={cn(
+                              "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                              memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                            )}
+                            onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                            onDragLeave={memoDnD.onDragLeave}
+                            onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                          >
+                            선택한 조건에 맞는 메모가 없어요. 필터를 바꿔 보거나, 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
+                          </div>
+                        ) : null}
+
+                        {completedItems.length > 0 ? (
+                          <DashboardCompletedRevealSection
+                            count={completedItems.length}
+                            expanded={completedOpen}
+                            onToggle={() => {
+                              setCompletedExpandedByFolder((prev) => ({
+                                ...prev,
+                                [folder.id]: !completedOpen,
+                              }));
+                            }}
+                          >
+                            {renderMemoGrid(completedItems, folder, folder.id, true)}
+                          </DashboardCompletedRevealSection>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </AppMainColumn>
@@ -727,6 +876,7 @@ export function IdeaMemosView() {
           if (payload.id) {
             const { id, ...rest } = payload;
             updateMemoFolder(id, rest);
+            syncMemoNoteCategoriesForMemoFolder(id);
           } else {
             addMemoFolder({
               name: payload.name,
