@@ -3,8 +3,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@/components/ui/cn";
 import { STATUS_ORDER, type StatusVisibilityFilter } from "@/lib/dashboard-workflow-filters";
-import { statusVisibilityPillClass } from "@/lib/dashboard-status-visibility-styles";
-import { statusSectionSignalClass } from "@/lib/workflow-run-status";
+import {
+  statusVisibilityPillClass,
+  statusVisibilitySignalClass,
+} from "@/lib/dashboard-status-visibility-styles";
 
 type Props = {
   statusVisibility: StatusVisibilityFilter;
@@ -38,11 +40,15 @@ export function DashboardExposureStatusBar({
             onClick={() => setStatusVisibility((p) => ({ ...p, [s]: !p[s] }))}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition hover:opacity-90",
+              "outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-50",
               statusVisibilityPillClass(s, statusVisibility[s]),
             )}
             aria-pressed={statusVisibility[s]}
           >
-            <span className={cn("text-sm leading-none", statusSectionSignalClass(s))} aria-hidden>
+            <span
+              className={cn("text-sm leading-none", statusVisibilitySignalClass(s, statusVisibility[s]))}
+              aria-hidden
+            >
               ⏺
             </span>
             {s}
@@ -55,6 +61,7 @@ export function DashboardExposureStatusBar({
           onClick={() => setIncludeCompletedInAllView((v) => !v)}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition hover:opacity-90",
+            "outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-50",
             includeCompletedInAllView
               ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
               : "bg-zinc-100 text-zinc-400 ring-zinc-200",

@@ -18,9 +18,31 @@ export const WORKSPACE_MEMO_TEXTAREA_CLASS =
 
 const SECTION_SHELL = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200/80";
 
-/** 도구 창고 헤더「추가」와 동일: h-10, rounded-full, bg-zinc-900 */
+/** 도구 창고·메모 등 서브페이지 헤더「추가」와 동일: h-10, rounded-full, bg-zinc-900 */
 export const WORKSPACE_HEADER_ADD_MATCH_BTN =
   "inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-bold leading-none text-white shadow-sm hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2";
+
+/** 템플릿·워크스페이스 상단 메타 블록(제목행 + 설명) */
+export const DETAIL_PRIMARY_HEADER_ROW_CLASS = "mt-3 flex flex-col gap-3";
+
+/**
+ * 제목 입력과 우측 CTA만 한 줄 — `items-center`로 입력창과 버튼 높이 맞춤.
+ * 설명 textarea는 이 행 아래 별도 줄에 둡니다.
+ */
+export const DETAIL_HEADER_TITLE_ACTION_ROW_CLASS =
+  "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4";
+
+/** 우측 CTA 열 — 추가 padding 없음(제목 행과 수직 정렬 유지) */
+export const DETAIL_PRIMARY_HEADER_TRAILING_CLASS =
+  "flex shrink-0 flex-col items-stretch gap-2 sm:items-end sm:justify-center";
+
+/** 워크플로우·프로젝트 이름 입력 (템플릿 상세와 동일 셸) */
+export const DETAIL_PAGE_TITLE_INPUT_CLASS =
+  "w-full max-w-2xl rounded-xl border border-zinc-200 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100";
+
+/** 한 줄 설명(부제) — 카드·목록 미리보기에 쓰임 */
+export const DETAIL_PAGE_SUBTITLE_TEXTAREA_CLASS =
+  "w-full max-w-2xl resize-y rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100";
 
 const softPrimaryBtn =
   "inline-flex items-center justify-center rounded-lg bg-zinc-200/90 px-3 py-1.5 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-300/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300/80";

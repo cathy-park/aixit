@@ -37,6 +37,11 @@ import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
 import { DetailPageWrapper } from "@/components/layout/DetailPageWrapper";
 import {
+  DETAIL_HEADER_TITLE_ACTION_ROW_CLASS,
+  DETAIL_PAGE_SUBTITLE_TEXTAREA_CLASS,
+  DETAIL_PAGE_TITLE_INPUT_CLASS,
+  DETAIL_PRIMARY_HEADER_ROW_CLASS,
+  DETAIL_PRIMARY_HEADER_TRAILING_CLASS,
   WORKSPACE_HEADER_ADD_MATCH_BTN,
   WorkspaceRelatedLinksSection,
   WorkspaceWorkflowCommonMemosSection,
@@ -47,10 +52,6 @@ function makeId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `id_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
-
-/** 워크플로우 제목 입력과 동일한 셸 */
-const titleLikeInputClass =
-  "w-full max-w-2xl rounded-xl border border-zinc-200 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100";
 
 export function WorkspaceView() {
   const router = useRouter();
@@ -444,34 +445,43 @@ export function WorkspaceView() {
           <span aria-hidden>←</span>
           프로젝트
         </Link>
-        <div className="mt-3 flex flex-col gap-3">
-          {/* 1단: 프로젝트 제목 + 상태 */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <label className="block">
-                <span className="sr-only">워크플로우 제목</span>
-                <input
-                  value={wf.name}
-                  onChange={(e) => applyLocal({ ...wf, name: e.target.value, updatedAt: Date.now() })}
-                  className={titleLikeInputClass}
-                />
-              </label>
-            </div>
-
-            <div className="flex shrink-0 flex-col items-end gap-2">
-              <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-col gap-3">
+          {/* 1단: 제목·설명(템플릿 상세와 동일) + 저장 — 서브페이지「추가」버튼과 동일 CTA 스타일 */}
+          <div className={DETAIL_PRIMARY_HEADER_ROW_CLASS}>
+            <div className={DETAIL_HEADER_TITLE_ACTION_ROW_CLASS}>
+              <div className="min-w-0 flex-1">
+                <label className="block">
+                  <span className="sr-only">프로젝트·워크플로 제목</span>
+                  <input
+                    value={wf.name}
+                    onChange={(e) => applyLocal({ ...wf, name: e.target.value, updatedAt: Date.now() })}
+                    className={DETAIL_PAGE_TITLE_INPUT_CLASS}
+                  />
+                </label>
+              </div>
+              <div className={DETAIL_PRIMARY_HEADER_TRAILING_CLASS}>
                 {dirty ? (
-                  <span className="text-xs font-semibold text-amber-800">저장되지 않은 변경이 있어요</span>
+                  <span className="text-right text-xs font-semibold text-amber-800 sm:max-w-[220px] sm:text-right">
+                    저장되지 않은 변경이 있어요
+                  </span>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
-                >
+                <button type="button" onClick={handleSave} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
                   저장
                 </button>
               </div>
             </div>
+            <label className="block max-w-2xl">
+              <span className="sr-only">프로젝트·워크플로 설명</span>
+              <textarea
+                value={wf.subtitle ?? ""}
+                onChange={(e) =>
+                  applyLocal({ ...wf, subtitle: e.target.value, updatedAt: Date.now() })
+                }
+                rows={2}
+                placeholder="설명을 적어보세요"
+                className={DETAIL_PAGE_SUBTITLE_TEXTAREA_CLASS}
+              />
+            </label>
           </div>
 
           {/* 2단: 폴더 / 시작일 / 마감일 (inline 배치) */}

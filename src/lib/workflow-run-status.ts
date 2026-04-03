@@ -3,6 +3,9 @@ export type WorkflowRunStatus = "완료" | "진행중" | "준비중" | "보류" 
 
 export const WORKFLOW_STATUS_OPTIONS: WorkflowRunStatus[] = ["진행중", "준비중", "보류", "완료", "중단"];
 
+/** 프로젝트 카드·노출 필터와 동일한 5단계·표시 순서 */
+export const WORKFLOW_CARD_STATUS_OPTIONS: WorkflowRunStatus[] = ["준비중", "진행중", "보류", "중단", "완료"];
+
 export function isWorkflowRunStatus(v: unknown): v is WorkflowRunStatus {
   return v === "완료" || v === "진행중" || v === "준비중" || v === "보류" || v === "중단";
 }
@@ -15,7 +18,7 @@ export function statusSectionHeaderClass(status: WorkflowRunStatus): string {
     case "보류":
       return "bg-orange-50 text-orange-800 ring-orange-200/90";
     case "준비중":
-      return "bg-zinc-100 text-zinc-800 ring-zinc-200";
+      return "bg-green-50 text-green-800 ring-green-200";
     case "완료":
       return "bg-emerald-50 text-emerald-800 ring-emerald-200";
     case "중단":
@@ -32,7 +35,7 @@ export function statusSectionSignalClass(status: WorkflowRunStatus): string {
     case "보류":
       return "text-orange-500";
     case "준비중":
-      return "text-zinc-500";
+      return "text-green-600";
     case "완료":
       return "text-emerald-500";
     case "중단":

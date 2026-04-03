@@ -25,6 +25,12 @@ import {
 import { setBuiltinTemplateLinksMemosOverride } from "@/lib/builtin-template-links-memos-store";
 import type { WorkspaceLinkItem, WorkspaceMemoItem } from "@/lib/workspace-store";
 import {
+  DETAIL_HEADER_TITLE_ACTION_ROW_CLASS,
+  DETAIL_PAGE_SUBTITLE_TEXTAREA_CLASS,
+  DETAIL_PAGE_TITLE_INPUT_CLASS,
+  DETAIL_PRIMARY_HEADER_ROW_CLASS,
+  DETAIL_PRIMARY_HEADER_TRAILING_CLASS,
+  WORKSPACE_HEADER_ADD_MATCH_BTN,
   WorkspaceRelatedLinksSection,
   WorkspaceWorkflowCommonMemosSection,
 } from "@/components/workspace/WorkspaceLinksMemosSections";
@@ -243,42 +249,36 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
           워크플로우 템플릿
         </Link>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="block min-w-0 flex-1">
-            <label className="block">
-              <span className="sr-only">워크플로우 템플릿 제목</span>
-              <input
-                value={isUserTemplate ? titleDraft : wf.name}
-                readOnly={!isUserTemplate}
-                onChange={isUserTemplate ? (e) => setTitleDraft(e.target.value) : undefined}
-                className={cn(
-                  "w-full max-w-2xl rounded-xl border bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-zinc-950 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100",
-                  isUserTemplate ? "border-zinc-200" : "border-zinc-200",
-                )}
-              />
-            </label>
-            <label className="mt-2 block max-w-2xl">
-              <span className="sr-only">워크플로우 템플릿 설명</span>
-              <textarea
-                value={isUserTemplate ? subtitleDraft : preview.subtitle}
-                readOnly={!isUserTemplate}
-                onChange={isUserTemplate ? (e) => setSubtitleDraft(e.target.value) : undefined}
-                rows={2}
-                placeholder={isUserTemplate ? "설명을 적어보세요" : undefined}
-                className={cn(
-                  "w-full resize-y rounded-xl border bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100",
-                  isUserTemplate ? "border-zinc-200" : "border-zinc-200",
-                )}
-              />
-            </label>
+        <div className={DETAIL_PRIMARY_HEADER_ROW_CLASS}>
+          <div className={DETAIL_HEADER_TITLE_ACTION_ROW_CLASS}>
+            <div className="min-w-0 flex-1">
+              <label className="block">
+                <span className="sr-only">워크플로우 템플릿 제목</span>
+                <input
+                  value={isUserTemplate ? titleDraft : wf.name}
+                  readOnly={!isUserTemplate}
+                  onChange={isUserTemplate ? (e) => setTitleDraft(e.target.value) : undefined}
+                  className={DETAIL_PAGE_TITLE_INPUT_CLASS}
+                />
+              </label>
+            </div>
+            <div className={DETAIL_PRIMARY_HEADER_TRAILING_CLASS}>
+              <button type="button" onClick={handleCreateProject} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
+                프로젝트 생성
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleCreateProject}
-            className="shrink-0 rounded-full bg-zinc-900 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
-          >
-            프로젝트 생성
-          </button>
+          <label className="block max-w-2xl">
+            <span className="sr-only">워크플로우 템플릿 설명</span>
+            <textarea
+              value={isUserTemplate ? subtitleDraft : preview.subtitle}
+              readOnly={!isUserTemplate}
+              onChange={isUserTemplate ? (e) => setSubtitleDraft(e.target.value) : undefined}
+              rows={2}
+              placeholder={isUserTemplate ? "설명을 적어보세요" : undefined}
+              className={DETAIL_PAGE_SUBTITLE_TEXTAREA_CLASS}
+            />
+          </label>
         </div>
 
         {linkedProjects.length > 0 ? (
