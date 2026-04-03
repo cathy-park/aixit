@@ -60,7 +60,6 @@ import {
   removeDashboardWorkflow,
   setDashboardWorkflowFolder,
 } from "@/lib/workflows-store";
-import { reassignMemoNotesFromFolder, syncMemoNotesToDashboardFolders } from "@/lib/notes-store";
 import { cn } from "@/components/ui/cn";
 
 const FOLDER_INITIAL = 6;
@@ -456,7 +455,6 @@ export function DashboardExperience() {
     saveLayout(lay);
     setLayout(lay);
     setFolderRecords(folders);
-    syncMemoNotesToDashboardFolders();
   }, []);
 
   const handleDeleteFolder = (strategy: "move_all" | "folder_only", targetFolderId: string) => {
@@ -467,7 +465,6 @@ export function DashboardExperience() {
       saveLayout(next);
       return next;
     });
-    reassignMemoNotesFromFolder(deleteTarget.id, tid);
     removeDashboardFolder(deleteTarget.id);
     refreshFolders();
     if (activeFolderId === deleteTarget.id) setActiveFolderId("all");

@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
@@ -15,23 +15,19 @@ import type { FolderBarItem } from "@/components/dashboard/DashboardFolderBar";
 import { IdeaModal, type IdeaModalMode } from "@/components/memos/IdeaModal";
 import { PillSearchField } from "@/components/ui/PillSearchField";
 import { cn } from "@/components/ui/cn";
-import { TOOL_CARD_SHELL_CLASS } from "@/components/tools/ToolCard";
+import { EditableLifecycleStatusControl } from "@/components/dashboard/WorkflowCard";
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
+import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
+import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import {
-  addDashboardFolder,
-  loadDashboardFolders,
-  pickDefaultProjectFolderId,
-  removeDashboardFolder,
-  reorderDashboardFolderBefore,
-  updateDashboardFolder,
-  type DashboardFolderRecord,
-} from "@/lib/dashboard-folders-store";
-import {
-  ensureLayoutMerged,
-  migrateAllEntriesFromFolder,
-  saveLayout,
-} from "@/lib/dashboard-layout-store";
+  addMemoFolder,
+  loadMemoFolders,
+  pickDefaultMemoFolderId,
+  removeMemoFolder,
+  reorderMemoFolderBefore,
+  updateMemoFolder,
+} from "@/lib/memo-folders-store";
 import { MEMO_ENTRY_MIME } from "@/lib/layout-card-dnd";
 import {
   ensureMemoLayoutMerged,
@@ -53,7 +49,7 @@ import {
   NOTES_UPDATED_EVENT,
   removeNote,
   reassignMemoNotesFromFolder,
-  syncMemoNotesToDashboardFolders,
+  syncMemoNotesToMemoFolders,
   updateNote,
   type IdeaNote,
 } from "@/lib/notes-store";
@@ -108,6 +104,7 @@ function buildDisplayList(
 
 function IdeaMemoCard({
   note,
+  folder,
   pinned,
   dropTargetKey,
   memoDnD,
@@ -117,6 +114,7 @@ function IdeaMemoCard({
   onDelete,
 }: {
   note: IdeaNote;
+  folder: DashboardFolderRecord;
   pinned: boolean;
   dropTargetKey: string | null;
   memoDnD: MemoLayoutDnD | null;
@@ -133,6 +131,11 @@ function IdeaMemoCard({
   const tagTone = keywordTagToneClass(normalizeKeyword(note.category));
   const dnd = memoDnD;
 
+  const stopCardNav = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <div
       className={cn(
@@ -147,85 +150,102 @@ function IdeaMemoCard({
       onDrop={dnd ? (e) => dnd.onDrop(e, note.id) : undefined}
       onDragEnd={dnd ? dnd.onDragEnd : undefined}
     >
-      <article className={cn(TOOL_CARD_SHELL_CLASS, "relative")}>
-        <div className="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-full bg-white/90 px-0.5 py-0.5 shadow-sm ring-1 ring-zinc-200/80 backdrop-blur-sm">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onTogglePin();
-            }}
-            className={cn(
-              "grid h-8 w-8 place-items-center rounded-full text-base leading-none hover:bg-zinc-100",
-              pinned && "text-amber-500",
-            )}
-            aria-label={pinned ? "즐겨찾기 해제" : "즐겨찾기"}
-            title="즐겨찾기"
-          >
-            {pinned ? "★" : "☆"}
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="grid h-8 w-8 place-items-center rounded-full text-base leading-none hover:bg-zinc-100"
-            aria-label="수정"
-            title="수정"
-          >
-            ✏
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="grid h-8 w-8 place-items-center rounded-full text-base leading-none hover:bg-zinc-100"
-            aria-label="삭제"
-            title="삭제"
-          >
-            🗑
-          </button>
-        </div>
-
-        <div className={grayscaleMain}>
-          <button type="button" onClick={onOpenModal} className="w-full pr-24 text-left">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="truncate text-lg font-bold tracking-tight text-zinc-950">
-                  {note.title.trim() || "제목 없음"}
-                </span>
-                {converted ? (
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
-                    전환 완료
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1.5 line-clamp-3 text-sm leading-snug text-zinc-500">
-                {note.content?.trim() || "본문 없음"}
-              </p>
-            </div>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tagTone)}>
-                #{note.category}
-              </span>
-            </div>
-          </button>
-        </div>
-
-        {converted && note.convertedProjectId ? (
-          <div className="mt-6 border-t border-zinc-100 pt-5">
-            <Link
-              href={`/workspace?id=${encodeURIComponent(note.convertedProjectId)}`}
-              className={cn(WORKSPACE_HEADER_ADD_MATCH_BTN, "inline-flex w-full justify-center no-underline sm:w-auto")}
+      <div className="flex box-border overflow-hidden rounded-[28px] border border-zinc-200/80 bg-white p-5 shadow-md shadow-zinc-200/50">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              onClick={onOpenModal}
+              className="min-w-0 flex-1 rounded-2xl text-left outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
             >
-              워크스페이스 열기
-            </Link>
+              <div className={grayscaleMain}>
+                <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                  <FolderGlyph folder={folder} size="md" className="shrink-0" accentColor={folder.color} />
+                  <span className="truncate text-lg font-bold tracking-tight text-zinc-950">
+                    {note.title.trim() || "제목 없음"}
+                  </span>
+                  <EditableLifecycleStatusControl
+                    status={note.projectStatus ?? "waiting"}
+                    editable={!converted}
+                    ariaLabelEntity="아이디어"
+                    onChange={(next) => updateNote(note.id, { projectStatus: next })}
+                  />
+                  {converted ? (
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
+                      전환 완료
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-2 line-clamp-3 text-sm font-medium leading-snug text-zinc-500">
+                  {note.content?.trim() || "본문 없음"}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tagTone)}>
+                    #{note.category}
+                  </span>
+                </div>
+              </div>
+            </button>
+
+            <div className="flex shrink-0 flex-row items-start gap-0">
+              <button
+                type="button"
+                draggable={false}
+                onClick={(e) => {
+                  stopCardNav(e);
+                  onTogglePin();
+                }}
+                className={cn(
+                  actionIconButtonClass,
+                  "h-8 w-8",
+                  pinned && "text-amber-500 hover:bg-amber-50 hover:text-amber-600",
+                )}
+                aria-pressed={Boolean(pinned)}
+                title={pinned ? "상단 고정 해제" : "상단 고정"}
+              >
+                <IconStarPin active={Boolean(pinned)} />
+              </button>
+              <button
+                type="button"
+                draggable={false}
+                title="수정"
+                aria-label="메모 편집"
+                onClick={(e) => {
+                  stopCardNav(e);
+                  onEdit();
+                }}
+                className={cn(actionIconButtonClass, "h-8 w-8")}
+              >
+                <IconEdit />
+              </button>
+              <button
+                type="button"
+                draggable={false}
+                title="삭제"
+                aria-label="메모 삭제"
+                onClick={(e) => {
+                  stopCardNav(e);
+                  onDelete();
+                }}
+                className={cn(actionIconButtonClass, "h-8 w-8")}
+              >
+                <IconTrash />
+              </button>
+            </div>
           </div>
-        ) : null}
-      </article>
+
+          {converted && note.convertedProjectId ? (
+            <div className="mt-6 border-t border-zinc-100 pt-5">
+              <Link
+                href={`/workspace?id=${encodeURIComponent(note.convertedProjectId)}`}
+                className={cn(WORKSPACE_HEADER_ADD_MATCH_BTN, "inline-flex w-full justify-center no-underline sm:w-auto")}
+              >
+                워크스페이스 열기
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -263,21 +283,21 @@ export function IdeaMemosView() {
   const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>({});
 
   const refreshFolders = useCallback(() => {
-    setFolderRecords(loadDashboardFolders());
+    setFolderRecords(loadMemoFolders());
   }, []);
 
   const bumpNotesAndLayout = useCallback(() => {
-    const folders = loadDashboardFolders();
-    const fb = pickDefaultProjectFolderId(folders);
+    const folders = loadMemoFolders();
+    const fb = pickDefaultMemoFolderId(folders);
     const n = loadNotes();
     setNotes(n);
     setMemoLayout(ensureMemoLayoutMerged(n, fb));
   }, []);
 
   useEffect(() => {
-    const folders = loadDashboardFolders();
+    const folders = loadMemoFolders();
     setFolderRecords(folders);
-    const fb = pickDefaultProjectFolderId(folders);
+    const fb = pickDefaultMemoFolderId(folders);
     const n = loadNotes();
     setNotes(n);
     setMemoLayout(ensureMemoLayoutMerged(n, fb));
@@ -288,20 +308,20 @@ export function IdeaMemosView() {
   useEffect(() => {
     const onNotes = () => bumpNotesAndLayout();
     const onMemoLayout = () => setMemoLayout(loadMemoLayout() ?? []);
-    const onFolders = () => {
+    const onMemoFolders = () => {
       refreshFolders();
-      syncMemoNotesToDashboardFolders();
+      syncMemoNotesToMemoFolders();
       bumpNotesAndLayout();
     };
     const onPinned = () => setPinnedIds(loadPinnedIdeaNoteIds());
     window.addEventListener(NOTES_UPDATED_EVENT, onNotes);
     window.addEventListener(MEMO_LAYOUT_UPDATED_EVENT, onMemoLayout);
-    window.addEventListener("aixit-dashboard-folders-updated", onFolders);
+    window.addEventListener("aixit-memo-folders-updated", onMemoFolders);
     window.addEventListener(PINNED_IDEA_NOTES_UPDATED_EVENT, onPinned);
     return () => {
       window.removeEventListener(NOTES_UPDATED_EVENT, onNotes);
       window.removeEventListener(MEMO_LAYOUT_UPDATED_EVENT, onMemoLayout);
-      window.removeEventListener("aixit-dashboard-folders-updated", onFolders);
+      window.removeEventListener("aixit-memo-folders-updated", onMemoFolders);
       window.removeEventListener(PINNED_IDEA_NOTES_UPDATED_EVENT, onPinned);
     };
   }, [bumpNotesAndLayout, refreshFolders]);
@@ -319,7 +339,7 @@ export function IdeaMemosView() {
 
   const visibleFolderRecords = useMemo(() => folderRecords.filter((f) => !f.hidden), [folderRecords]);
 
-  const hiddenProjectFolders = useMemo(() => folderRecords.filter((f) => f.hidden), [folderRecords]);
+  const hiddenMemoFolders = useMemo(() => folderRecords.filter((f) => f.hidden), [folderRecords]);
 
   const allVisibleMemoCount = useMemo(
     () => notes.filter((n) => !hiddenFolderIds.has(n.folderId)).length,
@@ -341,7 +361,7 @@ export function IdeaMemosView() {
       const f = folderRecords.find((x) => x.id === activeFolderId);
       if (f && !f.hidden) return activeFolderId;
     }
-    return pickDefaultProjectFolderId(folderRecords);
+    return pickDefaultMemoFolderId(folderRecords);
   }, [activeFolderId, folderRecords]);
 
   const q = search.trim();
@@ -379,7 +399,7 @@ export function IdeaMemosView() {
 
   const handleToggleFolderHidden = useCallback(
     (f: DashboardFolderRecord) => {
-      updateDashboardFolder(f.id, { hidden: !f.hidden });
+      updateMemoFolder(f.id, { hidden: !f.hidden });
       refreshFolders();
     },
     [refreshFolders],
@@ -390,11 +410,8 @@ export function IdeaMemosView() {
       if (!deleteTarget) return;
       void strategy;
       const tid = targetFolderId;
-      const prev = ensureLayoutMerged();
-      const next = migrateAllEntriesFromFolder(prev, deleteTarget.id, tid);
-      saveLayout(next);
       reassignMemoNotesFromFolder(deleteTarget.id, tid);
-      removeDashboardFolder(deleteTarget.id);
+      removeMemoFolder(deleteTarget.id);
       refreshFolders();
       bumpNotesAndLayout();
       if (activeFolderId === deleteTarget.id) setActiveFolderId("all");
@@ -523,12 +540,13 @@ export function IdeaMemosView() {
     />
   );
 
-  const renderMemoGrid = (items: IdeaNote[], endDropFolderId: string) => (
+  const renderMemoGrid = (items: IdeaNote[], sectionFolder: DashboardFolderRecord, endDropFolderId: string) => (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {items.map((note) => (
         <IdeaMemoCard
           key={note.id}
           note={note}
+          folder={sectionFolder}
           pinned={pinnedIds.has(note.id)}
           dropTargetKey={memoDnD.dropTargetKey}
           memoDnD={memoDnD}
@@ -565,7 +583,7 @@ export function IdeaMemosView() {
       <AdaptivePageHeader
         title="메모"
         count={headerCount}
-        description="프로젝트와 같은 폴더로 정리하고, 카드를 끌어 순서·폴더를 바꿀 수 있어요."
+        description="메모 전용 폴더로 정리하고, 카드를 끌어 순서·폴더를 바꿀 수 있어요. (프로젝트 폴더와 데이터는 분리됩니다.)"
         rightSlot={
           <button type="button" onClick={openCreate} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
             새 아이디어 기록
@@ -581,9 +599,9 @@ export function IdeaMemosView() {
             activeFolderId={activeFolderId}
             onFolderChange={setActiveFolderId}
             onAddFolderClick={() => setFolderModal({ mode: "create", initial: null })}
-            hiddenFolderRecords={hiddenProjectFolders}
+            hiddenFolderRecords={hiddenMemoFolders}
             onUnhideHiddenFolder={(id) => {
-              updateDashboardFolder(id, { hidden: false });
+              updateMemoFolder(id, { hidden: false });
               refreshFolders();
             }}
             onDeleteHiddenFolderRequest={(f) => setDeleteTarget(f)}
@@ -591,7 +609,7 @@ export function IdeaMemosView() {
             onFolderToggleHidden={handleToggleFolderHidden}
             onFolderDeleteRequest={(f) => setDeleteTarget(f)}
             onReorderFolders={(dragId, beforeId) => {
-              reorderDashboardFolderBefore(dragId, beforeId);
+              reorderMemoFolderBefore(dragId, beforeId);
               refreshFolders();
             }}
           />
@@ -650,7 +668,7 @@ export function IdeaMemosView() {
                           검색 조건에 맞는 메모가 없어요.
                         </div>
                       ) : (
-                        renderMemoGrid(items, folder.id)
+                        renderMemoGrid(items, folder, folder.id)
                       )
                     ) : null}
                   </section>
@@ -691,7 +709,7 @@ export function IdeaMemosView() {
                       : "조건에 맞는 메모가 없어요."}
                   </div>
                 ) : (
-                  renderMemoGrid(singleFolderDisplay, folder.id)
+                  renderMemoGrid(singleFolderDisplay, folder, folder.id)
                 )}
               </div>
             ))
@@ -708,9 +726,9 @@ export function IdeaMemosView() {
         onSave={(payload) => {
           if (payload.id) {
             const { id, ...rest } = payload;
-            updateDashboardFolder(id, rest);
+            updateMemoFolder(id, rest);
           } else {
-            addDashboardFolder({
+            addMemoFolder({
               name: payload.name,
               emoji: payload.emoji,
               iconType: payload.iconType,
@@ -721,7 +739,7 @@ export function IdeaMemosView() {
             });
           }
           refreshFolders();
-          syncMemoNotesToDashboardFolders();
+          syncMemoNotesToMemoFolders();
           bumpNotesAndLayout();
         }}
       />

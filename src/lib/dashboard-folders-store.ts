@@ -46,12 +46,12 @@ export function loadDashboardFolders(): DashboardFolderRecord[] {
     window.localStorage.setItem(KEY, JSON.stringify(initial));
     return initial;
   }
-  return raw.map(normalizeFolder);
+  return raw.map(normalizeDashboardFolderRecord);
 }
 
 export function saveDashboardFolders(folders: DashboardFolderRecord[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(KEY, JSON.stringify(folders.map(normalizeFolder)));
+  window.localStorage.setItem(KEY, JSON.stringify(folders.map(normalizeDashboardFolderRecord)));
   window.dispatchEvent(new CustomEvent("aixit-dashboard-folders-updated"));
 }
 
@@ -81,7 +81,7 @@ export function reorderDashboardFolderBefore(dragId: string, beforeId: string | 
   saveDashboardFolders(next);
 }
 
-function normalizeFolder(f: DashboardFolderRecord): DashboardFolderRecord {
+export function normalizeDashboardFolderRecord(f: DashboardFolderRecord): DashboardFolderRecord {
   const raw = f.iconType as string;
   let iconType: DashboardFolderIconType = "emoji";
   if (raw === "image") {
@@ -120,7 +120,7 @@ export function addDashboardFolder(
 ): DashboardFolderRecord {
   const id = data.id ?? `folder_${Date.now().toString(16)}`;
   const list = loadDashboardFolders();
-  const record = normalizeFolder({ ...data, id } as DashboardFolderRecord);
+  const record = normalizeDashboardFolderRecord({ ...data, id } as DashboardFolderRecord);
   saveDashboardFolders([...list, record]);
   return record;
 }
@@ -130,7 +130,7 @@ export function updateDashboardFolder(id: string, patch: Partial<DashboardFolder
   const idx = list.findIndex((f) => f.id === id);
   if (idx < 0) return;
   const next = [...list];
-  next[idx] = normalizeFolder({ ...next[idx], ...patch, id });
+  next[idx] = normalizeDashboardFolderRecord({ ...next[idx], ...patch, id });
   saveDashboardFolders(next);
 }
 
@@ -150,3 +150,11 @@ export function pickDefaultProjectFolderId(folders: DashboardFolderRecord[]): st
   if (ddokdi) return ddokdi.id;
   return visible[0]?.id ?? "ddokdi";
 }
+
+/** 명시적 프로젝트 폴더 전용 API (메모 폴더 스토어와 구분) */
+export const loadProjectFolders = loadDashboardFolders;
+export const saveProjectFolders = saveDashboardFolders;
+export const createProjectFolder = addDashboardFolder;
+export const updateProjectFolder = updateDashboardFolder;
+export const deleteProjectFolder = removeDashboardFolder;
+export const reorderProjectFolderBefore = reorderDashboardFolderBefore;

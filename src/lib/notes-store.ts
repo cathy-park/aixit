@@ -7,7 +7,9 @@ import {
   saveMemoLayout,
   updateMemoEntryFolder,
 } from "@/lib/memo-layout-store";
-import { loadDashboardFolders, pickDefaultProjectFolderId } from "@/lib/dashboard-folders-store";
+import { ensureMemoFolderDomainSplit } from "@/lib/memo-folder-migration";
+import { loadMemoFolders, pickDefaultMemoFolderId } from "@/lib/memo-folders-store";
+import { isProjectLifecycleStatus, type ProjectLifecycleStatus } from "@/lib/project-lifecycle-status";
 
 export const NOTE_CATEGORIES = ["MVP", "강의", "소설", "일반"] as const;
 export type NoteCategory = (typeof NOTE_CATEGORIES)[number];
@@ -48,8 +50,10 @@ export type IdeaNote = {
   content: string;
   category: NoteCategory;
   metadata: MvpNoteMetadata | LectureNoteMetadata | NovelNoteMetadata | GeneralNoteMetadata;
-  /** 대시보드 폴더 id (프로젝트와 동일 스토어) */
+  /** 메모 전용 폴더 id (`memo-folders-store`) */
   folderId: string;
+  /** 카드 StatusChip용 (waiting | in_progress | completed) */
+  projectStatus?: ProjectLifecycleStatus;
   isConverted: boolean;
   convertedProjectId?: string;
   createdAt: number;
@@ -59,6 +63,8 @@ export type IdeaNote = {
 export const NOTES_UPDATED_EVENT = "aixit-notes-updated";
 
 const KEY = "aixit.ideaNotes.v1";
+
+let memoFolderSplitEnsured = false;
 
 function safeParse<T>(raw: string | null): T | null {
   if (!raw) return null;
@@ -74,12 +80,19 @@ function makeId() {
   return `note_${Date.now().toString(16)}`;
 }
 
-function resolveFolderId(raw: unknown): string {
+function deriveNoteProjectStatus(n: Pick<IdeaNote, "isConverted" | "projectStatus">): ProjectLifecycleStatus {
+  if (n.isConverted) return "completed";
+  const raw = n.projectStatus;
+  if (isProjectLifecycleStatus(raw)) return raw;
+  return "waiting";
+}
+
+function resolveMemoFolderId(raw: unknown): string {
   if (typeof raw === "string" && raw.trim()) return raw.trim();
   if (typeof window !== "undefined") {
-    return pickDefaultProjectFolderId(loadDashboardFolders());
+    return pickDefaultMemoFolderId(loadMemoFolders());
   }
-  return "ddokdi";
+  return "memo-folder-s1";
 }
 
 /** 로컬에 남은 구버전 키를 신규 스키마로 합칩니다. */
@@ -115,7 +128,11 @@ export function migrateMetadataForCategory(category: NoteCategory, raw: unknown)
 function normalizeNote(n: IdeaNote): IdeaNote {
   const category = NOTE_CATEGORIES.includes(n.category as NoteCategory) ? n.category : "일반";
   const metadata = migrateMetadataForCategory(category, n.metadata);
-  const folderId = resolveFolderId((n as { folderId?: unknown }).folderId);
+  const folderId = resolveMemoFolderId((n as { folderId?: unknown }).folderId);
+  const projectStatus = deriveNoteProjectStatus({
+    isConverted: Boolean(n.isConverted),
+    projectStatus: (n as { projectStatus?: ProjectLifecycleStatus }).projectStatus,
+  });
   return {
     ...n,
     title: typeof n.title === "string" ? n.title : "",
@@ -123,6 +140,7 @@ function normalizeNote(n: IdeaNote): IdeaNote {
     category,
     metadata,
     folderId,
+    projectStatus,
     isConverted: Boolean(n.isConverted),
     convertedProjectId: typeof n.convertedProjectId === "string" ? n.convertedProjectId : undefined,
     createdAt: typeof n.createdAt === "number" ? n.createdAt : Date.now(),
@@ -130,12 +148,12 @@ function normalizeNote(n: IdeaNote): IdeaNote {
   };
 }
 
-/** 폴더 id 변경·삭제 후 메모 folderId·레이아웃 보정 (프로젝트 페이지와 동기) */
-export function syncMemoNotesToDashboardFolders() {
+/** 메모 폴더 id 변경·삭제 후 note·레이아웃 보정 (메모 도메인만) */
+export function syncMemoNotesToMemoFolders() {
   if (typeof window === "undefined") return;
-  const folders = loadDashboardFolders();
+  const folders = loadMemoFolders();
   const validIds = folders.map((f) => f.id);
-  const fallback = pickDefaultProjectFolderId(folders);
+  const fallback = pickDefaultMemoFolderId(folders);
   const list = loadNotes();
   const next = list.map((n) =>
     validIds.includes(n.folderId) ? n : normalizeNote({ ...n, folderId: fallback }),
@@ -146,7 +164,12 @@ export function syncMemoNotesToDashboardFolders() {
   saveMemoLayout(layout);
 }
 
-/** 폴더 삭제 시 프로젝트와 동일하게 메모·레이아웃 이동 */
+/** @deprecated 메모 전용으로 `syncMemoNotesToMemoFolders` 사용 */
+export function syncMemoNotesToDashboardFolders() {
+  syncMemoNotesToMemoFolders();
+}
+
+/** 메모 폴더 삭제·이동 시 메모·레이아웃만 갱신 */
 export function reassignMemoNotesFromFolder(fromFolderId: string, toFolderId: string) {
   if (typeof window === "undefined") return;
   const list = loadNotes().map((n) =>
@@ -190,6 +213,10 @@ export function validateStructuredNote(note: Pick<IdeaNote, "category" | "metada
 
 export function loadNotes(): IdeaNote[] {
   if (typeof window === "undefined") return [];
+  if (!memoFolderSplitEnsured) {
+    memoFolderSplitEnsured = true;
+    ensureMemoFolderDomainSplit();
+  }
   const raw = safeParse<IdeaNote[]>(window.localStorage.getItem(KEY));
   if (!raw || !Array.isArray(raw)) return [];
   return raw.map((x) => normalizeNote(x as IdeaNote));
@@ -209,15 +236,17 @@ export function addNote(
   input: Omit<IdeaNote, "id" | "createdAt" | "updatedAt" | "isConverted" | "folderId"> & {
     isConverted?: boolean;
     folderId?: string;
+    projectStatus?: ProjectLifecycleStatus;
   },
 ) {
   const now = Date.now();
-  const folderId = input.folderId?.trim() || pickDefaultProjectFolderId(loadDashboardFolders());
+  const folderId = input.folderId?.trim() || pickDefaultMemoFolderId(loadMemoFolders());
   const note: IdeaNote = normalizeNote({
     ...input,
     folderId,
     id: makeId(),
     isConverted: input.isConverted ?? false,
+    projectStatus: input.projectStatus ?? "waiting",
     createdAt: now,
     updatedAt: now,
   } as IdeaNote);

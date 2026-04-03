@@ -62,14 +62,18 @@ export function StatusChip({ status }: { status: ProjectLifecycleStatus }) {
   );
 }
 
-function CardProjectLifecycleControl({
-  workflowId,
-  projectStatus,
+/** StatusChip + 드롭다운 — 프로젝트 카드·메모 카드 공통 */
+export function EditableLifecycleStatusControl({
+  status,
   editable,
+  onChange,
+  ariaLabelEntity = "프로젝트",
 }: {
-  workflowId: string;
-  projectStatus: ProjectLifecycleStatus;
+  status: ProjectLifecycleStatus;
   editable: boolean;
+  onChange: (next: ProjectLifecycleStatus) => void;
+  /** aria-label 접두(예: "아이디어", "프로젝트") */
+  ariaLabelEntity?: string;
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -94,11 +98,11 @@ function CardProjectLifecycleControl({
   }, [open]);
 
   if (!editable) {
-    return <StatusChip status={projectStatus} />;
+    return <StatusChip status={status} />;
   }
 
   const apply = (next: ProjectLifecycleStatus) => {
-    setDashboardProjectLifecycleStatus(workflowId, next);
+    onChange(next);
     setOpen(false);
   };
 
@@ -109,14 +113,14 @@ function CardProjectLifecycleControl({
         className="inline-flex rounded-full border-0 bg-transparent p-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-label={`프로젝트 상태: ${PROJECT_LIFECYCLE_LABEL[projectStatus]}. 눌러서 변경`}
+        aria-label={`${ariaLabelEntity} 상태: ${PROJECT_LIFECYCLE_LABEL[status]}. 눌러서 변경`}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           setOpen((v) => !v);
         }}
       >
-        <StatusChip status={projectStatus} />
+        <StatusChip status={status} />
       </button>
       {open ? (
         <>
@@ -132,7 +136,7 @@ function CardProjectLifecycleControl({
           />
           <ul
             role="listbox"
-            aria-label="프로젝트 상태 선택"
+            aria-label={`${ariaLabelEntity} 상태 선택`}
             className="absolute left-0 top-[calc(100%+8px)] z-[70] min-w-[9.5rem] rounded-2xl bg-white py-1.5 text-left shadow-xl ring-1 ring-zinc-200"
           >
             {PROJECT_LIFECYCLE_OPTIONS.map((s) => (
@@ -140,10 +144,10 @@ function CardProjectLifecycleControl({
                 <button
                   type="button"
                   role="option"
-                  aria-selected={s === projectStatus}
+                  aria-selected={s === status}
                   className={cn(
                     "flex w-full items-center px-3 py-2 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50",
-                    s === projectStatus && "bg-sky-50 text-sky-900",
+                    s === status && "bg-sky-50 text-sky-900",
                   )}
                   onClick={(e) => {
                     e.preventDefault();
@@ -159,6 +163,24 @@ function CardProjectLifecycleControl({
         </>
       ) : null}
     </div>
+  );
+}
+
+function CardProjectLifecycleControl({
+  workflowId,
+  projectStatus,
+  editable,
+}: {
+  workflowId: string;
+  projectStatus: ProjectLifecycleStatus;
+  editable: boolean;
+}) {
+  return (
+    <EditableLifecycleStatusControl
+      status={projectStatus}
+      editable={editable}
+      onChange={(next) => setDashboardProjectLifecycleStatus(workflowId, next)}
+    />
   );
 }
 

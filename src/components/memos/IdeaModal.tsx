@@ -13,6 +13,7 @@ import {
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
 import { listWorkflowTemplates } from "@/lib/aixit-data";
 import { appendUserLayoutEntry } from "@/lib/dashboard-layout-store";
+import { loadDashboardFolders, pickDefaultProjectFolderId } from "@/lib/dashboard-folders-store";
 import { promoteNoteToProject, type PromoteTemplateChoice } from "@/lib/note-to-project";
 import {
   addNote,
@@ -130,12 +131,13 @@ export function IdeaModal({
       window.alert(err);
       return;
     }
-    const result = promoteNoteToProject(note, note.folderId, choice);
+    const projectFolderId = pickDefaultProjectFolderId(loadDashboardFolders());
+    const result = promoteNoteToProject(note, projectFolderId, choice);
     if (!result) {
       window.alert("프로젝트를 만들 수 없습니다. 템플릿을 확인해 주세요.");
       return;
     }
-    appendUserLayoutEntry(result.projectId, note.folderId);
+    appendUserLayoutEntry(result.projectId, projectFolderId);
     updateNote(note.id, { isConverted: true, convertedProjectId: result.projectId });
     setTemplateOpen(false);
     onClose();

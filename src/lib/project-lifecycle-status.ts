@@ -10,7 +10,7 @@ export function isProjectLifecycleStatus(v: unknown): v is ProjectLifecycleStatu
 export const PROJECT_LIFECYCLE_OPTIONS: ProjectLifecycleStatus[] = ["waiting", "in_progress", "completed"];
 
 export const PROJECT_LIFECYCLE_LABEL: Record<ProjectLifecycleStatus, string> = {
-  waiting: "대기",
+  waiting: "시작전",
   in_progress: "진행중",
   completed: "완료",
 };
