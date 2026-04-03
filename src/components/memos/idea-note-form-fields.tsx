@@ -6,11 +6,15 @@ import { cn } from "@/components/ui/cn";
 import { WORKSPACE_MEMO_TEXTAREA_CLASS } from "@/components/workspace/WorkspaceLinksMemosSections";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { memoFolderCategoryKey } from "@/lib/memo-folders-store";
-import { normalizeKeyword } from "@/lib/keyword-tag-styles";
+import { StatusChip } from "@/components/dashboard/WorkflowCard";
+import { FolderGlyph } from "@/components/dashboard/FolderGlyph";
+import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
 import { normalizeIdeaNoteTags, type IdeaNote, type NoteStructureKey } from "@/lib/notes-store";
 import {
   buildSectionSetsFromRawMetadata,
   emptySectionSets,
+  getEffectivePlanTemplate,
+  getSectionsForStructure,
   newStructuredSectionId,
   presetLectureTargetSection,
   presetSectionByKey,
@@ -441,6 +445,112 @@ export function IdeaFormFields({
           placeholder="태그 입력 후 Enter"
           maxLength={52}
         />
+      </div>
+    </div>
+  );
+}
+
+const READONLY_SECTION_SHELL =
+  "rounded-lg border border-zinc-200/90 bg-white p-3 shadow-sm";
+
+/** 메모 카드 뷰어: 입력 컨트롤 없이 저장된 노트만 표시 */
+export function IdeaMemoReadOnlyPanel({
+  note,
+  memoFolders,
+}: {
+  note: IdeaNote;
+  memoFolders: DashboardFolderRecord[];
+}) {
+  const meta = (note.metadata ?? {}) as Record<string, unknown>;
+  const folder = memoFolders.find((f) => f.id === note.folderId);
+  const folderDisplay = folder ? memoFolderCategoryKey(folder) : note.category;
+  const planKey = getEffectivePlanTemplate(meta, note.category) as NoteStructureKey;
+  const planLabel = PLAN_CHIPS.find((p) => p.key === planKey)?.label ?? planKey;
+  const templateKey = planKey === "일반" ? null : (planKey as StructuredMemoTemplateKey);
+  const sections = templateKey ? getSectionsForStructure(meta, planKey) : [];
+
+  return (
+    <div className="space-y-4 text-sm">
+      <div className="flex flex-wrap items-center gap-2 gap-y-2 border-b border-zinc-100 pb-3">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-700">
+          <span className="font-semibold text-zinc-500">폴더</span>
+          {folder ? (
+            <FolderGlyph folder={folder} size="sm" className="shrink-0" accentColor={folder.color} />
+          ) : null}
+          <span className="font-semibold text-zinc-900">#{folderDisplay}</span>
+        </div>
+        <span className="hidden text-zinc-300 sm:inline" aria-hidden>
+          ·
+        </span>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-semibold text-zinc-500">템플릿</span>
+          <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[11px] font-bold text-zinc-800 ring-1 ring-zinc-200/90">
+            {planLabel}
+          </span>
+        </div>
+        <StatusChip status={note.projectStatus ?? "waiting"} />
+      </div>
+
+      <div>
+        <div className="text-xs font-semibold text-zinc-500">제목</div>
+        <div className="mt-1.5 text-base font-semibold leading-snug text-zinc-950">
+          {note.title.trim() || "제목 없음"}
+        </div>
+      </div>
+
+      {templateKey ? (
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">
+            {GUIDE_SECTION_LABEL[planKey]}
+          </p>
+          <div className="mt-3 space-y-3">
+            {sections.length === 0 ? (
+              <p className="text-xs text-zinc-500">구조형 섹션이 없습니다.</p>
+            ) : (
+              sections.map((s) => (
+                <div key={s.id} className={READONLY_SECTION_SHELL}>
+                  <div className="text-xs font-semibold text-zinc-900">
+                    {[s.title, s.subtitle].filter(Boolean).join(" · ") || s.key}
+                  </div>
+                  {s.description?.trim() ? (
+                    <div className="mt-1 text-[11px] leading-snug text-zinc-500">{s.description}</div>
+                  ) : null}
+                  <div className="mt-2 whitespace-pre-wrap text-sm font-medium leading-snug text-zinc-700">
+                    {s.value.trim() ? s.value : "—"}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      <div>
+        <div className="text-xs font-semibold text-zinc-500">자유 메모</div>
+        <div className="mt-1.5 whitespace-pre-wrap text-sm font-medium leading-snug text-zinc-700">
+          {note.content?.trim() ? note.content : "—"}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs font-semibold text-zinc-500">태그</div>
+        {note.tags.length === 0 ? (
+          <p className="mt-1.5 text-xs text-zinc-400">태그 없음</p>
+        ) : (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {note.tags.map((tag) => (
+              <span
+                key={tag}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-bold ring-1",
+                  keywordTagToneClass(normalizeKeyword(tag)),
+                )}
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

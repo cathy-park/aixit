@@ -563,6 +563,7 @@ export function IdeaMemosView() {
 
   const openCreate = () => setIdeaModal({ open: true, mode: "create", noteId: null });
 
+  const openView = (note: IdeaNote) => setIdeaModal({ open: true, mode: "view", noteId: note.id });
   const openEdit = (note: IdeaNote) => setIdeaModal({ open: true, mode: "edit", noteId: note.id });
 
   const togglePin = (id: string) => {
@@ -602,7 +603,7 @@ export function IdeaMemosView() {
           dropTargetKey={memoDnD.dropTargetKey}
           memoDnD={memoDnD}
           dimCompleted={dimCompleted}
-          onOpenModal={() => openEdit(note)}
+          onOpenModal={() => openView(note)}
           onTogglePin={() => togglePin(note.id)}
           onEdit={() => openEdit(note)}
           onDelete={() => deleteNote(note)}
@@ -925,6 +926,7 @@ export function IdeaMemosView() {
         folderIdForCreate={newMemoFolderId}
         onClose={() => setIdeaModal((m) => ({ ...m, open: false }))}
         onSaved={bumpNotesAndLayout}
+        onRequestEdit={() => setIdeaModal((m) => (m.mode === "view" ? { ...m, mode: "edit" } : m))}
       />
     </>
   );

@@ -8,6 +8,7 @@ import {
   emptyIdeaFormState,
   formMetadataFromState,
   IdeaFormFields,
+  IdeaMemoReadOnlyPanel,
   noteToFormState,
   type IdeaFormState,
 } from "@/components/memos/idea-note-form-fields";
@@ -57,6 +58,7 @@ export function IdeaModal({
   folderIdForCreate,
   onClose,
   onSaved,
+  onRequestEdit,
 }: {
   open: boolean;
   mode: IdeaModalMode;
@@ -64,6 +66,8 @@ export function IdeaModal({
   folderIdForCreate: string;
   onClose: () => void;
   onSaved?: () => void;
+  /** view 모달에서 편집으로 전환 */
+  onRequestEdit?: () => void;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<IdeaFormState>(() => emptyIdeaFormState("memo-folder-s1"));
@@ -123,7 +127,13 @@ export function IdeaModal({
   );
 
   const copyAll = async () => {
-    const text = buildIdeaCopyText(form);
+    const text =
+      mode === "view" && effectiveNoteId
+        ? (() => {
+            const n = getNote(effectiveNoteId);
+            return n ? buildIdeaCopyText(noteToFormState(n)) : buildIdeaCopyText(form);
+          })()
+        : buildIdeaCopyText(form);
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -170,16 +180,27 @@ export function IdeaModal({
   };
 
   const runPromote = (choice: PromoteTemplateChoice) => {
-    const noteIdAfter = persistFormToStore();
-    const id = noteIdAfter ?? effectiveNoteId;
-    if (!id) {
-      window.alert("메모를 저장할 수 없습니다.");
-      return;
-    }
-    const note = getNote(id);
-    if (!note) {
-      window.alert("저장된 메모를 찾을 수 없습니다.");
-      return;
+    let id: string | null;
+    let note: IdeaNote | null;
+    if (mode === "view") {
+      id = effectiveNoteId;
+      note = id ? getNote(id) : null;
+      if (!id || !note) {
+        window.alert("메모를 찾을 수 없습니다.");
+        return;
+      }
+    } else {
+      const noteIdAfter = persistFormToStore();
+      id = noteIdAfter ?? effectiveNoteId;
+      if (!id) {
+        window.alert("메모를 저장할 수 없습니다.");
+        return;
+      }
+      note = getNote(id);
+      if (!note) {
+        window.alert("저장된 메모를 찾을 수 없습니다.");
+        return;
+      }
     }
     const err = validateStructuredNote(note);
     if (err) {
@@ -221,6 +242,11 @@ export function IdeaModal({
     effectiveNoteId && open ? (getNote(effectiveNoteId) ?? null) : null;
   const showProjectStart = Boolean(currentNote && !currentNote.isConverted) || mode === "create";
 
+  const headerSubtitle =
+    mode === "view"
+      ? "읽기 전용입니다. 수정하려면 하단의 편집을 눌러 주세요."
+      : "폴더를 바꿔도 다른 기획 필드에 적어 둔 내용은 유지됩니다.";
+
   if (!open) return null;
 
   return (
@@ -241,9 +267,7 @@ export function IdeaModal({
             <h2 id="idea-modal-title" className="text-base font-semibold text-zinc-900">
               {headerTitle}
             </h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              폴더를 바꿔도 다른 기획 필드에 적어 둔 내용은 유지됩니다.
-            </p>
+            <p className="mt-1 text-sm text-zinc-500">{headerSubtitle}</p>
           </div>
           <button
             type="button"
@@ -256,7 +280,15 @@ export function IdeaModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 [overflow-anchor:none]">
-          <IdeaFormFields memoFolders={memoFolders} form={form} setForm={setFormPatch} />
+          {mode === "view" ? (
+            currentNote ? (
+              <IdeaMemoReadOnlyPanel note={currentNote} memoFolders={memoFolders} />
+            ) : (
+              <p className="text-sm text-zinc-500">메모를 찾을 수 없습니다.</p>
+            )
+          ) : (
+            <IdeaFormFields memoFolders={memoFolders} form={form} setForm={setFormPatch} />
+          )}
         </div>
 
         <div className="flex flex-col gap-3 border-t border-zinc-100 px-5 py-4">
@@ -327,9 +359,20 @@ export function IdeaModal({
             >
               전체 복사
             </button>
-            <button type="button" onClick={save} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
-              저장
-            </button>
+            {mode === "view" ? (
+              <button
+                type="button"
+                onClick={() => onRequestEdit?.()}
+                disabled={!onRequestEdit}
+                className={WORKSPACE_HEADER_ADD_MATCH_BTN}
+              >
+                편집
+              </button>
+            ) : (
+              <button type="button" onClick={save} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
+                저장
+              </button>
+            )}
           </div>
         </div>
       </div>
