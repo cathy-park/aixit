@@ -41,6 +41,7 @@ import {
   WorkspaceRelatedLinksSection,
   WorkspaceWorkflowCommonMemosSection,
 } from "@/components/workspace/WorkspaceLinksMemosSections";
+import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
 
 function makeId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -617,7 +618,7 @@ export function WorkspaceView() {
                     key={m.id}
                     className="flex items-start justify-between gap-3 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-800 ring-1 ring-zinc-200"
                   >
-                    <span className="min-w-0 flex-1 whitespace-pre-wrap">{m.text}</span>
+                    <MemoMiniMarkupText text={m.text} className="block min-w-0 flex-1 text-sm text-zinc-800" />
                     <button
                       type="button"
                       onClick={() => removeStepMemo(m.id)}
@@ -637,7 +638,7 @@ export function WorkspaceView() {
                 <textarea
                   value={stepMemoDraft}
                   onChange={(e) => setStepMemoDraft(e.target.value)}
-                  placeholder="이 단계에서 기억할 내용을 적어보세요"
+                  placeholder="이 단계 메모 (**굵게**, *기울임*, %%얇게%%)"
                   rows={2}
                   className="w-full resize-y rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100"
                 />

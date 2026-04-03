@@ -10,6 +10,7 @@ import { CredentialProviderMark } from "@/components/tools/CredentialProviderMar
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { IosCardToggle } from "@/components/ui/IosCardToggle";
 import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
+import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
 import { APP_CARD_SHELL_WAREHOUSE_CLASS } from "@/components/cards/app-card-layout";
 
 export type ToolCardMode = "warehouse" | "workflow" | "picker";
@@ -43,7 +44,7 @@ function MemoNoteIcon({ className }: { className?: string }) {
 }
 
 function CardHeaderIcon({ tool }: { tool: Tool }) {
-  const box = "flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl ring-1";
+  const box = "flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl ring-1";
   const url = tool.logoImageUrl?.trim();
   const hex = tool.avatarBackgroundColor?.trim();
   if (url) {
@@ -62,7 +63,7 @@ function CardHeaderIcon({ tool }: { tool: Tool }) {
     const gptBg = hex && /^#/.test(hex) ? hex : "#059669";
     return (
       <div className={cn(box, "text-white ring-emerald-500/35")} style={{ backgroundColor: gptBg }} aria-hidden>
-        <OpenAiMark className="h-7 w-7" />
+        <OpenAiMark className="h-9 w-9" />
       </div>
     );
   }
@@ -73,7 +74,7 @@ function CardHeaderIcon({ tool }: { tool: Tool }) {
       style={hex && /^#/.test(hex) ? { backgroundColor: hex } : undefined}
       aria-hidden
     >
-      <span className={cn("font-extrabold tracking-tight", label.length <= 2 ? "text-[12px]" : "text-[10px]")}>
+      <span className={cn("font-extrabold tracking-tight", label.length <= 2 ? "text-[15px]" : "text-[12px]")}>
         {label}
       </span>
     </div>
@@ -92,7 +93,7 @@ function CardHeaderWithAccountBadge({
   const provider = tool.credentialProvider ?? "email";
 
   return (
-    <div className="relative h-12 w-12 shrink-0">
+    <div className="relative h-16 w-16 shrink-0">
       <CardHeaderIcon tool={tool} />
       {hasCreds ? (
         <button
@@ -233,7 +234,7 @@ export function ToolCard({
     >
       <div className={cardShell}>
       <div className={grayscaleMainClass}>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4">
           <CardHeaderWithAccountBadge
             tool={tool}
             hasCreds={hasCreds}
@@ -243,7 +244,7 @@ export function ToolCard({
               setCredentialOpen(true);
             }}
           />
-          <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 overflow-hidden">
@@ -251,11 +252,6 @@ export function ToolCard({
                     {tool.name}
                   </span>
                   <span className="flex shrink-0 flex-wrap items-center gap-2">
-                    {tool.userDisabled ? (
-                      <span className="inline-flex shrink-0 items-center rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-zinc-600">
-                        창고 비활성화
-                      </span>
-                    ) : null}
                     {!effectiveActive && tool.userDisabled !== true && tool.active === false ? (
                       <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200/90 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold leading-tight text-amber-900">
                         미결제·한도
@@ -391,12 +387,11 @@ export function ToolCard({
                 ) : null}
               </div>
             </div>
+            {tool.description?.trim() ? (
+              <p className="mt-[-4px] min-w-0 text-sm leading-snug text-zinc-500">{tool.description.trim()}</p>
+            ) : null}
           </div>
         </div>
-
-        {tool.description?.trim() ? (
-          <p className="mt-1.5 w-full min-w-0 text-sm leading-snug text-zinc-500">{tool.description.trim()}</p>
-        ) : null}
 
         {displayTags.length > 0 ? (
           <div className="mt-5 flex flex-wrap gap-2">
@@ -555,8 +550,8 @@ export function ToolCard({
                 메모
               </h2>
             </div>
-            <div className="mt-5 whitespace-pre-wrap rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-800 ring-1 ring-zinc-200">
-              {tool.highlightNote}
+            <div className="mt-5 rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-800 ring-1 ring-zinc-200">
+              <MemoMiniMarkupText text={tool.highlightNote ?? ""} />
             </div>
             <button
               type="button"

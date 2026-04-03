@@ -142,7 +142,13 @@ export function InspirationSiteFormModal({
 
             <label className="block">
               <span className="text-xs font-bold text-zinc-800">메모</span>
-              <textarea value={memo} onChange={(e) => setMemo(e.target.value)} rows={3} className={cn(inputClass(), "resize-y")} />
+              <textarea
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                rows={3}
+                placeholder="**굵게** *기울임* %%얇게%%"
+                className={cn(inputClass(), "resize-y")}
+              />
             </label>
 
             <div>

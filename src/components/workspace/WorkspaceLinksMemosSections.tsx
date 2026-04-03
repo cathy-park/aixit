@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconEdit, IconTrash } from "@/components/ui/action-icons";
 import type { WorkspaceLinkItem, WorkspaceMemoItem } from "@/lib/workspace-store";
+import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
 
 /** 14px 기준 컴팩트 입력 */
 export const WORKSPACE_LINK_TITLE_INPUT_CLASS =
@@ -305,7 +306,9 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
               key={m.id}
               className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5 ring-1 ring-zinc-100/80"
             >
-              <div className={MEMO_READ_BODY_CLASS}>{m.text}</div>
+              <div className={MEMO_READ_BODY_CLASS}>
+                <MemoMiniMarkupText text={m.text} />
+              </div>
             </li>
           ))
         ) : (
@@ -321,7 +324,7 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
                     <textarea
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
-                      placeholder="메모 내용"
+                      placeholder="메모 내용 (**굵게**, *기울임*, %%얇게%%)"
                       rows={4}
                       className={cn(
                         WORKSPACE_MEMO_TEXTAREA_CLASS,
@@ -340,7 +343,7 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
                   </div>
                 ) : (
                   <div className="flex items-start justify-between gap-2">
-                    <div className={cn(MEMO_READ_BODY_CLASS, "min-w-0 flex-1")}>{m.text}</div>
+                    <MemoMiniMarkupText text={m.text} className={cn(MEMO_READ_BODY_CLASS, "min-w-0 flex-1")} />
                     <div className="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"
@@ -379,7 +382,7 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
             <textarea
               value={props.memoDraft}
               onChange={(e) => props.onMemoDraftChange(e.target.value)}
-              placeholder="내용을 입력하세요"
+              placeholder="내용 (**굵게**, *기울임*, %%얇게%%)"
               rows={3}
               className={cn(WORKSPACE_MEMO_TEXTAREA_CLASS, "min-h-[4.5rem] max-h-[min(40vh,24rem)] flex-1")}
               aria-label="새 메모"

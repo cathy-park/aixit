@@ -1,10 +1,13 @@
 "use client";
 
 import {
+  forwardRef,
   useCallback,
   useLayoutEffect,
   useRef,
   type ChangeEvent,
+  type MutableRefObject,
+  type Ref,
   type SyntheticEvent,
   type TextareaHTMLAttributes,
 } from "react";
@@ -17,21 +20,29 @@ type Props = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "rows"> & {
   maxHeightPx?: number;
 };
 
+function assignRef<T>(r: Ref<T> | undefined, el: T | null) {
+  if (typeof r === "function") r(el);
+  else if (r) (r as MutableRefObject<T | null>).current = el;
+}
+
 /**
  * 값에 따라 세로 높이가 늘어나는 textarea.
  * controlled 업데이트 시 scrollTop·커서(selection)를 복원합니다.
  */
-export function AutoResizeTextarea({
-  className,
-  minHeightPx = 72,
-  maxHeightPx,
-  value,
-  onChange,
-  onSelect,
-  ...props
-}: Props) {
+export const AutoResizeTextarea = forwardRef<HTMLTextAreaElement, Props>(function AutoResizeTextarea(
+  { className, minHeightPx = 72, maxHeightPx, value, onChange, onSelect, ...props },
+  forwardedRef,
+) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const selRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
+
+  const setRefs = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      ref.current = el;
+      assignRef(forwardedRef, el);
+    },
+    [forwardedRef],
+  );
 
   const captureCaret = useCallback(() => {
     const el = ref.current;
@@ -92,7 +103,7 @@ export function AutoResizeTextarea({
 
   return (
     <textarea
-      ref={ref}
+      ref={setRefs}
       rows={1}
       className={cn(className)}
       value={value}
@@ -101,4 +112,4 @@ export function AutoResizeTextarea({
       {...props}
     />
   );
-}
+});

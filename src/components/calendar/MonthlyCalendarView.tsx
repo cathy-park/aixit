@@ -418,10 +418,25 @@ export function MonthlyCalendarView() {
           />
           <div className="relative max-h-[min(85vh,32rem)] w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-zinc-200">
             <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 id="cal-day-popup-title" className="text-lg font-bold tracking-tight text-zinc-950">
-                {formatKoreanShortDateWithWeekday(dayPopupIso)}
-              </h2>
-              <p className="mt-0.5 text-sm text-zinc-500">이 날의 예정 할 일·완료 기록·프로젝트예요.</p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 id="cal-day-popup-title" className="text-lg font-bold tracking-tight text-zinc-950">
+                    {formatKoreanShortDateWithWeekday(dayPopupIso)}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-zinc-500">이 날의 예정 할 일·완료 기록·프로젝트예요.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDayPopupIso(null)}
+                  aria-label="닫기"
+                  title="닫기"
+                  className="shrink-0 rounded-full bg-zinc-50 p-2 text-sm font-semibold text-zinc-700 ring-1 ring-zinc-200 hover:bg-white"
+                >
+                  <span aria-hidden className="block text-xl leading-none">
+                    ×
+                  </span>
+                </button>
+              </div>
             </div>
             <div className="max-h-[min(58vh,24rem)] overflow-y-auto px-5 py-4">
               <section aria-labelledby="cal-popup-planned" className="border-b border-zinc-100 pb-5">
@@ -538,15 +553,6 @@ export function MonthlyCalendarView() {
                   </section>
                 ) : null}
               </div>
-            </div>
-            <div className="border-t border-zinc-100 px-5 py-3">
-              <button
-                type="button"
-                onClick={() => setDayPopupIso(null)}
-                className="w-full rounded-full bg-zinc-900 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-              >
-                닫기
-              </button>
             </div>
           </div>
         </div>

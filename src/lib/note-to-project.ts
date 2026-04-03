@@ -17,6 +17,7 @@ import {
   createProjectFromUserTemplate,
   getUserWorkflowTemplateById,
 } from "@/lib/user-workflow-templates-store";
+import { isBracketLabelPlaceholder } from "@/lib/memo-subtitle-placeholders";
 
 function newMemoId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -57,22 +58,27 @@ function buildProjectSubtitle(note: IdeaNote, templateFallback: string): string 
     const out = [a, b].filter(Boolean).join(" · ");
     return out.length > 180 ? `${out.slice(0, 177)}…` : out;
   };
+  const firstMeaningfulLine = (raw?: string) => {
+    const line = firstLine(raw);
+    if (!line || isBracketLabelPlaceholder(line)) return "";
+    return line;
+  };
   const st = planForNote(note);
   if (st === "일반") {
-    return firstLine(note.content) || templateFallback;
+    return firstMeaningfulLine(note.content) || templateFallback;
   }
   const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
-  const filled = sections.map((s) => s.value.trim()).filter(Boolean);
+  const lines = sections.map((s) => firstMeaningfulLine(s.value)).filter(Boolean);
   if (st === "MVP") {
-    return join(firstLine(filled[0]), firstLine(filled[1])) || firstLine(note.content) || templateFallback;
+    return join(lines[0] ?? "", lines[1] ?? "") || firstMeaningfulLine(note.content) || templateFallback;
   }
   if (st === "강의") {
-    return join(firstLine(filled[0]), firstLine(filled[1])) || templateFallback;
+    return join(lines[0] ?? "", lines[1] ?? "") || templateFallback;
   }
   if (st === "소설") {
-    return firstLine(filled[0]) || templateFallback;
+    return (lines[0] ?? "") || templateFallback;
   }
-  return firstLine(note.content) || templateFallback;
+  return firstMeaningfulLine(note.content) || templateFallback;
 }
 
 function workflowMemosFromNote(note: IdeaNote): WorkspaceMemoItem[] {

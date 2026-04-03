@@ -86,12 +86,12 @@ export function EditableLifecycleStatusControl({
 
   useEffect(() => {
     if (!open) return;
-    const close = (e: globalThis.MouseEvent) => {
+    const close = (e: globalThis.PointerEvent) => {
       if (wrapRef.current?.contains(e.target as Node)) return;
       setOpen(false);
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("pointerdown", close, true);
+    return () => document.removeEventListener("pointerdown", close, true);
   }, [open]);
 
   useEffect(() => {
@@ -117,13 +117,13 @@ export function EditableLifecycleStatusControl({
       <button
         type="button"
         draggable={false}
-        className="inline-flex rounded-full border-0 bg-transparent p-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+        className="touch-manipulation inline-flex rounded-full border-0 bg-transparent p-0 align-middle outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={`${ariaLabelEntity} 상태: ${PROJECT_LIFECYCLE_LABEL[status]}. 눌러서 변경`}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -137,8 +137,10 @@ export function EditableLifecycleStatusControl({
           <button
             type="button"
             draggable={false}
-            className="fixed inset-0 z-[60] cursor-default"
+            className="touch-manipulation fixed inset-0 z-[60] cursor-default"
             aria-label="닫기"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.preventDefault();
@@ -159,9 +161,11 @@ export function EditableLifecycleStatusControl({
                   draggable={false}
                   aria-selected={s === status}
                   className={cn(
-                    "flex w-full items-center px-3 py-2 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50",
+                    "touch-manipulation flex w-full items-center px-3 py-2 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50",
                     s === status && "bg-sky-50 text-sky-900",
                   )}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.preventDefault();

@@ -4,6 +4,7 @@ import { useCallback, useRef, useState, type KeyboardEvent } from "react";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { cn } from "@/components/ui/cn";
 import { WORKSPACE_MEMO_TEXTAREA_CLASS } from "@/components/workspace/WorkspaceLinksMemosSections";
+import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { memoFolderCategoryKey } from "@/lib/memo-folders-store";
 import { StatusChip } from "@/components/dashboard/WorkflowCard";
@@ -195,7 +196,7 @@ function StructuredSectionCard({
           maxHeightPx={320}
           value={section.value}
           onChange={(e) => onChange({ value: e.target.value })}
-          placeholder="내용을 입력하세요…"
+          placeholder="내용… **굵게** *기울임* %%얇게%%"
         />
       </div>
     </div>
@@ -437,7 +438,7 @@ export function IdeaFormFields({
         maxHeightPx={320}
         value={form.content}
         onChange={(e) => setForm({ content: e.target.value })}
-        placeholder="생각을 풀어 쓰기…"
+        placeholder="생각을 풀어 쓰기… **굵게** *기울임* %%얇게%%"
       />
 
       <div className="space-y-1.5">
@@ -551,8 +552,8 @@ export function IdeaMemoReadOnlyPanel({
                   {s.description?.trim() ? (
                     <div className="mt-1 text-[11px] leading-snug text-zinc-500">{s.description}</div>
                   ) : null}
-                  <div className="mt-2 whitespace-pre-wrap text-sm font-medium leading-snug text-zinc-700">
-                    {s.value.trim() ? s.value : "—"}
+                  <div className="mt-2 text-sm font-medium leading-snug text-zinc-700">
+                    {s.value.trim() ? <MemoMiniMarkupText text={s.value} /> : "—"}
                   </div>
                 </div>
               ))
@@ -563,8 +564,8 @@ export function IdeaMemoReadOnlyPanel({
 
       <div>
         <div className="text-xs font-semibold text-zinc-500">자유 메모</div>
-        <div className="mt-1.5 whitespace-pre-wrap text-sm font-medium leading-snug text-zinc-700">
-          {note.content?.trim() ? note.content : "—"}
+        <div className="mt-1.5 text-sm font-medium leading-snug text-zinc-700">
+          {note.content?.trim() ? <MemoMiniMarkupText text={note.content} /> : "—"}
         </div>
       </div>
 

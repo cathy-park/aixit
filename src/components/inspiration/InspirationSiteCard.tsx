@@ -9,6 +9,7 @@ import { incrementInspirationShortcut } from "@/lib/inspiration-store";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
+import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
 import {
   APP_CARD_SHELL_WAREHOUSE_CLASS,
   APP_CARD_TITLE_TEXT_CLASS,
@@ -44,10 +45,10 @@ export function InspirationSiteCard({
 
   return (
     <div className={APP_CARD_SHELL_WAREHOUSE_CLASS}>
-      <div className="flex min-w-0 gap-4">
+      <div className="flex min-w-0 items-center gap-4">
         <div
           className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-extrabold text-white ring-1 ring-zinc-200/80",
+            "flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl text-base font-extrabold text-white ring-1 ring-zinc-200/80",
             !logo && "bg-[#1769ff]",
           )}
         >
@@ -58,7 +59,7 @@ export function InspirationSiteCard({
             initials
           )}
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex min-w-0 items-center gap-3">
             <div className={cn(APP_CARD_TITLE_TRACK_CLASS, "min-w-0")}>
               <span className={APP_CARD_TITLE_TEXT_CLASS}>{site.name}</span>
@@ -142,12 +143,11 @@ export function InspirationSiteCard({
               </button>
             </CardActionsOverflow>
           </div>
+          {site.description?.trim() ? (
+            <p className="mt-[-4px] min-w-0 text-sm leading-snug text-zinc-500">{site.description.trim()}</p>
+          ) : null}
         </div>
       </div>
-
-      {site.description?.trim() ? (
-        <p className="mt-1.5 w-full min-w-0 text-sm leading-snug text-zinc-500">{site.description.trim()}</p>
-      ) : null}
 
       {site.tags.length > 0 ? (
         <div className="mt-5 flex flex-wrap gap-2">
@@ -207,8 +207,8 @@ export function InspirationSiteCard({
                 메모
               </h2>
             </div>
-            <div className="mt-5 whitespace-pre-wrap rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-800 ring-1 ring-zinc-200">
-              {site.memo.trim()}
+            <div className="mt-5 rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-800 ring-1 ring-zinc-200">
+              <MemoMiniMarkupText text={site.memo.trim()} />
             </div>
             <button
               type="button"
