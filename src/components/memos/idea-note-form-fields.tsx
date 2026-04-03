@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState, type KeyboardEvent } from "react";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { cn } from "@/components/ui/cn";
 import { WORKSPACE_MEMO_TEXTAREA_CLASS } from "@/components/workspace/WorkspaceLinksMemosSections";
@@ -215,19 +215,54 @@ export function IdeaFormFields({
 
   const [focusTitleSectionId, setFocusTitleSectionId] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState("");
+  /** 한글 IME 등 조합 중에는 Enter/쉼표로 태그 확정 금지 */
+  const tagImeComposingRef = useRef(false);
+  /** 동일 문자열이 짧은 간격으로 두 번 커밋되는 경우 방지 (일부 브라우저 이중 keydown) */
+  const lastTagCommitRef = useRef<{ norm: string; at: number }>({ norm: "", at: 0 });
 
-  const commitTagDraft = useCallback(() => {
-    const raw = tagDraft.trim();
-    if (!raw) return;
-    const t = raw.replace(/^#+/u, "").trim();
-    if (!t) return;
-    const norm = normalizeKeyword(t);
-    setForm((prev) => {
-      if (prev.tags.some((x) => normalizeKeyword(x) === norm)) return prev;
-      return { ...prev, tags: normalizeIdeaNoteTags([...prev.tags, t]) };
-    });
-    setTagDraft("");
-  }, [setForm, tagDraft]);
+  const commitTagValue = useCallback(
+    (rawInput: string) => {
+      const raw = rawInput.trim().replace(/,+$/u, "").trim();
+      if (!raw) return;
+      const t = raw.replace(/^#+/u, "").trim();
+      if (!t) return;
+      const norm = normalizeKeyword(t);
+      const now = Date.now();
+      if (lastTagCommitRef.current.norm === norm && now - lastTagCommitRef.current.at < 400) {
+        return;
+      }
+      let added = false;
+      setForm((prev) => {
+        if (prev.tags.some((x) => normalizeKeyword(x) === norm)) return prev;
+        added = true;
+        return { ...prev, tags: normalizeIdeaNoteTags([...prev.tags, t]) };
+      });
+      if (added) {
+        lastTagCommitRef.current = { norm, at: now };
+        setTagDraft("");
+      }
+    },
+    [setForm],
+  );
+
+  const tagInputKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      const ne = e.nativeEvent;
+      if (ne.isComposing || tagImeComposingRef.current || ne.keyCode === 229) {
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        commitTagValue(e.currentTarget.value);
+        return;
+      }
+      if (e.key === ",") {
+        e.preventDefault();
+        commitTagValue(e.currentTarget.value.replace(/,+$/u, "").trim());
+      }
+    },
+    [commitTagValue],
+  );
 
   const removeTag = useCallback(
     (tag: string) => {
@@ -410,7 +445,7 @@ export function IdeaFormFields({
           태그
         </label>
         <p className="text-[11px] leading-snug text-zinc-500">
-          폴더명은 카드에 자동 표시됩니다. Enter로 태그를 추가하세요.
+          폴더명은 카드에 자동 표시됩니다. Enter 또는 쉼표(,)로 태그를 추가하세요.
         </p>
         <div className="flex flex-wrap gap-2">
           {form.tags.map((tag) => (
@@ -436,13 +471,14 @@ export function IdeaFormFields({
           className={cn(TITLE_INPUT_CLASS, "mt-0")}
           value={tagDraft}
           onChange={(e) => setTagDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              commitTagDraft();
-            }
+          onCompositionStart={() => {
+            tagImeComposingRef.current = true;
           }}
-          placeholder="태그 입력 후 Enter"
+          onCompositionEnd={() => {
+            tagImeComposingRef.current = false;
+          }}
+          onKeyDown={tagInputKeyDown}
+          placeholder="태그 입력 후 Enter 또는 ,"
           maxLength={52}
         />
       </div>
