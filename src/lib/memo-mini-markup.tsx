@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, type ReactNode } from "react";
+import { cn } from "@/components/ui/cn";
 
 /**
  * 메모 본문 — 저장은 plain text, 표시 시만 스타일.
@@ -135,4 +136,95 @@ export function renderMemoMiniMarkup(text: string): ReactNode {
   if (parts.length === 0) return null;
   if (parts.length === 1) return parts[0];
   return <Fragment>{parts}</Fragment>;
+}
+
+const CHECK_LINE = /^\s*-\s*\[\s*([xX ])\s*\]\s*(.*)$/;
+
+/**
+ * 블록 단위: 체크박스 리스트, `-` 불릿, 빈 줄, 단락. 인라인은 `renderMemoMiniMarkup` 재사용.
+ */
+export function renderMemoDocument(text: string): ReactNode {
+  const raw = text.replace(/\r\n/g, "\n");
+  if (!raw.trim()) return null;
+  const lines = raw.split("\n");
+  const blocks: ReactNode[] = [];
+  let i = 0;
+  let b = 0;
+
+  while (i < lines.length) {
+    const line = lines[i] ?? "";
+
+    if (CHECK_LINE.test(line)) {
+      const items: ReactNode[] = [];
+      while (i < lines.length) {
+        const m = CHECK_LINE.exec(lines[i] ?? "");
+        if (!m) break;
+        const checked = m[1].toLowerCase() === "x";
+        const body = m[2] ?? "";
+        items.push(
+          <li key={`cb-${b}-${items.length}`} className="flex gap-2">
+            <span
+              className={cn(
+                "mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-zinc-300 bg-white text-[10px] font-bold leading-none text-white",
+                checked && "border-sky-600 bg-sky-600",
+              )}
+              aria-hidden
+            >
+              {checked ? "✓" : null}
+            </span>
+            <span className="min-w-0">{renderMemoMiniMarkup(body)}</span>
+          </li>,
+        );
+        i++;
+      }
+      blocks.push(
+        <ul key={`ulc-${b++}`} className="my-1 list-none space-y-1.5 pl-0">
+          {items}
+        </ul>,
+      );
+      continue;
+    }
+
+    const bullet = /^\s*-\s+(.+)$/.exec(line);
+    if (bullet) {
+      const items: ReactNode[] = [];
+      while (i < lines.length) {
+        const rawLine = lines[i] ?? "";
+        if (CHECK_LINE.test(rawLine)) break;
+        const bm = /^\s*-\s+(.+)$/.exec(rawLine);
+        if (!bm) break;
+        items.push(
+          <li key={`li-${b}-${items.length}`} className="ml-1 list-disc pl-4 marker:text-zinc-400">
+            {renderMemoMiniMarkup(bm[1])}
+          </li>,
+        );
+        i++;
+      }
+      if (items.length) {
+        blocks.push(
+          <ul key={`ulb-${b++}`} className="my-1 list-disc space-y-1 pl-5">
+            {items}
+          </ul>,
+        );
+        continue;
+      }
+    }
+
+    if (!line.trim()) {
+      i++;
+      blocks.push(<div key={`sp-${b++}`} className="h-2 shrink-0" aria-hidden />);
+      continue;
+    }
+
+    blocks.push(
+      <p key={`p-${b++}`} className="my-0 min-w-0 whitespace-pre-wrap break-words">
+        {renderMemoMiniMarkup(line)}
+      </p>,
+    );
+    i++;
+  }
+
+  if (blocks.length === 0) return null;
+  if (blocks.length === 1) return blocks[0];
+  return <div className="memo-markup-doc space-y-1">{blocks}</div>;
 }

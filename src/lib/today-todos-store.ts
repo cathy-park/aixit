@@ -16,6 +16,11 @@ export type TodayTodo = {
   weekStartIso?: string;
   /** 캘린더에서 미리 잡은 예정일(YYYY-MM-DD). 해당 주의 홈「이번주 할 일」에 자동 표시 */
   scheduledDate?: string;
+  /**
+   * 홈「오늘 할 일」체크리스트에 붙인 날짜. 자정이 지나면 같은 데이터는 스토리지에 남고
+   * 목록에서는 `today === dailySheetDate`로만 보여 필터링됩니다.
+   */
+  dailySheetDate?: string;
 };
 
 function safeParse<T>(raw: string | null): T | null {
@@ -43,6 +48,7 @@ function normalizeTodo(raw: unknown): TodayTodo | null {
   const completedAt = t.done && validCompletedAt(t.completedAt) ? t.completedAt : undefined;
   const weekStartIso = validCompletedAt(t.weekStartIso) ? t.weekStartIso : undefined;
   const scheduledDate = validCompletedAt(t.scheduledDate) ? t.scheduledDate : undefined;
+  const dailySheetDate = validCompletedAt(t.dailySheetDate) ? t.dailySheetDate : undefined;
   return {
     id: t.id,
     text: t.text,
@@ -50,6 +56,7 @@ function normalizeTodo(raw: unknown): TodayTodo | null {
     ...(completedAt ? { completedAt } : {}),
     ...(weekStartIso ? { weekStartIso } : {}),
     ...(scheduledDate ? { scheduledDate } : {}),
+    ...(dailySheetDate ? { dailySheetDate } : {}),
   };
 }
 
@@ -107,6 +114,65 @@ export function loadCurrentWeekTodos(): TodayTodo[] {
   if (typeof window === "undefined") return [];
   const ws = getLocalSundayWeekStartIso();
   return loadTodayTodos().filter((t) => belongsToWeek(t, ws));
+}
+
+function isOnHomeTodaySheet(t: TodayTodo, todayIso: string, ws: string): boolean {
+  if (t.dailySheetDate && validCompletedAt(t.dailySheetDate)) {
+    return t.dailySheetDate === todayIso;
+  }
+  if (t.scheduledDate && validCompletedAt(t.scheduledDate)) {
+    return t.scheduledDate === todayIso;
+  }
+  if (t.weekStartIso !== ws) return false;
+  if (t.done) {
+    return validCompletedAt(t.completedAt) && t.completedAt === todayIso;
+  }
+  return false;
+}
+
+/**
+ * 홈 상단 체크리스트(오늘 할 일) 전용 — 삭제 없이 날짜로만 걸러 냄.
+ * - `dailySheetDate === todayIso` 인 수동 항목
+ * - `scheduledDate === todayIso` 인 예정 항목
+ * - 완료만 `completedAt === todayIso` 인 레거시(일일 시트 없음)
+ */
+export function loadTodosForHomeTodaySheet(todayIso: string): TodayTodo[] {
+  if (typeof window === "undefined") return [];
+  const ws = getLocalSundayWeekStartIso();
+  return loadTodayTodos().filter((t) => isOnHomeTodaySheet(t, todayIso, ws));
+}
+
+/**
+ * 레거시: 이번 주·미완료·daily/scheduled 없음 → 오늘 시트에 한 번 붙여 자정 이후 필터로만 숨김.
+ */
+export function migrateLegacyHomeTodosDailySheet(todayIso: string) {
+  if (typeof window === "undefined") return;
+  const ws = getLocalSundayWeekStartIso();
+  const all = loadTodayTodos();
+  let changed = false;
+  const next = all.map((t) => {
+    if (t.dailySheetDate || t.scheduledDate) return t;
+    if (t.weekStartIso !== ws || t.done) return t;
+    changed = true;
+    return { ...t, dailySheetDate: todayIso };
+  });
+  if (changed) saveTodayTodos(next);
+}
+
+/**
+ * 오늘 시트에 해당하던 항목만 교체. 나머지 날짜·캘린더 데이터는 그대로 둡니다.
+ */
+export function saveHomeTodaySheet(todayIso: string, nextSlice: TodayTodo[]) {
+  if (typeof window === "undefined") return;
+  const ws = getLocalSundayWeekStartIso();
+  const all = loadTodayTodos();
+  const rest = all.filter((t) => !isOnHomeTodaySheet(t, todayIso, ws));
+  const stamped = nextSlice.map((t) => {
+    const base: TodayTodo = { ...t, weekStartIso: t.weekStartIso ?? ws };
+    if (t.scheduledDate && validCompletedAt(t.scheduledDate)) return base;
+    return { ...base, dailySheetDate: t.dailySheetDate ?? todayIso };
+  });
+  saveTodayTodos([...rest, ...stamped]);
 }
 
 function stampWeekStartsForSave(todos: TodayTodo[], currentWeekSunday: string): TodayTodo[] {
@@ -169,11 +235,13 @@ export function appendTodayTodos(entries: Array<{ text: string }>): TodayTodo[] 
   const trimmed = entries.map((e) => e.text.trim()).filter((t) => t.length > 0);
   if (trimmed.length === 0) return [];
   const all = loadTodayTodos();
+  const today = getTodayIsoLocal();
   const newOnes: TodayTodo[] = trimmed.map((text) => ({
     id: newTodoId(),
     text,
     done: false,
     weekStartIso: ws,
+    dailySheetDate: today,
   }));
   saveTodayTodos([...all, ...newOnes]);
   return newOnes;

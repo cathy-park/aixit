@@ -29,6 +29,7 @@ import {
   APP_CARD_TITLE_TRACK_CLASS,
 } from "@/components/cards/app-card-layout";
 import { EditableLifecycleStatusControl } from "@/components/dashboard/WorkflowCard";
+import { MemoMarkupBody } from "@/components/workspace/MemoMiniMarkupText";
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
 import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
@@ -208,7 +209,9 @@ function IdeaMemoCard({
               >
                 <div className={grayscaleMain}>
                   {note.content?.trim() ? (
-                    <p className="mt-2 line-clamp-3 text-sm font-medium leading-snug text-zinc-500">{note.content.trim()}</p>
+                    <div className="mt-2 max-h-[3.75rem] overflow-hidden text-sm font-medium leading-snug text-zinc-500">
+                      <MemoMarkupBody text={note.content.trim()} />
+                    </div>
                   ) : null}
                   <div className="mt-5 flex flex-wrap gap-2">
                     <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tagTone)}>

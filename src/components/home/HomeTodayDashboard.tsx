@@ -26,7 +26,12 @@ import {
   isProjectRelevantToToday,
   koreanWeekdayShortLabels,
 } from "@/lib/today-project-filter";
-import { loadCurrentWeekTodos, saveCurrentWeekTodos, type TodayTodo } from "@/lib/today-todos-store";
+import {
+  loadTodosForHomeTodaySheet,
+  migrateLegacyHomeTodosDailySheet,
+  saveHomeTodaySheet,
+  type TodayTodo,
+} from "@/lib/today-todos-store";
 import { ensureDashboardWorkflow } from "@/lib/workflows-store";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
@@ -47,7 +52,6 @@ function newTodoId() {
 }
 
 export function HomeTodayDashboard() {
-  const [today] = useState(() => getTodayIsoLocal());
   const [layout, setLayout] = useState<LayoutEntry[]>([]);
   const [folders, setFolders] = useState<DashboardFolderRecord[]>([]);
   const [pinnedKeys, setPinnedKeys] = useState<Set<string>>(() => new Set());
@@ -70,14 +74,16 @@ export function HomeTodayDashboard() {
 
   useEffect(() => {
     refreshLayout();
-    setTodos(loadCurrentWeekTodos());
+    const day = getTodayIsoLocal();
+    migrateLegacyHomeTodosDailySheet(day);
+    setTodos(loadTodosForHomeTodaySheet(day));
     setGreetName(loadHomeGreetingName());
     setReady(true);
   }, [refreshLayout]);
 
   useEffect(() => {
     const onWorkflows = () => refreshLayout();
-    const onTodos = () => setTodos(loadCurrentWeekTodos());
+    const onTodos = () => setTodos(loadTodosForHomeTodaySheet(getTodayIsoLocal()));
     const onFolders = () => refreshLayout();
     const onGreeting = () => setGreetName(loadHomeGreetingName());
     window.addEventListener("aixit-workflows-updated", onWorkflows);
@@ -103,11 +109,12 @@ export function HomeTodayDashboard() {
       const nowDay = getTodayIsoLocal();
       if (nowWeek !== lastWeek) {
         lastWeek = nowWeek;
-        setTodos(loadCurrentWeekTodos());
+        setTodos(loadTodosForHomeTodaySheet(getTodayIsoLocal()));
       }
       if (nowDay !== lastDay) {
         lastDay = nowDay;
         setCalendarPulse((n) => n + 1);
+        setTodos(loadTodosForHomeTodaySheet(nowDay));
       }
     };
     const id = window.setInterval(tick, 30_000);
@@ -120,6 +127,8 @@ export function HomeTodayDashboard() {
 
   const folderById = useMemo(() => Object.fromEntries(folders.map((f) => [f.id, f])), [folders]);
 
+  const todayIso = useMemo(() => getTodayIsoLocal(), [calendarPulse, ready]);
+
   const todayProjects = useMemo(() => {
     const out: {
       entry: LayoutEntry;
@@ -130,7 +139,7 @@ export function HomeTodayDashboard() {
     for (const entry of layout) {
       if (entry.kind !== "user") continue;
       const wf = ensureDashboardWorkflow(entry.id, entry.folderId);
-      if (!wf || !isProjectRelevantToToday(wf, today)) continue;
+      if (!wf || !isProjectRelevantToToday(wf, todayIso)) continue;
       const folder = folderById[entry.folderId];
       if (!folder || folder.hidden) continue;
       const templateEmoji = wf.templateId ? templateCatalog.find((w) => w.id === wf.templateId)?.emoji : undefined;
@@ -150,7 +159,7 @@ export function HomeTodayDashboard() {
     });
 
     return out;
-  }, [layout, folderById, today, pinnedKeys]);
+  }, [layout, folderById, todayIso, pinnedKeys]);
 
   const togglePin = useCallback((entry: LayoutEntry) => {
     setPinnedKeys(togglePinnedWorkflowKey(layoutEntryPinKey(entry.kind, entry.id)));
@@ -170,13 +179,16 @@ export function HomeTodayDashboard() {
   const addTodo = () => {
     const text = todoDraft.trim();
     if (!text) return;
-    const next = [...todos, { id: newTodoId(), text, done: false }];
+    const day = getTodayIsoLocal();
+    const ws = getLocalSundayWeekStartIso();
+    const next = [...todos, { id: newTodoId(), text, done: false, weekStartIso: ws, dailySheetDate: day }];
     setTodos(next);
-    saveCurrentWeekTodos(next);
+    saveHomeTodaySheet(day, next);
     setTodoDraft("");
   };
 
   const toggleTodo = (id: string) => {
+    const day = getTodayIsoLocal();
     const next = todos.map((t) => {
       if (t.id !== id) return t;
       const done = !t.done;
@@ -185,13 +197,14 @@ export function HomeTodayDashboard() {
         : { ...t, done: false, completedAt: undefined };
     });
     setTodos(next);
-    saveCurrentWeekTodos(next);
+    saveHomeTodaySheet(day, next);
   };
 
   const removeTodo = (id: string) => {
+    const day = getTodayIsoLocal();
     const next = todos.filter((t) => t.id !== id);
     setTodos(next);
-    saveCurrentWeekTodos(next);
+    saveHomeTodaySheet(day, next);
   };
 
   if (!ready) {
@@ -201,7 +214,6 @@ export function HomeTodayDashboard() {
   void calendarPulse;
   const weekStartIso = getLocalSundayWeekStartIso();
   const weekDayIsos = getWeekDayIsoListSundayStart(weekStartIso);
-  const todayIso = getTodayIsoLocal();
   const weekdayLabels = koreanWeekdayShortLabels();
 
   const commitGreet = () => {
@@ -333,7 +345,7 @@ export function HomeTodayDashboard() {
 
       <section className="mt-6 pt-5" aria-labelledby="week-todos-heading">
         <h2 id="week-todos-heading" className="text-lg font-semibold tracking-tight text-zinc-950">
-          이번주 할 일
+          오늘 할 일
         </h2>
         <p className="mt-1 flex items-center gap-2.5 text-sm text-zinc-500">
           <span className="font-medium text-zinc-700">{formatKoreanWeekRangeSunSat(weekStartIso)}</span>
@@ -367,17 +379,17 @@ export function HomeTodayDashboard() {
               <>
                 <button
                   type="button"
-                  className="fixed inset-0 z-[60] cursor-default"
+                  className="fixed inset-0 z-[200] cursor-default bg-black/40 backdrop-blur-sm"
                   aria-label="닫기"
                   onClick={() => setWeekInfoOpen(false)}
                 />
                 <div
                   role="dialog"
                   aria-label="캘린더 예정 일정 안내"
-                  className="absolute left-0 top-[calc(100%+8px)] z-[70] w-[min(520px,calc(100vw-2rem))] rounded-2xl bg-white p-4 text-xs font-medium leading-relaxed text-zinc-700 shadow-xl ring-1 ring-zinc-200"
+                  className="absolute left-0 top-[calc(100%+8px)] z-[210] w-[min(520px,calc(100vw-2rem))] rounded-2xl bg-white p-4 text-xs font-medium leading-relaxed text-zinc-700 shadow-xl ring-1 ring-zinc-200"
                 >
-                  캘린더에 넣은 예정 일정은 예정일이 이번 주이면서 그날(로컬)이 되면 여기에 자동으로 붙습니다. 매주 일요일이 지나면 이번 주 목록은 비우고
-                  새 주를 시작합니다. 완료한 기록은 캘린더에 남습니다. 이 기기 브라우저에 저장됩니다.
+                  오늘 날짜에 해당하는 할 일만 여기에 보입니다. 자정이 지나면 목록은 비워지지만 데이터는 삭제되지 않으며, 캘린더·과거 완료일로 계속 볼 수 있습니다.
+                  캘린더 예정 일정은 예정일 당일에 여기에 붙습니다. 이 기기 브라우저에 저장됩니다.
                 </div>
               </>
             ) : null}

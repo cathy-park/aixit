@@ -4,7 +4,7 @@ import { useCallback, useRef, useState, type KeyboardEvent } from "react";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { cn } from "@/components/ui/cn";
 import { WORKSPACE_MEMO_TEXTAREA_CLASS } from "@/components/workspace/WorkspaceLinksMemosSections";
-import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
+import { MemoMarkupBody } from "@/components/workspace/MemoMiniMarkupText";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { memoFolderCategoryKey } from "@/lib/memo-folders-store";
 import { StatusChip } from "@/components/dashboard/WorkflowCard";
@@ -216,6 +216,8 @@ export function IdeaFormFields({
 
   const [focusTitleSectionId, setFocusTitleSectionId] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState("");
+  const contentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const contentCaretRef = useRef({ start: 0, end: 0 });
   /** 한글 IME 등 조합 중에는 Enter/쉼표로 태그 확정 금지 */
   const tagImeComposingRef = useRef(false);
   /** 동일 문자열이 짧은 간격으로 두 번 커밋되는 경우 방지 (일부 브라우저 이중 keydown) */
@@ -268,6 +270,34 @@ export function IdeaFormFields({
   const removeTag = useCallback(
     (tag: string) => {
       setForm((prev) => ({ ...prev, tags: prev.tags.filter((x) => x !== tag) }));
+    },
+    [setForm],
+  );
+
+  const insertIntoContent = useCallback(
+    (snippet: string) => {
+      setForm((prev) => {
+        const cur = prev.content;
+        const el = contentTextareaRef.current;
+        let s = contentCaretRef.current.start;
+        let e = contentCaretRef.current.end;
+        if (el && document.activeElement === el) {
+          s = el.selectionStart;
+          e = el.selectionEnd;
+        }
+        s = Math.min(Math.max(0, s), cur.length);
+        e = Math.min(Math.max(0, e), cur.length);
+        const next = cur.slice(0, s) + snippet + cur.slice(e);
+        requestAnimationFrame(() => {
+          const ta = contentTextareaRef.current;
+          if (!ta) return;
+          const pos = s + snippet.length;
+          ta.focus();
+          ta.setSelectionRange(pos, pos);
+          contentCaretRef.current = { start: pos, end: pos };
+        });
+        return { ...prev, content: next };
+      });
     },
     [setForm],
   );
@@ -432,13 +462,27 @@ export function IdeaFormFields({
       ) : null}
 
       <label className="block text-xs font-semibold text-zinc-500">자유 메모</label>
+      <div className="mt-1.5 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => insertIntoContent("- [ ] ")}
+          className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100"
+        >
+          체크 항목 (- [ ])
+        </button>
+      </div>
       <AutoResizeTextarea
-        className={cn(WORKSPACE_MEMO_TEXTAREA_CLASS, "mt-1.5 min-h-[100px]")}
+        ref={contentTextareaRef}
+        className={cn(WORKSPACE_MEMO_TEXTAREA_CLASS, "mt-2 min-h-[100px]")}
         minHeightPx={100}
         maxHeightPx={320}
         value={form.content}
         onChange={(e) => setForm({ content: e.target.value })}
-        placeholder="생각을 풀어 쓰기… **굵게** *기울임* %%얇게%%"
+        onSelect={(ev) => {
+          const t = ev.currentTarget;
+          contentCaretRef.current = { start: t.selectionStart, end: t.selectionEnd };
+        }}
+        placeholder="생각을 풀어 쓰기… **굵게** *기울임* %%얇게%% 줄바꿈·- 리스트·- [ ] 체크"
       />
 
       <div className="space-y-1.5">
@@ -553,7 +597,7 @@ export function IdeaMemoReadOnlyPanel({
                     <div className="mt-1 text-[11px] leading-snug text-zinc-500">{s.description}</div>
                   ) : null}
                   <div className="mt-2 text-sm font-medium leading-snug text-zinc-700">
-                    {s.value.trim() ? <MemoMiniMarkupText text={s.value} /> : "—"}
+                    {s.value.trim() ? <MemoMarkupBody text={s.value} /> : "—"}
                   </div>
                 </div>
               ))
@@ -565,7 +609,7 @@ export function IdeaMemoReadOnlyPanel({
       <div>
         <div className="text-xs font-semibold text-zinc-500">자유 메모</div>
         <div className="mt-1.5 text-sm font-medium leading-snug text-zinc-700">
-          {note.content?.trim() ? <MemoMiniMarkupText text={note.content} /> : "—"}
+          {note.content?.trim() ? <MemoMarkupBody text={note.content} /> : "—"}
         </div>
       </div>
 
