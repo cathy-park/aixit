@@ -79,10 +79,13 @@ export function mergeWorkflowDetailWithBuiltinOverrides(detail: WorkflowDetail):
   if (!o) return detail;
   const steps =
     o.stepTitles && o.stepTitles.length > 0
-      ? detail.steps.map((s, i) => ({
-          ...s,
-          toolName: o.stepTitles![i] !== undefined && o.stepTitles![i] !== "" ? o.stepTitles![i]! : s.toolName,
-        }))
+      ? detail.steps.map((s, i) => {
+          const t = o.stepTitles![i];
+          return {
+            ...s,
+            toolName: typeof t === "string" && t.trim() ? t : s.toolName,
+          };
+        })
       : detail.steps;
   return { ...detail, links: o.links, memo: o.memos, steps };
 }

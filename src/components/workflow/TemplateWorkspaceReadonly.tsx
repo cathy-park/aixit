@@ -175,7 +175,44 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
     return () => window.removeEventListener("aixit-workflows-updated", onWf);
   }, [refreshLinked]);
 
-  const wf = useMemo(() => buildTemplatePreviewDashboardWorkflow(detail, preview), [detail, preview]);
+  const saveBuiltinLinksMemos = useCallback(
+    (payload: TemplateLinksMemosSavePayload) => {
+      const prev = getBuiltinTemplateLinksMemosOverride(detail.id);
+      setBuiltinTemplateLinksMemosOverride(detail.id, {
+        links: payload.links,
+        memos: payload.memos,
+        stepTitles: prev?.stepTitles,
+      });
+    },
+    [detail.id],
+  );
+
+  const isUserTemplate = isUserWorkflowTemplateId(detail.id);
+
+  const [localSteps, setLocalSteps] = useState<UserWorkflowTemplateStep[]>([]);
+  const stepsSignature = detail.steps.map((s, i) => `${i}:${s.toolName}:${(s.toolIds ?? []).join(",")}`).join("|");
+
+  useEffect(() => {
+    setLocalSteps(
+      detail.steps.map((s) => ({
+        toolName: s.toolName,
+        toolIds: [...(s.toolIds ?? [])],
+      })),
+    );
+  }, [detail.id, stepsSignature]);
+
+  const patchedDetail = useMemo(() => {
+    if (localSteps.length !== detail.steps.length) return detail;
+    return {
+      ...detail,
+      steps: detail.steps.map((s, i) => ({
+        ...s,
+        toolName: localSteps[i]?.toolName ?? s.toolName,
+      })),
+    };
+  }, [detail, localSteps]);
+
+  const wf = useMemo(() => buildTemplatePreviewDashboardWorkflow(patchedDetail, preview), [patchedDetail, preview]);
 
   const navSteps = useMemo(
     () =>
@@ -206,14 +243,21 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
       .filter((t): t is NonNullable<typeof t> => Boolean(t));
   }, [currentStep, toolCatalog]);
 
-  const saveBuiltinLinksMemos = useCallback(
-    (payload: TemplateLinksMemosSavePayload) => {
-      setBuiltinTemplateLinksMemosOverride(detail.id, payload);
-    },
-    [detail.id],
-  );
-
-  const isUserTemplate = isUserWorkflowTemplateId(detail.id);
+  const reorderLocalSteps = useCallback((from: number, to: number) => {
+    if (from === to) return;
+    setLocalSteps((prev) => {
+      const next = [...prev];
+      const [m] = next.splice(from, 1);
+      next.splice(to, 0, m);
+      return next;
+    });
+    setCurrentIndex((idx) => {
+      if (idx === from) return to;
+      if (from < to && idx > from && idx <= to) return idx - 1;
+      if (from > to && idx >= to && idx < from) return idx + 1;
+      return idx;
+    });
+  }, []);
   const metaSig = `${detail.id}:${detail.title}:${preview.subtitle}`;
   useEffect(() => {
     setTitleDraft(detail.title);
@@ -232,6 +276,23 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
     }, 350);
     return () => window.clearTimeout(t);
   }, [detail.id, isUserTemplate, metaHydrated, titleDraft, subtitleDraft]);
+
+  useEffect(() => {
+    if (localSteps.length === 0) return;
+    const t = window.setTimeout(() => {
+      if (isUserTemplate) {
+        updateUserWorkflowTemplateSteps(detail.id, localSteps);
+        return;
+      }
+      const prev = getBuiltinTemplateLinksMemosOverride(detail.id);
+      setBuiltinTemplateLinksMemosOverride(detail.id, {
+        links: prev?.links ?? detail.links.map((l) => ({ label: l.label, href: l.href })),
+        memos: prev?.memos ? [...prev.memos] : [...detail.memo],
+        stepTitles: localSteps.map((s) => s.toolName),
+      });
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [localSteps, isUserTemplate, detail.id, detail.links, detail.memo]);
 
   const handleCreateProject = () => {
     const fid = pickDefaultProjectFolderId(loadDashboardFolders());
@@ -300,13 +361,32 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
           selectedIndex={currentIndex}
           statuses={statuses}
           onSelect={setCurrentIndex}
+          onReorder={isUserTemplate ? reorderLocalSteps : undefined}
           className="bg-white"
           toolsCatalog={toolCatalog}
         />
 
+        <p className="text-[11px] leading-snug text-zinc-500">
+          STEP 이름은 아래 입력란에서 바꿀 수 있어요. 내 템플릿은 칩을 드래그해 순서도 바꿀 수 있습니다(PC).
+        </p>
+
         <section className="rounded-2xl bg-white p-6 ring-1 ring-zinc-200">
           <div className="text-xs font-semibold text-zinc-500">현재 STEP</div>
-          <div className="mt-2 text-xl font-semibold tracking-tight text-zinc-950">{currentStep?.title ?? "—"}</div>
+          <label className="mt-2 block">
+            <span className="sr-only">단계 이름</span>
+            <input
+              value={localSteps[currentIndex]?.toolName ?? ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                setLocalSteps((rows) => rows.map((row, i) => (i === currentIndex ? { ...row, toolName: v } : row)));
+              }}
+              placeholder="단계 이름"
+              className={cn(
+                "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xl font-semibold tracking-tight text-zinc-950",
+                "outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100",
+              )}
+            />
+          </label>
 
           <div className="mt-6 flex items-center justify-between gap-3 border-t border-zinc-100 pt-6">
             <div className="text-sm font-semibold">연결된 도구</div>
