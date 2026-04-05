@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconEdit, IconTrash } from "@/components/ui/action-icons";
 import type { WorkspaceLinkItem, WorkspaceMemoItem } from "@/lib/workspace-store";
+import { CHECKLIST_MEMO_TEMPLATE } from "@/lib/memo-templates";
 import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
 
 /** 14px 기준 컴팩트 입력 */
@@ -342,7 +343,26 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
                 className="rounded-lg border border-zinc-100 bg-zinc-50/60 px-2.5 py-1.5 ring-1 ring-zinc-100/80"
               >
                 {isEditing ? (
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditText((t) => t + (t && !t.endsWith("\n") ? "\n" : "") + "- [ ] ")}
+                        className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-100"
+                      >
+                        + 체크 한 줄
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditText((t) => t + (t.trim() && !t.endsWith("\n") ? "\n\n" : "") + CHECKLIST_MEMO_TEMPLATE)
+                        }
+                        className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-900 hover:bg-sky-100"
+                      >
+                        + 체크리스트 템플릿
+                      </button>
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
                     <textarea
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
@@ -361,6 +381,7 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
                       <button type="button" className={softGhostBtn} onClick={cancelEdit}>
                         취소
                       </button>
+                    </div>
                     </div>
                   </div>
                 ) : (
@@ -400,7 +421,36 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
           <div className="space-y-1">
             <div className="text-sm font-medium text-zinc-500">새 메모</div>
           </div>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="mt-3 flex flex-col gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  props.onMemoDraftChange(
+                    props.memoDraft +
+                      (props.memoDraft.trim() && !props.memoDraft.endsWith("\n") ? "\n" : "") +
+                      "- [ ] ",
+                  )
+                }
+                className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100"
+              >
+                체크 한 줄
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  props.onMemoDraftChange(
+                    props.memoDraft +
+                      (props.memoDraft.trim() ? "\n\n" : "") +
+                      CHECKLIST_MEMO_TEMPLATE,
+                  )
+                }
+                className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-900 hover:bg-sky-100"
+              >
+                체크리스트 템플릿
+              </button>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <textarea
               value={props.memoDraft}
               onChange={(e) => props.onMemoDraftChange(e.target.value)}
@@ -412,6 +462,7 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
             <button type="button" onClick={props.onAddMemo} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
               메모 추가
             </button>
+            </div>
           </div>
         </div>
       ) : null}

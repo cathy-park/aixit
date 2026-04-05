@@ -16,13 +16,18 @@ import {
   listDashboardWorkflowsByTemplateId,
   type DashboardWorkflow,
 } from "@/lib/workflows-store";
+import type { UserWorkflowTemplateStep } from "@/lib/user-workflow-templates-store";
 import {
   createProjectFromUserTemplate,
   isUserWorkflowTemplateId,
   updateUserWorkflowTemplateMeta,
   updateUserWorkflowTemplateLinksAndMemos,
+  updateUserWorkflowTemplateSteps,
 } from "@/lib/user-workflow-templates-store";
-import { setBuiltinTemplateLinksMemosOverride } from "@/lib/builtin-template-links-memos-store";
+import {
+  getBuiltinTemplateLinksMemosOverride,
+  setBuiltinTemplateLinksMemosOverride,
+} from "@/lib/builtin-template-links-memos-store";
 import type { WorkspaceLinkItem, WorkspaceMemoItem } from "@/lib/workspace-store";
 import {
   DETAIL_HEADER_TITLE_ACTION_ROW_CLASS,

@@ -155,6 +155,22 @@ export function updateUserWorkflowTemplateLinksAndMemos(
   return true;
 }
 
+/** 내 템플릿 상세에서 STEP 이름·도구 구성 편집 시 저장 */
+export function updateUserWorkflowTemplateSteps(templateId: string, steps: UserWorkflowTemplateStep[]): boolean {
+  const list = loadUserWorkflowTemplates();
+  const idx = list.findIndex((t) => t.id === templateId);
+  if (idx < 0) return false;
+  const normalized = steps.map((s) => ({
+    toolName: typeof s.toolName === "string" && s.toolName.trim() ? s.toolName.trim() : "단계",
+    toolIds: [...(s.toolIds ?? []).filter((x) => typeof x === "string" && x.trim())],
+  }));
+  if (normalized.length === 0) return false;
+  const next = [...list];
+  next[idx] = { ...next[idx], steps: normalized };
+  saveAll(next);
+  return true;
+}
+
 export type CreateUserWorkflowTemplateBlueprint = {
   categoryId: string;
   title: string;

@@ -10,6 +10,7 @@ import { memoFolderCategoryKey } from "@/lib/memo-folders-store";
 import { StatusChip } from "@/components/dashboard/WorkflowCard";
 import { FolderGlyph } from "@/components/dashboard/FolderGlyph";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
+import { CHECKLIST_MEMO_TEMPLATE } from "@/lib/memo-templates";
 import { normalizeIdeaNoteTags, type IdeaNote, type NoteStructureKey } from "@/lib/notes-store";
 import {
   buildSectionSetsFromRawMetadata,
@@ -468,7 +469,14 @@ export function IdeaFormFields({
           onClick={() => insertIntoContent("- [ ] ")}
           className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100"
         >
-          체크 항목 (- [ ])
+          체크 한 줄
+        </button>
+        <button
+          type="button"
+          onClick={() => insertIntoContent(CHECKLIST_MEMO_TEMPLATE)}
+          className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-900 hover:bg-sky-100"
+        >
+          체크리스트 템플릿
         </button>
       </div>
       <AutoResizeTextarea

@@ -7,6 +7,8 @@ export const BUILTIN_TEMPLATE_LINKS_MEMOS_EVENT = "aixit-builtin-template-links-
 export type BuiltinTemplateLinksMemosPayload = {
   links: Array<{ label: string; href: string }>;
   memos: string[];
+  /** 카탈로그 STEP과 같은 순서의 표시 이름(로컬 오버라이드) */
+  stepTitles?: string[];
 };
 
 function safeParse(raw: string | null): Record<string, BuiltinTemplateLinksMemosPayload> | null {
@@ -34,7 +36,9 @@ function normalizePayload(raw: unknown): BuiltinTemplateLinksMemosPayload | null
   }
   const memosRaw = o.memos;
   const memos = Array.isArray(memosRaw) ? memosRaw.filter((x): x is string => typeof x === "string") : [];
-  return { links, memos };
+  const stRaw = o.stepTitles;
+  const stepTitles = Array.isArray(stRaw) ? stRaw.filter((x): x is string => typeof x === "string") : undefined;
+  return { links, memos, ...(stepTitles?.length ? { stepTitles } : {}) };
 }
 
 export function loadBuiltinTemplateLinksMemosOverrides(): Record<string, BuiltinTemplateLinksMemosPayload> {
@@ -59,17 +63,26 @@ export function setBuiltinTemplateLinksMemosOverride(
 ): void {
   if (typeof window === "undefined") return;
   const all = loadBuiltinTemplateLinksMemosOverrides();
+  const existing = all[templateCatalogId];
   all[templateCatalogId] = {
     links: payload.links.map((l) => ({ label: l.label, href: l.href })),
     memos: [...payload.memos],
+    stepTitles: payload.stepTitles ?? existing?.stepTitles,
   };
   window.localStorage.setItem(KEY, JSON.stringify(all));
   window.dispatchEvent(new Event(BUILTIN_TEMPLATE_LINKS_MEMOS_EVENT));
 }
 
-/** 카탈로그 상세에 사용자가 저장한 링크·메모를 합칩니다. */
+/** 카탈로그 상세에 사용자가 저장한 링크·메모·STEP 이름을 합칩니다. */
 export function mergeWorkflowDetailWithBuiltinOverrides(detail: WorkflowDetail): WorkflowDetail {
   const o = getBuiltinTemplateLinksMemosOverride(detail.id);
   if (!o) return detail;
-  return { ...detail, links: o.links, memo: o.memos };
+  const steps =
+    o.stepTitles && o.stepTitles.length > 0
+      ? detail.steps.map((s, i) => ({
+          ...s,
+          toolName: o.stepTitles![i] !== undefined && o.stepTitles![i] !== "" ? o.stepTitles![i]! : s.toolName,
+        }))
+      : detail.steps;
+  return { ...detail, links: o.links, memo: o.memos, steps };
 }
