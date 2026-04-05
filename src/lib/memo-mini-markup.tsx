@@ -203,7 +203,7 @@ export function renderMemoDocument(text: string, opts?: MemoDocumentRenderOption
                 checked={checked}
                 onChange={(e) => {
                   e.stopPropagation();
-                  opts.onToggleCheckbox?.(cbIndex);
+                  opts?.onToggleCheckbox?.(cbIndex);
                 }}
                 onClick={(e) => e.stopPropagation()}
                 className={cn(

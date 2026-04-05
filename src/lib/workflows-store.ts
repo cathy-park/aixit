@@ -388,7 +388,7 @@ export function createProjectFromTemplate(templateCatalogId: string, folderId: s
 
   const detailEffective = mergeWorkflowDetailWithBuiltinOverrides(detail);
 
-  const steps = templateDetailToWorkspaceSteps(detail).map((s, idx) => ({
+  const steps = templateDetailToWorkspaceSteps(detailEffective).map((s, idx) => ({
     ...s,
     id: `step_${newWorkflowItemId()}_${idx}`,
   }));

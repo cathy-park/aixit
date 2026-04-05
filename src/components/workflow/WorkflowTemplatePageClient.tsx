@@ -60,7 +60,7 @@ export function WorkflowTemplatePageClient({ slug }: { slug: string }) {
       };
     }
     return null;
-  }, [slug, userTick]);
+  }, [slug, userTick, builtinLmTick]);
 
   if (isDashboardProjectInstanceId(slug)) {
     return (

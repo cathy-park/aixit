@@ -9,7 +9,9 @@ import { loadDashboardFolders, pickDefaultProjectFolderId } from "@/lib/dashboar
 import { WorkflowNavigatorBar, type NavigatorStatus } from "@/components/recommendation/WorkflowNavigatorBar";
 import { APP_CARD_GRID_CLASS } from "@/components/cards/app-card-layout";
 import { ToolCard } from "@/components/tools/ToolCard";
+import { ToolPickerModal } from "@/components/tools/ToolPickerModal";
 import { useMergedTools } from "@/hooks/useMergedTools";
+import type { Tool } from "@/lib/tools";
 import {
   buildTemplatePreviewDashboardWorkflow,
   createProjectFromTemplate,
@@ -163,6 +165,7 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
   const [metaHydrated, setMetaHydrated] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [subtitleDraft, setSubtitleDraft] = useState("");
+  const [toolPickerOpen, setToolPickerOpen] = useState(false);
 
   const refreshLinked = useCallback(() => {
     setLinkedProjects(listDashboardWorkflowsByTemplateId(detail.id));
@@ -182,6 +185,7 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
         links: payload.links,
         memos: payload.memos,
         stepTitles: prev?.stepTitles,
+        stepsOverride: prev?.stepsOverride,
       });
     },
     [detail.id],
@@ -190,7 +194,9 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
   const isUserTemplate = isUserWorkflowTemplateId(detail.id);
 
   const [localSteps, setLocalSteps] = useState<UserWorkflowTemplateStep[]>([]);
-  const stepsSignature = detail.steps.map((s, i) => `${i}:${s.toolName}:${(s.toolIds ?? []).join(",")}`).join("|");
+  const stepsSignature = `${detail.steps.length}|${detail.steps
+    .map((s, i) => `${i}:${s.toolName}:${(s.toolIds ?? []).join(",")}`)
+    .join("|")}`;
 
   useEffect(() => {
     setLocalSteps(
@@ -202,12 +208,23 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
   }, [detail.id, stepsSignature]);
 
   const patchedDetail = useMemo(() => {
-    if (localSteps.length !== detail.steps.length) return detail;
+    if (localSteps.length !== detail.steps.length) {
+      return {
+        ...detail,
+        steps: localSteps.map((row, i) => ({
+          id: detail.steps[i]?.id ?? `tpl_dyn_${detail.id}_${i}`,
+          toolName: row.toolName,
+          statusLabel: detail.steps[i]?.statusLabel ?? "대기",
+          toolIds: [...row.toolIds],
+        })),
+      };
+    }
     return {
       ...detail,
       steps: detail.steps.map((s, i) => ({
         ...s,
         toolName: localSteps[i]?.toolName ?? s.toolName,
+        toolIds: localSteps[i] ? [...localSteps[i].toolIds] : (s.toolIds ?? []),
       })),
     };
   }, [detail, localSteps]);
@@ -248,7 +265,7 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
     setLocalSteps((prev) => {
       const next = [...prev];
       const [m] = next.splice(from, 1);
-      next.splice(to, 0, m);
+      next.splice(to, 0, m!);
       return next;
     });
     setCurrentIndex((idx) => {
@@ -258,6 +275,44 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
       return idx;
     });
   }, []);
+
+  const addStepAfterCurrent = useCallback(() => {
+    const insertAt = Math.min(currentIndex + 1, localSteps.length);
+    const row: UserWorkflowTemplateStep = { toolName: "새 단계", toolIds: [] };
+    setLocalSteps((prev) => [...prev.slice(0, insertAt), row, ...prev.slice(insertAt)]);
+    setCurrentIndex(insertAt);
+  }, [currentIndex, localSteps.length]);
+
+  const deleteCurrentStep = useCallback(() => {
+    if (localSteps.length <= 1) return;
+    const next = localSteps.filter((_, i) => i !== currentIndex);
+    setLocalSteps(next);
+    setCurrentIndex(Math.min(currentIndex, Math.max(0, next.length - 1)));
+  }, [localSteps, currentIndex]);
+
+  const addToolToCurrent = useCallback(
+    (tool: Tool) => {
+      setLocalSteps((rows) =>
+        rows.map((row, i) =>
+          i === currentIndex && !row.toolIds.includes(tool.id)
+            ? { ...row, toolIds: [...row.toolIds, tool.id] }
+            : row,
+        ),
+      );
+    },
+    [currentIndex],
+  );
+
+  const removeToolFromCurrent = useCallback(
+    (toolId: string) => {
+      setLocalSteps((rows) =>
+        rows.map((row, i) =>
+          i === currentIndex ? { ...row, toolIds: row.toolIds.filter((id) => id !== toolId) } : row,
+        ),
+      );
+    },
+    [currentIndex],
+  );
   const metaSig = `${detail.id}:${detail.title}:${preview.subtitle}`;
   useEffect(() => {
     setTitleDraft(detail.title);
@@ -289,6 +344,7 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
         links: prev?.links ?? detail.links.map((l) => ({ label: l.label, href: l.href })),
         memos: prev?.memos ? [...prev.memos] : [...detail.memo],
         stepTitles: localSteps.map((s) => s.toolName),
+        stepsOverride: localSteps.map((s) => ({ toolName: s.toolName, toolIds: [...s.toolIds] })),
       });
     }, 450);
     return () => window.clearTimeout(t);
@@ -361,13 +417,16 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
           selectedIndex={currentIndex}
           statuses={statuses}
           onSelect={setCurrentIndex}
-          onReorder={isUserTemplate ? reorderLocalSteps : undefined}
+          onReorder={reorderLocalSteps}
+          onAddStep={addStepAfterCurrent}
+          onDeleteStep={deleteCurrentStep}
+          canDelete={localSteps.length > 1}
           className="bg-white"
           toolsCatalog={toolCatalog}
         />
 
         <p className="text-[11px] leading-snug text-zinc-500">
-          STEP 이름은 아래 입력란에서 바꿀 수 있어요. 내 템플릿은 칩을 드래그해 순서도 바꿀 수 있습니다(PC).
+          STEP 칩을 탭해 단계를 바꾸고, 이름·연결 도구·순서를 고칠 수 있어요. PC에서는 칩을 드래그해 순서를 바꿀 수 있습니다.
         </p>
 
         <section className="rounded-2xl bg-white p-6 ring-1 ring-zinc-200">
@@ -390,16 +449,32 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
 
           <div className="mt-6 flex items-center justify-between gap-3 border-t border-zinc-100 pt-6">
             <div className="text-sm font-semibold">연결된 도구</div>
-            <span className="text-xs font-semibold text-zinc-500">{currentTools.length}개</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-zinc-500">{currentTools.length}개</span>
+              <button
+                type="button"
+                onClick={() => setToolPickerOpen(true)}
+                className="rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800"
+              >
+                도구 추가
+              </button>
+            </div>
           </div>
 
           <div className={cn("mt-3", APP_CARD_GRID_CLASS)}>
             {currentTools.length === 0 ? (
               <div className="col-span-full rounded-2xl bg-zinc-50/80 p-6 text-sm text-zinc-600 ring-1 ring-zinc-200">
-                이 단계에 매핑된 도구가 없어요.
+                이 단계에 연결된 도구가 없어요. 도구 추가로 연결하세요.
               </div>
             ) : (
-              currentTools.map((t) => <ToolCard key={t.id} mode="workflow" tool={t} />)
+              currentTools.map((t) => (
+                <ToolCard
+                  key={t.id}
+                  mode="workflow"
+                  tool={t}
+                  onDisconnect={() => removeToolFromCurrent(t.id)}
+                />
+              ))
             )}
           </div>
 
@@ -432,6 +507,15 @@ export function TemplateWorkspaceReadonly({ detail, preview }: { detail: Workflo
           )}
         </div>
       </main>
+
+      <ToolPickerModal
+        open={toolPickerOpen}
+        onClose={() => setToolPickerOpen(false)}
+        onPick={(tool) => {
+          addToolToCurrent(tool);
+          setToolPickerOpen(false);
+        }}
+      />
     </DetailPageWrapper>
   );
 }

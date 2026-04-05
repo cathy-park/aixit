@@ -386,7 +386,12 @@ export function WorkspaceWorkflowCommonMemosSection(props: WorkspaceWorkflowComm
                   </div>
                 ) : (
                   <div className="flex items-start justify-between gap-2">
-                    <MemoMiniMarkupText text={m.text} className={cn(MEMO_READ_BODY_CLASS, "min-w-0 flex-1")} />
+                    <MemoMiniMarkupText
+                      text={m.text}
+                      className={cn(MEMO_READ_BODY_CLASS, "min-w-0 flex-1")}
+                      interactiveCheckboxes
+                      onTextChange={(next) => props.onUpdateMemo(m.id, next)}
+                    />
                     <div className="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"

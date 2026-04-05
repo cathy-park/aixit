@@ -542,13 +542,34 @@ export function IdeaFormFields({
 const READONLY_SECTION_SHELL =
   "rounded-lg border border-zinc-200/90 bg-white p-3 shadow-sm";
 
+function metadataPatchedSectionValue(
+  note: IdeaNote,
+  sectionId: string,
+  value: string,
+): IdeaNote["metadata"] | null {
+  const meta = { ...(note.metadata as Record<string, unknown>) };
+  const planKey = getEffectivePlanTemplate(meta, note.category);
+  if (planKey !== "MVP" && planKey !== "강의" && planKey !== "소설") return null;
+  const tk = planKey as StructuredMemoTemplateKey;
+  const sets = buildSectionSetsFromRawMetadata(meta);
+  const list = sets[tk];
+  const idx = list.findIndex((s) => s.id === sectionId);
+  if (idx < 0) return null;
+  const nextList = [...list];
+  nextList[idx] = { ...nextList[idx]!, value };
+  const nextSets = { ...sets, [tk]: nextList };
+  return sectionSetsToStoredMetadata(nextSets, planKey as StructuredMemoTemplateKey | "일반") as IdeaNote["metadata"];
+}
+
 /** 메모 카드 뷰어: 입력 컨트롤 없이 저장된 노트만 표시 */
 export function IdeaMemoReadOnlyPanel({
   note,
   memoFolders,
+  onPersistNote,
 }: {
   note: IdeaNote;
   memoFolders: DashboardFolderRecord[];
+  onPersistNote?: (patch: Partial<Pick<IdeaNote, "content" | "metadata">>) => void;
 }) {
   const meta = (note.metadata ?? {}) as Record<string, unknown>;
   const folder = memoFolders.find((f) => f.id === note.folderId);
@@ -605,7 +626,22 @@ export function IdeaMemoReadOnlyPanel({
                     <div className="mt-1 text-[11px] leading-snug text-zinc-500">{s.description}</div>
                   ) : null}
                   <div className="mt-2 text-sm font-medium leading-snug text-zinc-700">
-                    {s.value.trim() ? <MemoMarkupBody text={s.value} /> : "—"}
+                    {s.value.trim() ? (
+                      <MemoMarkupBody
+                        text={s.value}
+                        interactiveCheckboxes={Boolean(onPersistNote)}
+                        onTextChange={
+                          onPersistNote
+                            ? (next) => {
+                                const meta = metadataPatchedSectionValue(note, s.id, next);
+                                if (meta) onPersistNote({ metadata: meta });
+                              }
+                            : undefined
+                        }
+                      />
+                    ) : (
+                      "—"
+                    )}
                   </div>
                 </div>
               ))
@@ -617,7 +653,15 @@ export function IdeaMemoReadOnlyPanel({
       <div>
         <div className="text-xs font-semibold text-zinc-500">자유 메모</div>
         <div className="mt-1.5 text-sm font-medium leading-snug text-zinc-700">
-          {note.content?.trim() ? <MemoMarkupBody text={note.content} /> : "—"}
+          {note.content?.trim() ? (
+            <MemoMarkupBody
+              text={note.content}
+              interactiveCheckboxes={Boolean(onPersistNote)}
+              onTextChange={onPersistNote ? (next) => onPersistNote({ content: next }) : undefined}
+            />
+          ) : (
+            "—"
+          )}
         </div>
       </div>
 

@@ -282,7 +282,18 @@ export function IdeaModal({
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 [overflow-anchor:none]">
           {mode === "view" ? (
             currentNote ? (
-              <IdeaMemoReadOnlyPanel note={currentNote} memoFolders={memoFolders} />
+              <IdeaMemoReadOnlyPanel
+                note={currentNote}
+                memoFolders={memoFolders}
+                onPersistNote={
+                  effectiveNoteId
+                    ? (patch) => {
+                        updateNote(effectiveNoteId, patch);
+                        onSaved?.();
+                      }
+                    : undefined
+                }
+              />
             ) : (
               <p className="text-sm text-zinc-500">메모를 찾을 수 없습니다.</p>
             )

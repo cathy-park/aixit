@@ -201,15 +201,32 @@ function IdeaMemoCard({
                 ) : null}
               </div>
 
-              <button
-                type="button"
-                onClick={onOpenModal}
-                className="mt-0 block min-w-0 rounded-2xl text-left outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest("input[type='checkbox']")) return;
+                  onOpenModal();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter" && e.key !== " ") return;
+                  if ((e.target as HTMLElement).closest("input[type='checkbox']")) return;
+                  e.preventDefault();
+                  onOpenModal();
+                }}
+                className="mt-0 block min-w-0 cursor-pointer rounded-2xl text-left outline-none focus-visible:ring-4 focus-visible:ring-zinc-100"
+                aria-label="메모 상세 열기"
               >
                 <div className={grayscaleMain}>
                   {note.content?.trim() ? (
                     <div className="mt-2 text-sm font-medium leading-snug text-zinc-500">
-                      <MemoMarkupBody text={note.content.trim()} />
+                      <MemoMarkupBody
+                        text={note.content}
+                        interactiveCheckboxes={!converted}
+                        onTextChange={
+                          converted ? undefined : (next) => updateNote(note.id, { content: next })
+                        }
+                      />
                     </div>
                   ) : null}
                   <div className="mt-5 flex flex-wrap gap-2">
@@ -229,7 +246,7 @@ function IdeaMemoCard({
                     ))}
                   </div>
                 </div>
-              </button>
+              </div>
             </div>
 
             <CardActionsOverflow

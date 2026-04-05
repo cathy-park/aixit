@@ -384,6 +384,16 @@ export function WorkspaceView() {
     applyLocal({ ...wf, steps: nextSteps, updatedAt: Date.now() });
   };
 
+  const updateStepMemoText = (id: string, text: string) => {
+    if (!wf || !currentStep) return;
+    const nextSteps = wf.steps.map((s, i) =>
+      i === currentIndex
+        ? { ...s, memos: (s.memos ?? []).map((m) => (m.id === id ? { ...m, text } : m)) }
+        : s,
+    );
+    applyLocal({ ...wf, steps: nextSteps, updatedAt: Date.now() });
+  };
+
   if (!workflowId) {
     return (
       <DetailPageWrapper>
@@ -632,7 +642,12 @@ export function WorkspaceView() {
                     key={m.id}
                     className="flex items-start justify-between gap-3 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-800 ring-1 ring-zinc-200"
                   >
-                    <MemoMiniMarkupText text={m.text} className="block min-w-0 flex-1 text-sm text-zinc-800" />
+                    <MemoMiniMarkupText
+                      text={m.text}
+                      className="block min-w-0 flex-1 text-sm text-zinc-800"
+                      interactiveCheckboxes
+                      onTextChange={(next) => updateStepMemoText(m.id, next)}
+                    />
                     <button
                       type="button"
                       onClick={() => removeStepMemo(m.id)}
