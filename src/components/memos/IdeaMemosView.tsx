@@ -24,7 +24,6 @@ import {
   APP_CARD_GRID_CLASS,
   APP_CARD_GRID_ITEM_CLASS,
   APP_CARD_SHELL_DASHBOARD_CLASS,
-  APP_CARD_SHELL_DASHBOARD_INNER_CLASS,
   APP_CARD_TITLE_TEXT_CLASS,
   APP_CARD_TITLE_TRACK_CLASS,
 } from "@/components/cards/app-card-layout";
@@ -175,7 +174,7 @@ function IdeaMemoCard({
       onDragEnd={dnd ? dnd.onDragEnd : undefined}
     >
       <div className={APP_CARD_SHELL_DASHBOARD_CLASS}>
-        <div className={APP_CARD_SHELL_DASHBOARD_INNER_CLASS}>
+        <div className="flex min-w-0 flex-1 flex-col overflow-visible rounded-lg">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className={cn(APP_CARD_TITLE_TRACK_CLASS, grayscaleMain)}>
@@ -209,7 +208,7 @@ function IdeaMemoCard({
               >
                 <div className={grayscaleMain}>
                   {note.content?.trim() ? (
-                    <div className="mt-2 max-h-[3.75rem] overflow-hidden text-sm font-medium leading-snug text-zinc-500">
+                    <div className="mt-2 text-sm font-medium leading-snug text-zinc-500">
                       <MemoMarkupBody text={note.content.trim()} />
                     </div>
                   ) : null}

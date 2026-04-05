@@ -134,8 +134,19 @@ export function WorkflowNavigatorBar({
     return catalog.find((t) => t.id === id) ?? null;
   };
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
-  const dragEnabled = Boolean(onSelect); // step 이동용 드래그 항상 허용
-  const reorderable = Boolean(onReorder); // 순서 변경까지 원할 때만 onReorder 사용
+  /** 터치·코스 포인터에서는 HTML5 드래그가 탭과 충돌해 STEP 선택이 막히므로, 마우스(미세 포인터)에서만 드래그 허용 */
+  const [allowNativeDrag, setAllowNativeDrag] = useState(false);
+  const dragEnabled = Boolean(onSelect);
+  const reorderable = Boolean(onReorder);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(pointer: fine)");
+    const apply = () => setAllowNativeDrag(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const scrollWrapRef = useRef<HTMLDivElement | null>(null);
   const stepBtnRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -222,21 +233,27 @@ export function WorkflowNavigatorBar({
                 >
                   <button
                     type="button"
-                    draggable={dragEnabled}
-                    onDragStart={dragEnabled ? handleDragStart(idx) : undefined}
-                    onDragEnd={dragEnabled ? handleDragEnd : undefined}
+                    draggable={dragEnabled && allowNativeDrag}
+                    onDragStart={dragEnabled && allowNativeDrag ? handleDragStart(idx) : undefined}
+                    onDragEnd={dragEnabled && allowNativeDrag ? handleDragEnd : undefined}
                     onClick={() => onSelect(idx)}
                     ref={(el) => {
                       stepBtnRefs.current[idx] = el;
                     }}
                     className={cn(
-                      "flex items-center gap-3 rounded-2xl px-3 py-2 text-left transition",
+                      "touch-manipulation flex items-center gap-3 rounded-2xl px-3 py-2 text-left transition",
                       "hover:bg-zinc-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-zinc-100",
                       selected && "bg-zinc-50 ring-1 ring-zinc-200",
-                      dragEnabled && "cursor-grab active:cursor-grabbing",
+                      dragEnabled && allowNativeDrag && "cursor-grab active:cursor-grabbing",
                     )}
                     aria-label={`STEP ${idx + 1} ${s.title}`}
-                    title={reorderable ? "드래그하여 순서 변경" : "드래그하여 이동"}
+                    title={
+                      allowNativeDrag
+                        ? reorderable
+                          ? "클릭하여 선택 · 드래그하여 순서 변경"
+                          : "클릭하여 선택 · 드래그하여 이동"
+                        : "탭하여 선택 (모바일에서는 드래그 순서 변경 없음)"
+                    }
                   >
                     <div className="relative">
                       <NavigatorStepLeadIcon

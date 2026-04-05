@@ -65,6 +65,10 @@ export function HomeTodayDashboard() {
   const [weekInfoOpen, setWeekInfoOpen] = useState(false);
   /** 날짜가 바뀌면(자정) 주간 칩의 오늘 표시를 갱신 */
   const [calendarPulse, setCalendarPulse] = useState(0);
+  /** 주간 칩에서 고른 날짜의 할 일 시트 (저장 키는 `dailySheetDate` / `scheduledDate` 필터) */
+  const [selectedSheetIso, setSelectedSheetIso] = useState<string>(() => getTodayIsoLocal());
+  const selectedSheetRef = useRef(selectedSheetIso);
+  selectedSheetRef.current = selectedSheetIso;
 
   const refreshLayout = useCallback(() => {
     setLayout(ensureLayoutMerged());
@@ -76,14 +80,18 @@ export function HomeTodayDashboard() {
     refreshLayout();
     const day = getTodayIsoLocal();
     migrateLegacyHomeTodosDailySheet(day);
-    setTodos(loadTodosForHomeTodaySheet(day));
     setGreetName(loadHomeGreetingName());
     setReady(true);
   }, [refreshLayout]);
 
   useEffect(() => {
+    if (!ready) return;
+    setTodos(loadTodosForHomeTodaySheet(selectedSheetIso));
+  }, [ready, selectedSheetIso]);
+
+  useEffect(() => {
     const onWorkflows = () => refreshLayout();
-    const onTodos = () => setTodos(loadTodosForHomeTodaySheet(getTodayIsoLocal()));
+    const onTodos = () => setTodos(loadTodosForHomeTodaySheet(selectedSheetRef.current));
     const onFolders = () => refreshLayout();
     const onGreeting = () => setGreetName(loadHomeGreetingName());
     window.addEventListener("aixit-workflows-updated", onWorkflows);
@@ -109,12 +117,14 @@ export function HomeTodayDashboard() {
       const nowDay = getTodayIsoLocal();
       if (nowWeek !== lastWeek) {
         lastWeek = nowWeek;
-        setTodos(loadTodosForHomeTodaySheet(getTodayIsoLocal()));
+        const t = getTodayIsoLocal();
+        setSelectedSheetIso(t);
+        setCalendarPulse((n) => n + 1);
       }
       if (nowDay !== lastDay) {
         lastDay = nowDay;
         setCalendarPulse((n) => n + 1);
-        setTodos(loadTodosForHomeTodaySheet(nowDay));
+        setSelectedSheetIso(nowDay);
       }
     };
     const id = window.setInterval(tick, 30_000);
@@ -179,16 +189,16 @@ export function HomeTodayDashboard() {
   const addTodo = () => {
     const text = todoDraft.trim();
     if (!text) return;
-    const day = getTodayIsoLocal();
+    const sheet = selectedSheetIso;
     const ws = getLocalSundayWeekStartIso();
-    const next = [...todos, { id: newTodoId(), text, done: false, weekStartIso: ws, dailySheetDate: day }];
+    const next = [...todos, { id: newTodoId(), text, done: false, weekStartIso: ws, dailySheetDate: sheet }];
     setTodos(next);
-    saveHomeTodaySheet(day, next);
+    saveHomeTodaySheet(sheet, next);
     setTodoDraft("");
   };
 
   const toggleTodo = (id: string) => {
-    const day = getTodayIsoLocal();
+    const sheet = selectedSheetIso;
     const next = todos.map((t) => {
       if (t.id !== id) return t;
       const done = !t.done;
@@ -197,14 +207,14 @@ export function HomeTodayDashboard() {
         : { ...t, done: false, completedAt: undefined };
     });
     setTodos(next);
-    saveHomeTodaySheet(day, next);
+    saveHomeTodaySheet(sheet, next);
   };
 
   const removeTodo = (id: string) => {
-    const day = getTodayIsoLocal();
+    const sheet = selectedSheetIso;
     const next = todos.filter((t) => t.id !== id);
     setTodos(next);
-    saveHomeTodaySheet(day, next);
+    saveHomeTodaySheet(sheet, next);
   };
 
   if (!ready) {
@@ -314,7 +324,7 @@ export function HomeTodayDashboard() {
       />
 
       <AppMainColumn className="min-w-0 pb-12">
-      <section className="mt-0" aria-labelledby="today-projects-heading">
+      <section className="mt-5" aria-labelledby="today-projects-heading">
         <h2 id="today-projects-heading" className="sr-only">
           오늘 일정 프로젝트
         </h2>
@@ -344,9 +354,14 @@ export function HomeTodayDashboard() {
 
       <section className="mt-6 pt-5" aria-labelledby="week-todos-heading">
         <h2 id="week-todos-heading" className="text-lg font-semibold tracking-tight text-zinc-950">
-          오늘 할 일
+          {selectedSheetIso === todayIso ? "오늘 할 일" : "이번 주 할 일"}
         </h2>
-        <p className="mt-1 flex items-center gap-2.5 text-sm text-zinc-500">
+        <p className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-zinc-500">
+          {selectedSheetIso !== todayIso ? (
+            <span className="font-semibold text-sky-800">
+              {formatKoreanShortDateWithWeekday(selectedSheetIso)} 기준
+            </span>
+          ) : null}
           <span className="font-medium text-zinc-700">{formatKoreanWeekRangeSunSat(weekStartIso)}</span>
           <span className="relative inline-flex items-center">
             <button
@@ -398,26 +413,41 @@ export function HomeTodayDashboard() {
         <div
           className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2"
           role="group"
-          aria-label="이번 주 날짜, 일요일부터 토요일까지"
+          aria-label="이번 주 날짜, 일요일부터 토요일까지. 날짜를 누르면 해당 날의 할 일을 봅니다."
         >
           {weekDayIsos.map((iso, i) => {
             const isToday = iso === todayIso;
+            const isSelected = iso === selectedSheetIso;
             const dom = Number(iso.slice(8, 10));
             const label = weekdayLabels[i] ?? "";
             return (
-              <div
+              <button
                 key={iso}
+                type="button"
+                onClick={() => setSelectedSheetIso(iso)}
+                aria-pressed={isSelected}
+                aria-label={`${formatKoreanShortDateWithWeekday(iso)} 할 일 보기`}
                 className={cn(
-                  "flex flex-col items-center justify-center rounded-xl border py-2.5 text-center sm:py-3",
-                  isToday
-                    ? "border-sky-200 bg-sky-50 text-sky-800 shadow-sm ring-1 ring-sky-100"
-                    : "border-zinc-200 bg-zinc-50/80 text-zinc-700",
+                  "flex flex-col items-center justify-center rounded-xl border py-2.5 text-center transition hover:bg-zinc-100/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 sm:py-3",
+                  isSelected
+                    ? "border-sky-400 bg-sky-100 text-sky-900 shadow-sm ring-2 ring-sky-200"
+                    : isToday
+                      ? "border-sky-200 bg-sky-50 text-sky-800 ring-1 ring-sky-100"
+                      : "border-zinc-200 bg-zinc-50/80 text-zinc-700",
                 )}
               >
                 <span
                   className={cn(
                     "text-[10px] font-bold uppercase tracking-wide sm:text-xs",
-                    isToday ? "text-sky-700" : i === 0 ? "text-red-600" : i === 6 ? "text-blue-600" : "text-zinc-500",
+                    isSelected
+                      ? "text-sky-900"
+                      : isToday
+                        ? "text-sky-700"
+                        : i === 0
+                          ? "text-red-600"
+                          : i === 6
+                            ? "text-blue-600"
+                            : "text-zinc-500",
                   )}
                 >
                   {label}
@@ -425,12 +455,20 @@ export function HomeTodayDashboard() {
                 <span
                   className={cn(
                     "mt-0.5 text-base font-bold tabular-nums sm:text-lg",
-                    isToday ? "text-sky-800" : i === 0 ? "text-red-600" : i === 6 ? "text-blue-600" : "text-zinc-700",
+                    isSelected
+                      ? "text-sky-950"
+                      : isToday
+                        ? "text-sky-800"
+                        : i === 0
+                          ? "text-red-600"
+                          : i === 6
+                            ? "text-blue-600"
+                            : "text-zinc-700",
                   )}
                 >
                   {dom}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>

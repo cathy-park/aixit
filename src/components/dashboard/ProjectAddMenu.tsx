@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/components/ui/cn";
 import { appendUserLayoutEntry } from "@/lib/dashboard-layout-store";
 import { loadDashboardFolders } from "@/lib/dashboard-folders-store";
@@ -23,19 +24,22 @@ export function ProjectAddMenu({
   const [open, setOpen] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState(targetFolderId);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (open) setSelectedFolderId(targetFolderId);
   }, [open, targetFolderId]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || variant === "fab") return;
     const onDoc = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
+  }, [open, variant]);
 
   const handleBlank = useCallback(() => {
     const fid = selectedFolderId;
@@ -45,6 +49,71 @@ export function ProjectAddMenu({
     setOpen(false);
     router.push(`/workspace?id=${encodeURIComponent(proj.id)}`);
   }, [selectedFolderId, onLayoutChange, router]);
+
+  const menuClassName =
+    "w-[min(280px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-xl ring-1 ring-zinc-100";
+
+  const menuBody = (
+    <>
+      <label className="block border-b border-zinc-100 px-4 py-3">
+        <span className="text-[11px] font-semibold text-zinc-500">프로젝트 폴더</span>
+        <select
+          value={selectedFolderId}
+          onChange={(e) => setSelectedFolderId(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-2 py-2 text-xs font-semibold text-zinc-900 outline-none focus:border-zinc-300"
+        >
+          {loadDashboardFolders()
+            .filter((f) => !f.hidden)
+            .map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.emoji} {f.name}
+              </option>
+            ))}
+        </select>
+      </label>
+      <Link
+        role="menuitem"
+        href="/workflows"
+        onClick={() => setOpen(false)}
+        className="block px-4 py-3 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+      >
+        워크플로우 선택하기
+      </Link>
+      <button
+        type="button"
+        role="menuitem"
+        onClick={handleBlank}
+        className={cn("w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50")}
+      >
+        새로 추가하기
+      </button>
+    </>
+  );
+
+  const fabPortal =
+    open && mounted && variant === "fab" ? (
+      createPortal(
+        <div className="fixed inset-0 z-[230]" role="presentation">
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default bg-black/50 backdrop-blur-sm"
+            aria-label="닫기"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            role="menu"
+            aria-modal="true"
+            aria-label="새 프로젝트"
+            className={cn("absolute left-1/2 top-1/2 max-h-[min(70vh,520px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto", menuClassName)}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {menuBody}
+          </div>
+        </div>,
+        document.body,
+      )
+    ) : null;
 
   return (
     <div className="relative" ref={wrapRef}>
@@ -78,46 +147,10 @@ export function ProjectAddMenu({
           "추가"
         )}
       </button>
-      {open ? (
-        <div
-          role="menu"
-          className="absolute right-0 z-50 mt-2 w-[260px] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-lg ring-1 ring-zinc-100"
-        >
-          <label className="block border-b border-zinc-100 px-4 py-3">
-            <span className="text-[11px] font-semibold text-zinc-500">프로젝트 폴더</span>
-            <select
-              value={selectedFolderId}
-              onChange={(e) => setSelectedFolderId(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-2 py-2 text-xs font-semibold text-zinc-900 outline-none focus:border-zinc-300"
-            >
-              {loadDashboardFolders()
-                .filter((f) => !f.hidden)
-                .map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.emoji} {f.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <Link
-            role="menuitem"
-            href="/workflows"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-3 text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-          >
-            워크플로우 선택하기
-          </Link>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={handleBlank}
-            className={cn(
-              "w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50",
-            )}
-          >
-            새로 추가하기
-          </button>
+      {fabPortal}
+      {open && variant !== "fab" ? (
+        <div role="menu" className={cn("absolute right-0 z-50 mt-2", menuClassName)}>
+          {menuBody}
         </div>
       ) : null}
     </div>
