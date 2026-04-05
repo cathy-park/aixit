@@ -80,15 +80,20 @@ export function MobileTopNav({ topbarHeightPx = MOBILE_TOPBAR_HEIGHT_PX }: { top
       </div>
 
       {open ? (
-        <div className="fixed inset-0 z-[80]" role="dialog" aria-modal="true" aria-label="메뉴">
+        <div
+          className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="메뉴"
+        >
           <button
             type="button"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 cursor-default"
             aria-label="메뉴 닫기"
             onClick={() => setOpen(false)}
           />
           <div
-            className="absolute left-0 top-0 flex h-full w-[min(280px,85vw)] flex-col shadow-xl ring-1 ring-white/10"
+            className="absolute left-0 top-0 z-10 flex h-full w-[min(280px,85vw)] flex-col shadow-xl ring-1 ring-white/10"
             style={{ backgroundColor: MOBILE_TOPBAR_BG }}
           >
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">

@@ -849,7 +849,7 @@ export function DashboardExperience() {
       </div>
       </AppMainColumn>
       <div
-        className="lg:hidden fixed right-5 z-[85]"
+        className="pointer-events-auto lg:hidden fixed right-5 z-[85]"
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
       >
         <ProjectAddMenu

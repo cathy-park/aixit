@@ -463,10 +463,15 @@ export function ToolCard({
       </div>
 
       {credentialOpen && hasCreds ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cred-modal-title">
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cred-modal-title"
+        >
           <button
             type="button"
-            className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm"
+            className="absolute inset-0 cursor-default"
             aria-label="닫기"
             onClick={() => setCredentialOpen(false)}
           />
@@ -534,10 +539,15 @@ export function ToolCard({
       ) : null}
 
       {noteOpen && hasNote ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="note-modal-title">
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="note-modal-title"
+        >
           <button
             type="button"
-            className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm"
+            className="absolute inset-0 cursor-default"
             aria-label="닫기"
             onClick={() => setNoteOpen(false)}
           />

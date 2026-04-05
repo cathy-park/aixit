@@ -634,11 +634,16 @@ export function WorkflowsLibraryView() {
       />
 
       {projectFolderModal ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="tpl-folder-title">
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tpl-folder-title"
+        >
           <button
             type="button"
             onClick={() => setProjectFolderModal(null)}
-            className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm"
+            className="absolute inset-0 cursor-default"
             aria-label="닫기"
           />
           <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-zinc-200">
@@ -683,11 +688,15 @@ export function WorkflowsLibraryView() {
       ) : null}
 
       {deleteTarget ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+        >
           <button
             type="button"
             onClick={() => setDeleteTarget(null)}
-            className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm"
+            className="absolute inset-0 cursor-default"
             aria-label="닫기"
           />
           <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-zinc-200">

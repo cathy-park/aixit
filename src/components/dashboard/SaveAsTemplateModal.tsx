@@ -73,8 +73,13 @@ export function SaveAsTemplateModal({ open, workflowId, layoutFolderId, onClose 
   if (!open || !workflowId) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="save-tpl-title">
-      <button type="button" onClick={onClose} className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm" aria-label="닫기" />
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="save-tpl-title"
+    >
+      <button type="button" onClick={onClose} className="absolute inset-0 cursor-default" aria-label="닫기" />
       <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-zinc-200">
         <h2 id="save-tpl-title" className="text-lg font-bold text-zinc-950">
           템플릿으로 추가

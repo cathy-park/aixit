@@ -405,14 +405,14 @@ export function MonthlyCalendarView() {
 
       {dayPopupIso ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="cal-day-popup-title"
         >
           <button
             type="button"
-            className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm"
+            className="absolute inset-0 cursor-default"
             aria-label="닫기"
             onClick={() => setDayPopupIso(null)}
           />

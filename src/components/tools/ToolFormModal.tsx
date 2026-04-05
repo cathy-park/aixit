@@ -298,8 +298,13 @@ export function ToolFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="tool-form-title">
-      <button type="button" onClick={onClose} className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm" aria-label="닫기" />
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tool-form-title"
+    >
+      <button type="button" onClick={onClose} className="absolute inset-0 cursor-default" aria-label="닫기" />
 
       <div className="relative flex max-h-[min(90vh,880px)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-zinc-200">
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-6 py-4">

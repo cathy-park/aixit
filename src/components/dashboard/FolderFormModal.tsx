@@ -128,8 +128,13 @@ export function FolderFormModal({
     !(mode === "edit" && initial?.imageDataUrl);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="folder-modal-title">
-      <button type="button" onClick={onClose} className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm" aria-label="닫기" />
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="folder-modal-title"
+    >
+      <button type="button" onClick={onClose} className="absolute inset-0 cursor-default" aria-label="닫기" />
 
       <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-zinc-200">
         <div className="border-b border-zinc-100 px-6 py-4">

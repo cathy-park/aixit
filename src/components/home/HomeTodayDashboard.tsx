@@ -211,7 +211,6 @@ export function HomeTodayDashboard() {
     return <div className="py-12 text-center text-sm text-zinc-500">불러오는 중…</div>;
   }
 
-  void calendarPulse;
   const weekStartIso = getLocalSundayWeekStartIso();
   const weekDayIsos = getWeekDayIsoListSundayStart(weekStartIso);
   const weekdayLabels = koreanWeekdayShortLabels();

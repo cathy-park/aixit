@@ -37,17 +37,12 @@ export function StepDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label={`STEP ${stepNumber} 상세`}
     >
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm"
-        aria-label="모달 닫기"
-      />
+      <button type="button" onClick={onClose} className="absolute inset-0 cursor-default" aria-label="모달 닫기" />
 
       <div className="@container relative w-full max-w-xl rounded-3xl bg-white p-6 shadow-xl ring-1 ring-zinc-200 [container-type:inline-size]">
         <div className="flex items-start justify-between gap-4">

@@ -558,6 +558,10 @@ export function WorkspaceView() {
           toolsCatalog={toolCatalog}
         />
 
+        <p className="text-[11px] leading-snug text-zinc-500">
+          위에서 STEP을 눌러 선택하면 아래「현재 STEP」에서 제목·도구를 수정할 수 있어요. 순서는 STEP 칩을 드래그해 바꿀 수 있습니다.
+        </p>
+
         <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200">
           <div className="text-xs font-semibold text-zinc-500">현재 STEP</div>
           <label className="mt-2 block">

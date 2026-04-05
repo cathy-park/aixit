@@ -42,7 +42,7 @@ export function FloatingAddButton({
   children?: ReactNode;
 }) {
   const base =
-    "lg:hidden fixed right-5 z-[85] inline-flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 text-white shadow-lg shadow-zinc-900/20 ring-1 ring-zinc-950/10 hover:bg-zinc-800 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-200";
+    "lg:hidden pointer-events-auto fixed right-5 z-[85] inline-flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 text-white shadow-lg shadow-zinc-900/20 ring-1 ring-zinc-950/10 hover:bg-zinc-800 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-zinc-200";
   const style = { bottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" } as const;
 
   const content = children ?? <PlusIcon />;
