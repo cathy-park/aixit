@@ -138,41 +138,91 @@ export function renderMemoMiniMarkup(text: string): ReactNode {
   return <Fragment>{parts}</Fragment>;
 }
 
-const CHECK_LINE = /^\s*-\s*\[\s*([xX ])\s*\]\s*(.*)$/;
+export const MEMO_CHECKBOX_LINE = /^\s*-\s*\[\s*([xX ])\s*\]\s*(.*)$/;
+
+/**
+ * 본문 전체에서 n번째(0부터) 마크다운 체크 줄만 `- [ ]` ↔ `- [x]` 토글합니다.
+ * 줄 단위로 `MEMO_CHECKBOX_LINE`에 매칭되는 것만 세어 인덱스를 맞춥니다.
+ */
+export function toggleNthMarkdownCheckbox(fullText: string, zeroBasedIndex: number): string {
+  const normalized = fullText.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+  let seen = 0;
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li] ?? "";
+    if (!MEMO_CHECKBOX_LINE.test(line)) continue;
+    if (seen === zeroBasedIndex) {
+      const m = MEMO_CHECKBOX_LINE.exec(line);
+      if (!m) return fullText;
+      const inner = m[1];
+      const checked = inner.toLowerCase() === "x";
+      lines[li] = line.replace(/^(\s*-\s*)\[\s*[xX ]\s*\]/, (_, lead: string) => (checked ? `${lead}[ ]` : `${lead}[x]`));
+      return lines.join("\n");
+    }
+    seen++;
+  }
+  return fullText;
+}
+
+export type MemoDocumentRenderOptions = {
+  /** true면 체크박스를 `<input type="checkbox">`로 두고 `onToggleCheckbox` 호출 */
+  interactiveCheckboxes?: boolean;
+  /** 문서 안에서 등장하는 순서(0,1,2…)의 체크 항목 인덱스 */
+  onToggleCheckbox?: (globalCheckboxIndex: number) => void;
+};
 
 /**
  * 블록 단위: 체크박스 리스트, `-` 불릿, 빈 줄, 단락. 인라인은 `renderMemoMiniMarkup` 재사용.
  */
-export function renderMemoDocument(text: string): ReactNode {
+export function renderMemoDocument(text: string, opts?: MemoDocumentRenderOptions): ReactNode {
   const raw = text.replace(/\r\n/g, "\n");
   if (!raw.trim()) return null;
   const lines = raw.split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
   let b = 0;
+  let checkboxSerial = 0;
+  const interactive = Boolean(opts?.interactiveCheckboxes && opts?.onToggleCheckbox);
 
   while (i < lines.length) {
     const line = lines[i] ?? "";
 
-    if (CHECK_LINE.test(line)) {
+    if (MEMO_CHECKBOX_LINE.test(line)) {
       const items: ReactNode[] = [];
       while (i < lines.length) {
-        const m = CHECK_LINE.exec(lines[i] ?? "");
+        const m = MEMO_CHECKBOX_LINE.exec(lines[i] ?? "");
         if (!m) break;
         const checked = m[1].toLowerCase() === "x";
         const body = m[2] ?? "";
+        const cbIndex = checkboxSerial++;
         items.push(
           <li key={`cb-${b}-${items.length}`} className="flex gap-2">
-            <span
-              className={cn(
-                "mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-zinc-300 bg-white text-[10px] font-bold leading-none text-white",
-                checked && "border-sky-600 bg-sky-600",
-              )}
-              aria-hidden
-            >
-              {checked ? "✓" : null}
-            </span>
-            <span className="min-w-0">{renderMemoMiniMarkup(body)}</span>
+            {interactive ? (
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  opts.onToggleCheckbox?.(cbIndex);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  "mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-zinc-300 text-sky-600 accent-sky-600 focus:ring-sky-400",
+                )}
+                aria-label={checked ? "완료 취소" : "완료로 표시"}
+              />
+            ) : (
+              <span
+                className={cn(
+                  "mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-zinc-300 bg-white text-[10px] font-bold leading-none text-white",
+                  checked && "border-sky-600 bg-sky-600",
+                )}
+                aria-hidden
+              >
+                {checked ? "✓" : null}
+              </span>
+            )}
+            <span className="min-w-0 select-text">{renderMemoMiniMarkup(body)}</span>
           </li>,
         );
         i++;
@@ -190,7 +240,7 @@ export function renderMemoDocument(text: string): ReactNode {
       const items: ReactNode[] = [];
       while (i < lines.length) {
         const rawLine = lines[i] ?? "";
-        if (CHECK_LINE.test(rawLine)) break;
+        if (MEMO_CHECKBOX_LINE.test(rawLine)) break;
         const bm = /^\s*-\s+(.+)$/.exec(rawLine);
         if (!bm) break;
         items.push(
