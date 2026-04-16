@@ -6,7 +6,22 @@ import {
   statusVisibilitySignalClass 
 } from "@/lib/dashboard-status-visibility-styles";
 
-export const MEMO_COLORS = ["yellow", "rose", "blue", "green", "orange", "purple"] as const;
+export type MemoColorConfig = {
+  key: string;
+  bg: string;
+  light: string;
+  border: string;
+  label: string;
+};
+
+export const MEMO_COLORS: MemoColorConfig[] = [
+  { key: "yellow", bg: "bg-amber-200", light: "bg-amber-50/70", border: "border-amber-300", label: "노랑" },
+  { key: "rose", bg: "bg-rose-200", light: "bg-rose-50/70", border: "border-rose-300", label: "분홍" },
+  { key: "blue", bg: "bg-sky-200", light: "bg-sky-50/70", border: "border-sky-300", label: "파랑" },
+  { key: "green", bg: "bg-emerald-200", light: "bg-emerald-50/70", border: "border-emerald-300", label: "초록" },
+  { key: "orange", bg: "bg-orange-200", light: "bg-orange-50/70", border: "border-orange-300", label: "주황" },
+  { key: "purple", bg: "bg-purple-200", light: "bg-purple-50/70", border: "border-purple-300", label: "보라" },
+];
 
 export type IdeaFormState = {
   title: string;
@@ -39,7 +54,6 @@ export function noteToFormState(note: IdeaNote): IdeaFormState {
   };
 }
 
-/** 폼 상태 → 저장용 메타데이터 (자유 메모는 빈 객체) */
 export function formMetadataFromState(state: IdeaFormState): Record<string, unknown> {
   return {};
 }
@@ -65,7 +79,7 @@ export function IdeaFormFields({
     <div className="flex flex-col gap-5">
       {/* Title */}
       <div>
-        <label htmlFor="idea-title" className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">제목</label>
+        <label htmlFor="idea-title" className="text-xs font-bold text-zinc-400 uppercase tracking-wider">제목</label>
         <input
           id="idea-title"
           autoFocus
@@ -76,10 +90,9 @@ export function IdeaFormFields({
         />
       </div>
 
-      {/* Folders & Status Row */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
-          <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">폴더</label>
+          <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">폴더</label>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {memoFolders.map((f) => (
               <button
@@ -100,7 +113,7 @@ export function IdeaFormFields({
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">상태</label>
+          <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">상태</label>
           <div className="mt-1.5">
             <StatusPicker 
               value={form.projectStatus} 
@@ -112,40 +125,37 @@ export function IdeaFormFields({
 
       {/* Content */}
       <div>
-        <label htmlFor="idea-content" className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">메모 내용</label>
+        <label htmlFor="idea-content" className="text-xs font-bold text-zinc-400 uppercase tracking-wider">메모 내용</label>
         <textarea
           id="idea-content"
-          className="mt-1.5 block min-h-[180px] w-full resize-none rounded-2xl border border-zinc-200 bg-white p-4 text-sm leading-relaxed text-zinc-700 shadow-sm transition outline-none focus-visible:border-zinc-300 focus-visible:ring-4 focus-visible:ring-zinc-100/80"
+          className="mt-1.5 block min-h-[160px] w-full resize-none rounded-2xl border border-zinc-200 bg-white p-4 text-sm leading-relaxed text-zinc-700 shadow-sm transition outline-none focus-visible:border-zinc-300 focus-visible:ring-4 focus-visible:ring-zinc-100/80"
           value={form.content}
           placeholder="구체적인 생각이나 계획을 자유롭게 적어보세요."
           onChange={(e) => setForm({ content: e.target.value })}
         />
       </div>
 
-      {/* Colors & Tags Row */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div>
-          <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">카드 색상</label>
-          <div className="mt-2 flex gap-2">
-            {MEMO_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setForm({ color: c })}
-                className={cn(
-                  "h-8 w-8 rounded-full border-2 transition-all",
-                  c === "yellow" && "bg-amber-100",
-                  c === "rose" && "bg-rose-100",
-                  c === "blue" && "bg-sky-100",
-                  c === "green" && "bg-emerald-100",
-                  c === "orange" && "bg-orange-100",
-                  c === "purple" && "bg-purple-100",
-                  form.color === c ? "border-zinc-800 scale-110 shadow-md" : "border-transparent hover:scale-105"
-                )}
-                aria-label={c}
-              />
-            ))}
-          </div>
+      {/* Card Color Selection */}
+      <div>
+        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">카드 색상</label>
+        <div className="mt-2 flex flex-wrap gap-3">
+          {MEMO_COLORS.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setForm({ color: c.key })}
+              className={cn(
+                "group relative flex items-center justify-center h-10 w-10 rounded-full border-2 transition-all",
+                c.bg,
+                form.color === c.key 
+                  ? "border-zinc-800 scale-110 shadow-lg z-10" 
+                  : "border-white hover:border-zinc-200 hover:scale-105"
+              )}
+              aria-label={c.label}
+            >
+              {form.color === c.key && <span className="text-zinc-900 text-lg">✓</span>}
+            </button>
+          ))}
         </div>
       </div>
     </div>
@@ -175,8 +185,9 @@ function StatusPicker({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-export function IdeaMemoReadOnlyPanel({ note, memoFolders, onPersistNote }: { note: IdeaNote; memoFolders: any[]; onPersistNote?: (patch: any) => void }) {
+export function IdeaMemoReadOnlyPanel({ note, memoFolders }: { note: IdeaNote; memoFolders: any[] }) {
   const folder = memoFolders.find(f => f.id === note.folderId);
+  const color = MEMO_COLORS.find(c => c.key === (note.color || "yellow")) || MEMO_COLORS[0]!;
   
   return (
     <div className="flex flex-col gap-5">
@@ -194,22 +205,19 @@ export function IdeaMemoReadOnlyPanel({ note, memoFolders, onPersistNote }: { no
       </div>
       
       <div className={cn(
-        "rounded-2xl p-5 shadow-sm ring-1 ring-zinc-100",
-        note.color === "yellow" && "bg-amber-50/50",
-        note.color === "rose" && "bg-rose-50/50",
-        note.color === "blue" && "bg-sky-50/50",
-        note.color === "green" && "bg-emerald-50/50",
-        note.color === "orange" && "bg-orange-50/50",
-        note.color === "purple" && "bg-purple-50/50",
-        (!note.color || note.color === "default") && "bg-zinc-50/50"
+        "rounded-2xl p-6 shadow-sm border transition-colors",
+        color.light,
+        color.border
       )}>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-700">{note.content}</p>
+        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-800 font-medium">
+          {note.content}
+        </p>
       </div>
       
       {note.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 mt-1">
           {note.tags.map(t => (
-            <span key={t} className="text-xs text-zinc-400">#{t}</span>
+            <span key={t} className="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-400">#{t}</span>
           ))}
         </div>
       )}
