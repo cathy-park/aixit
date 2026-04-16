@@ -177,7 +177,7 @@ function IdeaMemoCard({
   useEffect(() => {
     if (!isResizing) return;
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onMouseMove = (e: globalThis.MouseEvent) => {
       if (!cardRef.current) return;
       const rect = cardRef.current.getBoundingClientRect();
       const newHeight = e.clientY - rect.top;
@@ -218,7 +218,6 @@ function IdeaMemoCard({
         dnd && "cursor-grab rounded-[30px] active:cursor-grabbing",
         dnd && dropTargetKey === pinKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
         dimCompleted && "opacity-[0.78]",
-        "transition-transform hover:scale-[1.01] active:scale-[0.99]",
         isResizing && "transition-none scale-100"
       )}
       style={{
@@ -239,10 +238,10 @@ function IdeaMemoCard({
         "after:absolute after:bottom-0 after:right-0 after:h-4 after:w-4 after:bg-gradient-to-tl after:from-black/10 after:to-transparent" // Corner fold effect
       )}>
         <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden p-6 pb-2">
-          <div className="flex items-start justify-between gap-3 shrink-0">
-            <div className="min-w-0 flex-1">
+          {/* Header & Icons */}
+          <div className="relative shrink-0">
+            <div className="min-w-0 pr-10"> {/* Space for absolute icons */}
               <div className={cn(APP_CARD_TITLE_TRACK_CLASS, grayscaleMain)}>
-                <FolderGlyph folder={folder} size="sm" className="shrink-0 opacity-70" accentColor={folder.color} />
                 <button
                   type="button"
                   onClick={onOpenModal}
@@ -253,7 +252,8 @@ function IdeaMemoCard({
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
+            {/* Absolute Icons to avoid pushing content down */}
+            <div className="absolute top-0 right-0 flex flex-col items-end gap-2 z-40">
               <button
                 type="button"
                 draggable={false}
@@ -300,9 +300,8 @@ function IdeaMemoCard({
             </div>
           </div>
 
-          {/* Scrollable Content Area */}
           <div 
-            className="flex-1 overflow-y-auto custom-scrollbar mt-3 pr-1 pb-4"
+            className="flex-1 overflow-y-auto custom-scrollbar mt-1 pr-1 pb-4"
             onMouseDown={(e) => {
               // Prevent drag if clicking content in scrollable area
               if (e.target !== e.currentTarget) e.stopPropagation();
@@ -339,44 +338,50 @@ function IdeaMemoCard({
                   <div className="h-12" />
                 )}
 
-                <div className="flex flex-wrap gap-1.5 opacity-80">
-                  <span className={cn("rounded-md border border-black/10 bg-black/5 px-2 py-0.5 text-[10px] font-bold text-zinc-700")}>
-                    #{note.category}
-                  </span>
-                  {(note.tags ?? []).map((tag) => (
-                    <span
-                      key={`${note.id}:${tag}`}
-                      className={cn(
-                        "rounded-md border border-black/10 bg-black/5 px-2 py-0.5 text-[10px] font-bold text-zinc-700"
-                      )}
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-auto pt-4 flex items-center justify-between text-[10px] font-bold text-zinc-500/60 uppercase tracking-wider relative z-30 shrink-0">
-            <div className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold ring-1 transition-all",
-              statusVisibilityPillClass(note.projectStatus as WorkflowRunStatus || "준비중", true)
-            )}>
-              <span className={cn("text-xs leading-none", statusVisibilitySignalClass(note.projectStatus as WorkflowRunStatus || "준비중", true))}>
-                ⏺
-              </span>
-              <select
-                value={note.projectStatus || "준비중"}
-                onChange={(e) => updateNote(note.id, { projectStatus: e.target.value as WorkflowRunStatus })}
-                className="appearance-none bg-transparent outline-none cursor-pointer text-inherit"
-              >
-                {WORKFLOW_STATUS_OPTIONS.map(s => (
-                  <option key={s} value={s} className="text-zinc-900 bg-white">{s}</option>
-                ))}
-              </select>
+          <div className="mt-auto pt-4 flex items-center justify-between text-[10px] font-bold text-zinc-500/60 uppercase tracking-wider relative z-30 shrink-0 border-t border-black/5">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className={cn(
+                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold ring-1 transition-all",
+                statusVisibilityPillClass(note.projectStatus as WorkflowRunStatus || "준비중", true)
+              )}>
+                <span className={cn("text-xs leading-none", statusVisibilitySignalClass(note.projectStatus as WorkflowRunStatus || "준비중", true))}>
+                  ⏺
+                </span>
+                <select
+                  value={note.projectStatus || "준비중"}
+                  onChange={(e) => updateNote(note.id, { projectStatus: e.target.value as WorkflowRunStatus })}
+                  className="appearance-none bg-transparent outline-none cursor-pointer text-inherit"
+                >
+                  {WORKFLOW_STATUS_OPTIONS.map(s => (
+                    <option key={s} value={s} className="text-zinc-900 bg-white">{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tags moved to footer */}
+              <div className="flex items-center gap-1 overflow-hidden">
+                <span className="shrink-0 rounded-md border border-black/10 bg-black/5 px-1.5 py-0.5 text-[9px] font-bold text-zinc-600">
+                  #{note.category}
+                </span>
+                {(note.tags ?? []).length > 0 && (
+                  <div className="flex truncate gap-1">
+                    {(note.tags ?? []).map((tag) => (
+                      <span
+                        key={`${note.id}:${tag}`}
+                        className="shrink-0 rounded-md border border-black/10 bg-black/5 px-1.5 py-0.5 text-[9px] font-bold text-zinc-600"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <span className="opacity-60">{new Date(note.updatedAt).toLocaleDateString()}</span>
+            <span className="shrink-0 opacity-60 ml-2">{new Date(note.updatedAt).toLocaleDateString()}</span>
           </div>
         </div>
 

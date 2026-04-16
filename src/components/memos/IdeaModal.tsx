@@ -159,7 +159,7 @@ export function IdeaModal({
   useEffect(() => {
     if (!isResizing) return;
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onMouseMove = (e: globalThis.MouseEvent) => {
       if (!modalRef.current) return;
       const rect = modalRef.current.getBoundingClientRect();
       const newHeight = e.clientY - rect.top;
