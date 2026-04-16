@@ -1,5 +1,6 @@
 import { isWorkflowRunStatus, type WorkflowRunStatus } from "@/lib/workflow-run-status";
 import type { IdeaNote } from "@/lib/notes-store";
+import type { StatusVisibilityFilter } from "@/lib/dashboard-workflow-filters";
 
 /** 메모 카드·필터용 WorkflowRunStatus (전환 완료 = 완료) */
 export function memoNoteRunStatus(note: IdeaNote): WorkflowRunStatus {

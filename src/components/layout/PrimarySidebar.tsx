@@ -37,7 +37,7 @@ export function PrimarySidebar() {
                 active ? "bg-zinc-900 text-white" : "text-zinc-700 hover:bg-zinc-100",
               )}
             >
-              <Icon className={cn("h-5 w-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-60")} />
+              {Icon && <Icon className={cn("h-5 w-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-60")} />}
               {item.label}
             </Link>
           );

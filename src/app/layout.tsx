@@ -45,7 +45,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon-v2.png?v=8" type="image/png" sizes="64x64" />
         <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png?v=8" sizes="180x180" />
       </head>
-      <body className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 text-zinc-950">
+      <body suppressHydrationWarning className="flex h-full min-h-0 flex-col overflow-hidden bg-zinc-50 text-zinc-950">
         <AuthProvider>
           <AixitSupabaseSyncProvider />
           <AixitStorageMigrationBootstrap />

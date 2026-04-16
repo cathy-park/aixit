@@ -277,6 +277,7 @@ export function DashboardExperience() {
   const projectSectionsAll = useMemo(() => {
     const q = workflowSearch.trim();
     const completedOnlyVisibility: StatusVisibilityFilter = {
+      시작전: false,
       진행중: false,
       준비중: false,
       보류: false,
@@ -323,6 +324,7 @@ export function DashboardExperience() {
     const out: FlatWf[] = [];
     const q = workflowSearch.trim();
     const completedOnlyVisibility: StatusVisibilityFilter = {
+      시작전: false,
       진행중: false,
       준비중: false,
       보류: false,
@@ -366,6 +368,7 @@ export function DashboardExperience() {
     if (!folder) return [];
     const entries = layout.filter((e) => e.folderId === folder.id);
     const completedOnlyVisibility: StatusVisibilityFilter = {
+      시작전: false,
       진행중: false,
       준비중: false,
       보류: false,
