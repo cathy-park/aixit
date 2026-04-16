@@ -976,7 +976,7 @@ export function IdeaMemosView() {
       <IdeaModal
         open={ideaModal.open}
         mode={ideaModal.mode}
-        noteId={ideaModal.noteId}
+        noteId={ideaModal.noteId ?? undefined}
         folderIdForCreate={newMemoFolderId}
         onClose={() => setIdeaModal((m) => ({ ...m, open: false }))}
         onSaved={bumpNotesAndLayout}
