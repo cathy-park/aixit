@@ -3,12 +3,13 @@ import type { LayoutEntry } from "@/lib/dashboard-layout-store";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import type { WorkflowRunStatus } from "@/lib/workflow-run-status";
 
-export const STATUS_ORDER: WorkflowRunStatus[] = ["진행중", "준비중", "보류", "완료", "중단"];
+export const STATUS_ORDER: WorkflowRunStatus[] = ["시작전", "준비중", "진행중", "보류", "완료", "중단"];
 
 /** 노출 상태 — 켜진 상태의 카드만 목록에 표시 */
 export type StatusVisibilityFilter = Record<WorkflowRunStatus, boolean>;
 
 export const DEFAULT_STATUS_VISIBILITY: StatusVisibilityFilter = {
+  시작전: true,
   진행중: true,
   준비중: true,
   보류: true,

@@ -64,6 +64,17 @@ export function IconMoreVertical({ className }: { className?: string }) {
   );
 }
 
+export function IconMove({ className }: { className?: string }) {
+  return (
+    <svg className={cn("h-[18px] w-[18px]", className)} aria-hidden {...svgProps}>
+      <path d="M16 3h5v5" />
+      <path d="M8 21H3v-5" />
+      <path d="M13 11l8-8" />
+      <path d="M11 13l-8 8" />
+    </svg>
+  );
+}
+
 const STAR_PATH = "M12 2.5l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2.5z";
 
 /** 상단 고정: 꺼짐은 회색 라인, 켜짐은 채운 별(부모 `text-amber-500` 등으로 색 지정) */

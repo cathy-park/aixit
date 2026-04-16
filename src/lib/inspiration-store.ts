@@ -15,7 +15,7 @@ export type InspirationSite = {
 
 const KEY = "aixit.inspirationSites.v1";
 
-export const INSPIRATION_CATEGORIES = ["레퍼런스", "포트폴리오", "영감", "UI", "프로덕트", "기타"] as const;
+export const INSPIRATION_CATEGORIES = ["레퍼런스", "포트폴리오", "영감", "UI", "프로덕트", "챗봇", "기타"] as const;
 
 function safeParse<T>(raw: string | null): T | null {
   if (!raw) return null;

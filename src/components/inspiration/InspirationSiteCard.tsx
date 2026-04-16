@@ -7,8 +7,10 @@ import { cn } from "@/components/ui/cn";
 import type { InspirationSite } from "@/lib/inspiration-store";
 import { incrementInspirationShortcut } from "@/lib/inspiration-store";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
-import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
+import { actionIconButtonClass, IconEdit, IconMove, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
+import { MoveCardModal } from "@/components/cards/MoveCardModal";
+import { moveInspirationToWarehouse } from "@/lib/warehouse-move";
 import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
 import {
   APP_CARD_SHELL_WAREHOUSE_CLASS,
@@ -38,6 +40,7 @@ export function InspirationSiteCard({
   onTogglePinned?: () => void;
 }) {
   const [noteOpen, setNoteOpen] = useState(false);
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
   const logo = site.logoUrl?.trim();
   const initials = site.name.trim().slice(0, 2) || "?";
   const shortcutCount = useMemo(() => site.shortcutCount ?? 0, [site.shortcutCount]);
@@ -123,6 +126,15 @@ export function InspirationSiteCard({
                 ) : null
               }
             >
+              <button
+                type="button"
+                onClick={() => setMoveModalOpen(true)}
+                className={actionIconButtonClass}
+                title="이동"
+                aria-label="이동"
+              >
+                <IconMove />
+              </button>
               <button
                 type="button"
                 onClick={onEdit}
@@ -219,6 +231,17 @@ export function InspirationSiteCard({
             </button>
           </div>
         </div>
+      ) : null}
+      {moveModalOpen ? (
+        <MoveCardModal
+          open={moveModalOpen}
+          currentWarehouse={site.category === "챗봇" ? "chatbots" : "inspiration"}
+          onClose={() => setMoveModalOpen(false)}
+          onMove={(target) => {
+            moveInspirationToWarehouse(site, target);
+            setMoveModalOpen(false);
+          }}
+        />
       ) : null}
     </div>
   );

@@ -7,9 +7,11 @@ import { cn } from "@/components/ui/cn";
 import { keywordTagToneClass, normalizeKeyword } from "@/lib/keyword-tag-styles";
 import { isToolEffectivelyActive, type Tool, type ToolCredential } from "@/lib/tools";
 import { CredentialProviderMark } from "@/components/tools/CredentialProviderMarks";
-import { actionIconButtonClass, IconEdit, IconStarPin, IconTrash } from "@/components/ui/action-icons";
+import { actionIconButtonClass, IconEdit, IconMove, IconStarPin, IconTrash } from "@/components/ui/action-icons";
 import { IosCardToggle } from "@/components/ui/IosCardToggle";
 import { CardActionsOverflow } from "@/components/cards/CardActionsOverflow";
+import { MoveCardModal } from "@/components/cards/MoveCardModal";
+import { moveToolToWarehouse } from "@/lib/warehouse-move";
 import { MemoMiniMarkupText } from "@/components/workspace/MemoMiniMarkupText";
 import { APP_CARD_SHELL_WAREHOUSE_CLASS } from "@/components/cards/app-card-layout";
 
@@ -154,6 +156,7 @@ export function ToolCard({
   const [activeOn, setActiveOn] = useState(effectiveActive);
   const [credPickId, setCredPickId] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
 
   useEffect(() => {
     setActiveOn(isToolEffectivelyActive(tool));
@@ -353,6 +356,19 @@ export function ToolCard({
                       ) : null
                     }
                   >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setMoveModalOpen(true);
+                      }}
+                      className={cn(actionIconButtonClass, "h-8 w-8")}
+                      title="이동"
+                      aria-label="이동"
+                    >
+                      <IconMove />
+                    </button>
                     {onEdit ? (
                       <button
                         type="button"
@@ -572,6 +588,19 @@ export function ToolCard({
             </button>
           </div>
         </div>
+      ) : null}
+      {moveModalOpen ? (
+        <MoveCardModal
+          open={moveModalOpen}
+          currentWarehouse="tools"
+          onClose={() => setMoveModalOpen(false)}
+          onMove={(target) => {
+            if (target === "inspiration" || target === "chatbots") {
+              moveToolToWarehouse(tool, target);
+            }
+            setMoveModalOpen(false);
+          }}
+        />
       ) : null}
       </div>
     </div>

@@ -5,6 +5,7 @@ import {
   FolderKanban,
   Home,
   Lightbulb,
+  MessageSquare,
   Settings,
   StickyNote,
   Wrench,
@@ -20,6 +21,7 @@ export type AppNavItem = {
 /** 사이드바·모바일 상단 메뉴 공통 */
 export const APP_NAV_ITEMS: AppNavItem[] = [
   { href: "/dashboard", label: "홈", icon: Home, match: (p) => p === "/dashboard" },
+  { href: "/calendar", label: "캘린더", icon: Calendar, match: (p) => p.startsWith("/calendar") },
   {
     href: "/projects",
     label: "프로젝트",
@@ -32,13 +34,18 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     icon: BookOpen,
     match: (p) => p.startsWith("/workflows") || p.startsWith("/workflow/"),
   },
-  { href: "/calendar", label: "캘린더", icon: Calendar, match: (p) => p.startsWith("/calendar") },
   { href: "/tools", label: "도구 창고", icon: Wrench, match: (p) => p.startsWith("/tools") },
   {
     href: "/inspiration",
     label: "영감 창고",
     icon: Lightbulb,
     match: (p) => p.startsWith("/inspiration"),
+  },
+  {
+    href: "/chatbots",
+    label: "챗봇 창고",
+    icon: MessageSquare,
+    match: (p) => p.startsWith("/chatbots"),
   },
   { href: "/memos", label: "메모", icon: StickyNote, match: (p) => p.startsWith("/memos") },
   { href: "/settings", label: "설정", icon: Settings, match: (p) => p.startsWith("/settings") },

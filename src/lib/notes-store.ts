@@ -19,47 +19,10 @@ import {
   ensureMemoFolderForCategoryKey,
 } from "@/lib/memo-folders-store";
 import { isProjectLifecycleStatus, type ProjectLifecycleStatus } from "@/lib/project-lifecycle-status";
-import {
-  buildSectionSetsFromRawMetadata,
-  getEffectivePlanTemplate,
-  getSectionsForStructure,
-  inferMemoPlanTemplateForStorage,
-  sectionSetsToStoredMetadata,
-} from "@/lib/structured-memo-sections";
+import { type WorkflowRunStatus, isWorkflowRunStatus } from "@/lib/workflow-run-status";
 
 /** 메모 폴더와 1:1 — `memoFolderCategoryKey(folder)`와 항상 동일 */
 export type NoteCategory = string;
-
-/** 기획 필드(MVP/강의/소설) 분기용; 폴더 이름·slug가 이 값이면 해당 템플릿 검증·UI */
-export const NOTE_STRUCTURE_KEYS = ["MVP", "강의", "소설", "일반"] as const;
-export type NoteStructureKey = (typeof NOTE_STRUCTURE_KEYS)[number];
-
-/** @deprecated NOTE_STRUCTURE_KEYS / structureTypeFromMemoCategoryLabel 사용 */
-export const NOTE_CATEGORIES = NOTE_STRUCTURE_KEYS;
-
-/** MVP — Problem / Hypothesis / Experience / Features */
-export type MvpNoteMetadata = {
-  problem?: string;
-  hypothesis?: string;
-  criticalExperience?: string;
-  features?: string;
-};
-
-/** 강의 — Target / Goal / Curriculum / Assignment */
-export type LectureNoteMetadata = {
-  target?: string;
-  goal?: string;
-  curriculum?: string;
-  assignment?: string;
-};
-
-/** 소설 — Logline / Worldview / Characters / Plot */
-export type NovelNoteMetadata = {
-  logline?: string;
-  worldview?: string;
-  characters?: string;
-  plot?: string;
-};
 
 export type GeneralNoteMetadata = Record<string, unknown>;
 
@@ -70,13 +33,15 @@ export type IdeaNote = {
   category: NoteCategory;
   /** 사용자 지정 태그 (폴더 category와 별도; UI는 #폴더 + #태그) */
   tags: string[];
-  metadata: MvpNoteMetadata | LectureNoteMetadata | NovelNoteMetadata | GeneralNoteMetadata;
+  metadata: GeneralNoteMetadata;
   /** 메모 전용 폴더 id (`memo-folders-store`) */
   folderId: string;
-  /** 카드 StatusChip용 (waiting | in_progress | completed) */
-  projectStatus?: ProjectLifecycleStatus;
+  /** 카드 상태 (시작전 | 준비중 | 진행중 | 보류 | 중단 | 완료) */
+  projectStatus?: string;
   isConverted: boolean;
   convertedProjectId?: string;
+  /** 메모 배경 색상 (yellow, rose, blue, green, orange, purple) */
+  color?: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -88,11 +53,7 @@ const KEY = "aixit.ideaNotes.v1";
 let memoFolderSplitEnsured = false;
 let memoCategoryFolderSyncEnsured = false;
 
-export function structureTypeFromMemoCategoryLabel(label: string): NoteStructureKey {
-  const t = label.trim();
-  if (t === "MVP") return "MVP";
-  if (t === "강의") return "강의";
-  if (t === "소설") return "소설";
+export function structureTypeFromMemoCategoryLabel(label: string): string {
   return "일반";
 }
 
@@ -132,19 +93,16 @@ export function normalizeIdeaNoteTags(raw: unknown): string[] {
   return out;
 }
 
-function deriveNoteProjectStatus(n: Pick<IdeaNote, "isConverted" | "projectStatus">): ProjectLifecycleStatus {
-  if (n.isConverted) return "completed";
+function deriveNoteProjectStatus(n: Pick<IdeaNote, "isConverted" | "projectStatus">): string {
+  if (n.isConverted) return "완료";
   const raw = n.projectStatus;
-  if (isProjectLifecycleStatus(raw)) return raw;
-  return "waiting";
+  if (typeof raw === "string" && raw.trim()) return raw;
+  return "준비중";
 }
 
-/** 로컬에 남은 구버전 키를 신규 스키마로 합칩니다. (`category`는 메모 폴더 키 = slug || name) */
+/** 템플릿 로직 제거: raw 데이터를 그대로 반환 */
 export function migrateMetadataForCategory(category: NoteCategory, raw: unknown): IdeaNote["metadata"] {
-  const m = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-  const sets = buildSectionSetsFromRawMetadata(m);
-  const plan = inferMemoPlanTemplateForStorage(m, category, sets);
-  return sectionSetsToStoredMetadata(sets, plan) as IdeaNote["metadata"];
+  return (raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}) as GeneralNoteMetadata;
 }
 
 function reconcileMemoFolderAndCategory(
@@ -178,7 +136,7 @@ function normalizeNote(n: IdeaNote): IdeaNote {
   const metadata = migrateMetadataForCategory(category, n.metadata);
   const projectStatus = deriveNoteProjectStatus({
     isConverted: Boolean(n.isConverted),
-    projectStatus: (n as { projectStatus?: ProjectLifecycleStatus }).projectStatus,
+    projectStatus: n.projectStatus,
   });
   const tags = normalizeIdeaNoteTags((n as { tags?: unknown }).tags);
   return {
@@ -190,6 +148,7 @@ function normalizeNote(n: IdeaNote): IdeaNote {
     metadata,
     folderId,
     projectStatus,
+    color: typeof n.color === "string" ? n.color : "yellow",
     isConverted: Boolean(n.isConverted),
     convertedProjectId: typeof n.convertedProjectId === "string" ? n.convertedProjectId : undefined,
     createdAt: typeof n.createdAt === "number" ? n.createdAt : Date.now(),
@@ -232,21 +191,8 @@ export function reassignMemoNotesFromFolder(fromFolderId: string, toFolderId: st
   saveMemoLayout(layout);
 }
 
-/** 승격·저장 전 카테고리별 필수 입력 검사 (한글 메시지). */
+/** 템플릿 기능이 제거되어 유효성 검사가 불필요함 */
 export function validateStructuredNote(note: Pick<IdeaNote, "category" | "metadata">): string | null {
-  const meta = note.metadata as Record<string, unknown>;
-  const st = getEffectivePlanTemplate(meta, note.category);
-  if (st === "일반") return null;
-  const sections = getSectionsForStructure(meta, st);
-  if (sections.length === 0) {
-    return "구조형 메모에 섹션을 한 개 이상 두고, 각 섹션 내용을 입력해 주세요.";
-  }
-  for (const s of sections) {
-    if (!s.value.trim()) {
-      const head = [s.title, s.subtitle].filter(Boolean).join(" · ") || s.key;
-      return `「${head}」내용을 입력해 주세요.`;
-    }
-  }
   return null;
 }
 
@@ -291,7 +237,8 @@ export function addNote(
     folderId?: string;
     /** 생략 시 `folderId`로부터 파생 */
     category?: NoteCategory;
-    projectStatus?: ProjectLifecycleStatus;
+    projectStatus?: string;
+    color?: string;
   },
 ) {
   const now = Date.now();
@@ -323,7 +270,7 @@ export function addNote(
     category: categorySeed,
     id: makeId(),
     isConverted: input.isConverted ?? false,
-    projectStatus: input.projectStatus ?? "waiting",
+    projectStatus: input.projectStatus ?? "준비중",
     createdAt: now,
     updatedAt: now,
   } as IdeaNote);

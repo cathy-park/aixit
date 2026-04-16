@@ -25,7 +25,6 @@ import {
   addNote,
   getNote,
   updateNote,
-  validateStructuredNote,
   type IdeaNote,
 } from "@/lib/notes-store";
 
@@ -152,6 +151,7 @@ export function IdeaModal({
         tags: form.tags,
         metadata,
         folderId: form.folderId,
+        color: form.color,
       });
       setResolvedNoteId(note.id);
       onSaved?.();
@@ -165,6 +165,7 @@ export function IdeaModal({
       folderId: form.folderId,
       tags: form.tags,
       metadata,
+      color: form.color,
     });
     onSaved?.();
     return id;
@@ -201,11 +202,6 @@ export function IdeaModal({
         window.alert("저장된 메모를 찾을 수 없습니다.");
         return;
       }
-    }
-    const err = validateStructuredNote(note);
-    if (err) {
-      window.alert(err);
-      return;
     }
     const projectFolderId = pickDefaultProjectFolderId(loadDashboardFolders());
     const result = promoteNoteToProject(note, projectFolderId, choice);
@@ -245,7 +241,7 @@ export function IdeaModal({
   const headerSubtitle =
     mode === "view"
       ? "읽기 전용입니다. 수정하려면 하단의 편집을 눌러 주세요."
-      : "폴더를 바꿔도 다른 기획 필드에 적어 둔 내용은 유지됩니다.";
+      : "생각을 자유롭게 메모하고 색상과 상태를 저장하세요.";
 
   if (!open) return null;
 

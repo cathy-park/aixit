@@ -24,7 +24,7 @@ import {
 } from "@/lib/pinned-inspiration-store";
 import { normalizeKeyword } from "@/lib/keyword-tag-styles";
 
-export function InspirationWarehouseView() {
+export function ChatbotWarehouseView() {
   const [sites, setSites] = useState<InspirationSite[]>([]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<{ mode: "create" | "edit"; initial: InspirationSite | null } | null>(null);
@@ -32,7 +32,8 @@ export function InspirationWarehouseView() {
 
   const refresh = useCallback(() => {
     const all = loadInspirationSites();
-    setSites(all.filter((s) => s.category !== "챗봇"));
+    // 챗봇 카테고리만 필터링
+    setSites(all.filter(s => s.category === "챗봇"));
   }, []);
 
   useEffect(() => {
@@ -58,7 +59,6 @@ export function InspirationWarehouseView() {
             s.name.toLowerCase().includes(q) ||
             s.description.toLowerCase().includes(q) ||
             s.memo.toLowerCase().includes(q) ||
-            s.category.toLowerCase().includes(q) ||
             s.tags.some((t) => t.toLowerCase().includes(q)),
         );
     return [...list].sort((a, b) => {
@@ -72,7 +72,7 @@ export function InspirationWarehouseView() {
     });
   }, [sites, search, pinnedInspirationIds]);
 
-  const inspirationTagSuggestions = useMemo(() => {
+  const chatbotTagSuggestions = useMemo(() => {
     const s = new Set<string>();
     for (const site of sites) {
       for (const raw of site.tags) {
@@ -106,9 +106,9 @@ export function InspirationWarehouseView() {
   return (
     <>
       <AdaptivePageHeader
-        title="영감 창고"
+        title="챗봇 창고"
         count={filtered.length}
-        description="레퍼런스·포트폴리오·아이디어를 카드로 모아두는 공간이에요."
+        description="나만의 챗봇이나 자주 사용하는 AI 에이전트를 모아두는 공간이에요."
         hideOnMobile
         rightSlot={
           <button
@@ -126,8 +126,8 @@ export function InspirationWarehouseView() {
         <PillSearchField
           value={search}
           onChange={setSearch}
-          placeholder="사이트 이름, 설명, 태그, 메모 검색"
-          aria-label="영감 검색"
+          placeholder="챗봇 이름, 설명, 태그, 메모 검색"
+          aria-label="챗봇 검색"
         />
         <WarehouseKeywordsRow keywords={warehouseKeywords} onKeywordClick={(d) => setSearch(d)} />
       </div>
@@ -164,14 +164,15 @@ export function InspirationWarehouseView() {
         open={modal != null}
         mode={modal?.mode ?? "create"}
         initial={modal?.initial ?? null}
-        suggestionTags={inspirationTagSuggestions}
+        suggestionTags={chatbotTagSuggestions}
         onClose={() => setModal(null)}
         onSave={(payload) => {
           const { id, ...rest } = payload;
           if (id) {
             updateInspirationSite(id, rest);
           } else {
-            addInspirationSite({ ...rest, shortcutCount: 0 });
+            // 기본 카테고리를 '챗봇'으로 설정
+            addInspirationSite({ ...rest, category: "챗봇", shortcutCount: 0 });
           }
           refresh();
         }}

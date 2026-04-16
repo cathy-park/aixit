@@ -27,15 +27,17 @@ export function PrimarySidebar() {
       <nav className="mt-8 flex flex-col gap-0.5" aria-label="주요 메뉴">
         {APP_NAV_ITEMS.map((item) => {
           const active = item.match(pathname);
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
                 active ? "bg-zinc-900 text-white" : "text-zinc-700 hover:bg-zinc-100",
               )}
             >
+              <Icon className={cn("h-5 w-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-60")} />
               {item.label}
             </Link>
           );
