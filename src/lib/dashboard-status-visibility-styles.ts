@@ -13,7 +13,7 @@ export function statusVisibilityPillClass(status: WorkflowRunStatus, on: boolean
     case "중단":
       return "bg-rose-50 text-rose-800 ring-rose-200";
     case "준비중":
-      return "bg-amber-50 text-amber-800 ring-amber-200";
+      return "bg-green-50 text-green-800 ring-green-200";
     case "완료":
       return "bg-emerald-50 text-emerald-800 ring-emerald-200";
     default:

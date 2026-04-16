@@ -1,12 +1,12 @@
-import type { StatusVisibilityFilter } from "@/lib/dashboard-workflow-filters";
-import { projectLifecycleToRunStatus } from "@/lib/project-lifecycle-status";
-import type { WorkflowRunStatus } from "@/lib/workflow-run-status";
+import { isWorkflowRunStatus, type WorkflowRunStatus } from "@/lib/workflow-run-status";
 import type { IdeaNote } from "@/lib/notes-store";
 
 /** 메모 카드·필터용 WorkflowRunStatus (전환 완료 = 완료) */
 export function memoNoteRunStatus(note: IdeaNote): WorkflowRunStatus {
   if (note.isConverted) return "완료";
-  return projectLifecycleToRunStatus(note.projectStatus ?? "waiting");
+  const s = note.projectStatus;
+  if (isWorkflowRunStatus(s)) return s;
+  return "시작전";
 }
 
 function passesMemoVisibility(note: IdeaNote, v: StatusVisibilityFilter): boolean {

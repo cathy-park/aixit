@@ -76,7 +76,7 @@ function workflowRunStatusMenuRowClass(option: WorkflowRunStatus, current: Workf
     case "시작전":
       return cn(row, "bg-slate-50 text-slate-900");
     case "준비중":
-      return cn(row, "bg-amber-50 text-amber-900");
+      return cn(row, "bg-green-50 text-green-900");
     case "진행중":
       return cn(row, "bg-sky-50 text-sky-900");
     case "보류":
@@ -102,8 +102,8 @@ export function WorkflowRunStatusChip({ status }: { status: WorkflowRunStatus })
       );
     case "준비중":
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
-          <CircleOutlineIcon className="h-3.5 w-3.5 shrink-0 stroke-amber-600" />
+        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-800 ring-1 ring-green-200">
+          <CircleOutlineIcon className="h-3.5 w-3.5 shrink-0 stroke-green-600" />
           준비중
         </span>
       );

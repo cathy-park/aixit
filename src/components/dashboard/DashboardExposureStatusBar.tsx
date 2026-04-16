@@ -33,25 +33,27 @@ export function DashboardExposureStatusBar({
     <div className="flex flex-wrap items-center gap-2">
       <span className="w-full text-xs font-semibold text-zinc-500 sm:mr-1 sm:w-auto">노출 상태</span>
       {STATUS_ORDER.map((s) => (
-        <button
-          key={s}
-          type="button"
-          onClick={() => setStatusVisibility((p) => ({ ...p, [s]: !p[s] }))}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition hover:opacity-90",
-            "outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-50",
-            statusVisibilityPillClass(s, statusVisibility[s]),
-          )}
-          aria-pressed={statusVisibility[s]}
-        >
-          <span
-            className={cn("text-sm leading-none", statusVisibilitySignalClass(s, statusVisibility[s]))}
-            aria-hidden
+        s === "완료" ? null : (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setStatusVisibility((p) => ({ ...p, [s]: !p[s] }))}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition hover:opacity-90",
+              "outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-50",
+              statusVisibilityPillClass(s, statusVisibility[s]),
+            )}
+            aria-pressed={statusVisibility[s]}
           >
-            ⏺
-          </span>
-          {s}
-        </button>
+            <span
+              className={cn("text-sm leading-none", statusVisibilitySignalClass(s, statusVisibility[s]))}
+              aria-hidden
+            >
+              ⏺
+            </span>
+            {s}
+          </button>
+        )
       ))}
       {showIncludeCompletedToggle ? (
         <button
