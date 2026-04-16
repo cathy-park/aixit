@@ -5,14 +5,15 @@ import {
   statusVisibilityPillClass, 
   statusVisibilitySignalClass 
 } from "@/lib/dashboard-status-visibility-styles";
+import { type DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 
-export type MemoColorConfig = {
+export interface MemoColorConfig {
   key: string;
   bg: string;
   light: string;
   border: string;
   label: string;
-};
+}
 
 export const MEMO_COLORS: MemoColorConfig[] = [
   { key: "yellow", bg: "bg-amber-200", light: "bg-amber-50/70", border: "border-amber-300", label: "노랑" },
@@ -55,6 +56,7 @@ export function noteToFormState(note: IdeaNote): IdeaFormState {
 }
 
 export function formMetadataFromState(state: IdeaFormState): Record<string, unknown> {
+  void state;
   return {};
 }
 
@@ -66,15 +68,17 @@ export function buildIdeaCopyText(form: IdeaFormState): string {
   return lines.join("\n\n");
 }
 
+export interface IdeaFormFieldsProps {
+  memoFolders: DashboardFolderRecord[];
+  form: IdeaFormState;
+  setForm: (patch: Partial<IdeaFormState> | ((prev: IdeaFormState) => IdeaFormState)) => void;
+}
+
 export function IdeaFormFields({
   memoFolders,
   form,
   setForm,
-}: {
-  memoFolders: any[];
-  form: IdeaFormState;
-  setForm: (patch: Partial<IdeaFormState> | ((prev: IdeaFormState) => IdeaFormState)) => void;
-}) {
+}: IdeaFormFieldsProps) {
   return (
     <div className="flex flex-col gap-5">
       {/* Title */}
@@ -185,9 +189,16 @@ function StatusPicker({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-export function IdeaMemoReadOnlyPanel({ note, memoFolders }: { note: IdeaNote; memoFolders: any[] }) {
+export interface IdeaMemoReadOnlyPanelProps {
+  note: IdeaNote;
+  memoFolders: DashboardFolderRecord[];
+}
+
+export function IdeaMemoReadOnlyPanel({ note, memoFolders }: IdeaMemoReadOnlyPanelProps) {
   const folder = memoFolders.find(f => f.id === note.folderId);
-  const color = MEMO_COLORS.find(c => c.key === (note.color || "yellow")) || MEMO_COLORS[0]!;
+  const colorKey = note.color || "yellow";
+  const color = MEMO_COLORS.find(c => c.key === colorKey) || MEMO_COLORS[0]!;
+  const currentStatus = (note.projectStatus as WorkflowRunStatus) || "준비중";
   
   return (
     <div className="flex flex-col gap-5">
@@ -197,10 +208,10 @@ export function IdeaMemoReadOnlyPanel({ note, memoFolders }: { note: IdeaNote; m
         </span>
         <div className={cn(
           "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1",
-          statusVisibilityPillClass(note.projectStatus as WorkflowRunStatus || "준비중", true)
+          statusVisibilityPillClass(currentStatus, true)
         )}>
-          <span className={cn("text-[10px] leading-none", statusVisibilitySignalClass(note.projectStatus as WorkflowRunStatus || "준비중", true))}>⏺</span>
-          {note.projectStatus || "준비중"}
+          <span className={cn("text-[10px] leading-none", statusVisibilitySignalClass(currentStatus, true))}>⏺</span>
+          {currentStatus}
         </div>
       </div>
       

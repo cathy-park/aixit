@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { loadMemoFolders } from "@/lib/memo-folders-store";
+import { 
+  loadMemoFolders 
+} from "@/lib/memo-folders-store";
 import {
   buildIdeaCopyText,
   emptyIdeaFormState,
@@ -12,7 +13,9 @@ import {
   noteToFormState,
   type IdeaFormState,
 } from "@/components/memos/idea-note-form-fields";
-import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
+import { 
+  WORKSPACE_HEADER_ADD_MATCH_BTN 
+} from "@/components/workspace/WorkspaceLinksMemosSections";
 import { cn } from "@/components/ui/cn";
 import {
   addNote,
@@ -20,8 +23,19 @@ import {
   updateNote,
   type IdeaNote,
 } from "@/lib/notes-store";
+import { type DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 
 export type IdeaModalMode = "create" | "edit" | "view";
+
+export interface IdeaModalProps {
+  open: boolean;
+  mode: IdeaModalMode;
+  noteId?: string;
+  folderIdForCreate?: string;
+  onClose: () => void;
+  onSaved?: () => void;
+  onRequestEdit?: () => void;
+}
 
 export function IdeaModal({
   open,
@@ -31,22 +45,14 @@ export function IdeaModal({
   onClose,
   onSaved,
   onRequestEdit,
-}: {
-  open: boolean;
-  mode: IdeaModalMode;
-  noteId?: string;
-  folderIdForCreate?: string;
-  onClose: () => void;
-  onSaved?: () => void;
-  onRequestEdit?: () => void;
-}) {
-  const router = useRouter();
-  const [memoFolders] = useState(() => loadMemoFolders());
+}: IdeaModalProps) {
+  const [memoFolders] = useState<DashboardFolderRecord[]>(() => loadMemoFolders());
   const [form, setForm] = useState<IdeaFormState>(() => emptyIdeaFormState(folderIdForCreate || "memo-folder-s1"));
   const [resolvedNoteId, setResolvedNoteId] = useState<string | null>(null);
 
   const effectiveNoteId = resolvedNoteId ?? noteId;
 
+  // Initialize form state
   useEffect(() => {
     if (!open) {
       setResolvedNoteId(null);
@@ -56,9 +62,15 @@ export function IdeaModal({
       setForm(emptyIdeaFormState(folderIdForCreate || "memo-folder-s1"));
       return;
     }
-    const n = effectiveNoteId ? getNote(effectiveNoteId) : null;
-    if (n) setForm(noteToFormState(n));
-  }, [open, mode, noteId, folderIdForCreate, effectiveNoteId]);
+    
+    // Edit or View mode
+    if (effectiveNoteId) {
+      const n = getNote(effectiveNoteId);
+      if (n) {
+        setForm(noteToFormState(n));
+      }
+    }
+  }, [open, mode, folderIdForCreate, effectiveNoteId]);
 
   const setFormPatch = useCallback(
     (patch: Partial<IdeaFormState> | ((prev: IdeaFormState) => IdeaFormState)) => {
@@ -71,14 +83,16 @@ export function IdeaModal({
     const text = buildIdeaCopyText(form);
     try {
       await navigator.clipboard.writeText(text);
+      window.alert("복사되었습니다");
     } catch {
       window.prompt("복사할 내용:", text);
     }
-    window.alert("복사되었습니다");
   };
 
   const persistFormToStore = useCallback((): string | null => {
     const metadata = formMetadataFromState(form);
+    
+    // Create new note
     if (mode === "create" && !resolvedNoteId) {
       const note = addNote({
         title: form.title,
@@ -92,8 +106,11 @@ export function IdeaModal({
       onSaved?.();
       return note.id;
     }
+    
+    // Update existing note
     const id = effectiveNoteId;
     if (!id) return null;
+    
     updateNote(id, {
       title: form.title,
       content: form.content,
@@ -107,7 +124,7 @@ export function IdeaModal({
     return id;
   }, [form, mode, effectiveNoteId, resolvedNoteId, onSaved]);
 
-  const save = () => {
+  const handleSaveAndClose = () => {
     const id = persistFormToStore();
     if (id !== null) {
       onClose();
@@ -117,7 +134,7 @@ export function IdeaModal({
   };
 
   const headerTitle = mode === "create" ? "새 아이디어" : form.title.trim() || "아이디어";
-  const currentNote: IdeaNote | null = effectiveNoteId && open ? (getNote(effectiveNoteId) ?? null) : null;
+  const currentNote: IdeaNote | null = (effectiveNoteId && open) ? (getNote(effectiveNoteId) || null) : null;
 
   if (!open) return null;
 
@@ -141,7 +158,7 @@ export function IdeaModal({
               {headerTitle}
             </h2>
             <p className="mt-1 text-sm text-zinc-500">
-              {mode === "view" ? "읽기 전용입니다. 수정하려면 편집을 눌러 주세요." : "아이디어를 자유롭게 기록하세요."}
+              {mode === "view" ? "기록된 내용을 확인하고 있습니다." : "생각을 자유롭게 기록하세요."}
             </p>
           </div>
           <button onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600">
@@ -160,12 +177,17 @@ export function IdeaModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/30 px-5 py-4">
-          <button onClick={copyAll} className="h-10 rounded-full border border-zinc-200 bg-white px-5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm">
+          <button 
+            type="button"
+            onClick={copyAll} 
+            className="h-10 rounded-full border border-zinc-200 bg-white px-5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors shadow-sm"
+          >
             복사하기
           </button>
           <div className="flex gap-2">
             {mode === "view" ? (
               <button 
+                type="button"
                 onClick={onRequestEdit} 
                 className={cn(
                   WORKSPACE_HEADER_ADD_MATCH_BTN,
@@ -176,7 +198,8 @@ export function IdeaModal({
               </button>
             ) : (
               <button 
-                onClick={save} 
+                type="button"
+                onClick={handleSaveAndClose} 
                 className={cn(
                   WORKSPACE_HEADER_ADD_MATCH_BTN,
                   "h-10 px-6 rounded-full font-bold shadow-md shadow-zinc-200"
