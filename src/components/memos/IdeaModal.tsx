@@ -27,24 +27,19 @@ import {
 
 export type IdeaModalMode = "create" | "edit" | "view";
 
-/** 높이·타이포 공통 (폴더 칩 미선택 / 구조 템플릿 선택 색과 맞춤) */
 const PROJECT_START_BTN_BASE =
   "inline-flex h-9 w-full shrink-0 items-center justify-center rounded-full px-4 text-sm font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2";
 
 const PROJECT_START_BTN_ENABLED =
   "border border-blue-600 bg-blue-600 text-white hover:bg-blue-700";
 
-/** 메모 폴더 칩 비활성(미선택)과 동일 톤 */
 const PROJECT_START_BTN_DISABLED =
   "cursor-not-allowed border border-zinc-200/80 bg-zinc-100 text-zinc-600";
 
 const SELECT_CLASS =
   "mt-1 h-9 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-0 text-[13px] leading-9 text-zinc-900 outline-none focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-100/90 focus-visible:ring-offset-0";
 
-/** 드롭다운: 워크플로 템플릿 없이 빈 프로젝트로 시작 */
 const PROMOTE_BLANK_SELECT_VALUE = "__blank__";
-
-/** 초기값·미선택 (프로젝트 시작 비활성) */
 const TEMPLATE_PLACEHOLDER_VALUE = "";
 
 export function IdeaModal({
@@ -58,47 +53,37 @@ export function IdeaModal({
 }: {
   open: boolean;
   mode: IdeaModalMode;
-  noteId: string | null;
-  folderIdForCreate: string;
+  noteId?: string;
+  folderIdForCreate?: string;
   onClose: () => void;
   onSaved?: () => void;
-  /** view 모달에서 편집으로 전환 */
   onRequestEdit?: () => void;
 }) {
   const router = useRouter();
-  const [form, setForm] = useState<IdeaFormState>(() => emptyIdeaFormState("memo-folder-s1"));
+  const [memoFolders] = useState(() => loadMemoFolders());
+  const [form, setForm] = useState<IdeaFormState>(() => emptyIdeaFormState(folderIdForCreate || "memo-folder-s1"));
   const [resolvedNoteId, setResolvedNoteId] = useState<string | null>(null);
+  const [selectedWorkflowTemplateId, setSelectedWorkflowTemplateId] = useState(TEMPLATE_PLACEHOLDER_VALUE);
 
   const effectiveNoteId = resolvedNoteId ?? noteId;
 
-  const memoFolders = useMemo(() => (open ? loadMemoFolders() : []), [open]);
-
   const availableTemplates = useMemo(() => {
     return listWorkflowTemplatesForMenu();
-  }, []);
+  }, [open]);
 
-  const resetFromProps = useCallback(() => {
-    if (mode === "create") {
-      setForm(emptyIdeaFormState(folderIdForCreate));
+  useEffect(() => {
+    if (!open) {
       setResolvedNoteId(null);
-    } else if (noteId) {
-      const n = getNote(noteId);
-      setForm(n ? noteToFormState(n) : emptyIdeaFormState(folderIdForCreate));
-      setResolvedNoteId(null);
+      setSelectedWorkflowTemplateId(TEMPLATE_PLACEHOLDER_VALUE);
+      return;
     }
-    setSelectedWorkflowTemplateId(TEMPLATE_PLACEHOLDER_VALUE);
-  }, [mode, noteId, folderIdForCreate]);
-
-  useEffect(() => {
-    if (!open) return;
-    resetFromProps();
-  }, [open, resetFromProps]);
-
-  useEffect(() => {
-    if (!open || mode === "create" || !noteId) return;
-    const n = getNote(noteId);
+    if (mode === "create") {
+      setForm(emptyIdeaFormState(folderIdForCreate || "memo-folder-s1"));
+      return;
+    }
+    const n = effectiveNoteId ? getNote(effectiveNoteId) : null;
     if (n) setForm(noteToFormState(n));
-  }, [open, mode, noteId]);
+  }, [open, mode, noteId, folderIdForCreate]);
 
   const setFormPatch = useCallback(
     (patch: Partial<IdeaFormState> | ((prev: IdeaFormState) => IdeaFormState)) => {
@@ -108,13 +93,7 @@ export function IdeaModal({
   );
 
   const copyAll = async () => {
-    const text =
-      mode === "view" && effectiveNoteId
-        ? (() => {
-            const n = getNote(effectiveNoteId);
-            return n ? buildIdeaCopyText(noteToFormState(n)) : buildIdeaCopyText(form);
-          })()
-        : buildIdeaCopyText(form);
+    const text = buildIdeaCopyText(form);
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -123,10 +102,9 @@ export function IdeaModal({
     window.alert("복사되었습니다");
   };
 
-  /** 검증 없이 디스크에 반영. 새 메모면 id 반환. */
   const persistFormToStore = useCallback((): string | null => {
     const metadata = formMetadataFromState(form);
-    if (mode === "create" && !effectiveNoteId) {
+    if (mode === "create" && !resolvedNoteId) {
       const note = addNote({
         title: form.title,
         content: form.content,
@@ -148,10 +126,11 @@ export function IdeaModal({
       tags: form.tags,
       metadata,
       color: form.color,
+      projectStatus: form.projectStatus,
     });
     onSaved?.();
     return id;
-  }, [form, mode, effectiveNoteId, onSaved]);
+  }, [form, mode, effectiveNoteId, resolvedNoteId, onSaved]);
 
   const save = () => {
     const id = persistFormToStore();
@@ -163,27 +142,16 @@ export function IdeaModal({
   };
 
   const runPromote = (choice: PromoteTemplateChoice) => {
-    let id: string | null;
-    let note: IdeaNote | null;
-    if (mode === "view") {
-      id = effectiveNoteId;
-      note = id ? getNote(id) : null;
-      if (!id || !note) {
-        window.alert("메모를 찾을 수 없습니다.");
-        return;
-      }
-    } else {
-      const noteIdAfter = persistFormToStore();
-      id = noteIdAfter ?? effectiveNoteId;
-      if (!id) {
-        window.alert("메모를 저장할 수 없습니다.");
-        return;
-      }
-      note = getNote(id);
-      if (!note) {
-        window.alert("저장된 메모를 찾을 수 없습니다.");
-        return;
-      }
+    let id: string | null = persistFormToStore();
+    if (!id) id = effectiveNoteId;
+    if (!id) {
+      window.alert("메모를 저장할 수 없습니다.");
+      return;
+    }
+    const note = getNote(id);
+    if (!note) {
+      window.alert("메모를 찾을 수 없습니다.");
+      return;
     }
     const projectFolderId = pickDefaultProjectFolderId(loadDashboardFolders());
     const result = promoteNoteToProject(note, projectFolderId, choice);
@@ -213,17 +181,9 @@ export function IdeaModal({
     runPromote("blank");
   };
 
-  const headerTitle =
-    mode === "create" ? "새 아이디어" : form.title.trim() || "아이디어";
-
-  const currentNote: IdeaNote | null =
-    effectiveNoteId && open ? (getNote(effectiveNoteId) ?? null) : null;
+  const headerTitle = mode === "create" ? "새 아이디어" : form.title.trim() || "아이디어";
+  const currentNote: IdeaNote | null = effectiveNoteId && open ? (getNote(effectiveNoteId) ?? null) : null;
   const showProjectStart = Boolean(currentNote && !currentNote.isConverted) || mode === "create";
-
-  const headerSubtitle =
-    mode === "view"
-      ? "읽기 전용입니다. 수정하려면 하단의 편집을 눌러 주세요."
-      : "생각을 자유롭게 메모하고 색상과 상태를 저장하세요.";
 
   if (!open) return null;
 
@@ -240,128 +200,74 @@ export function IdeaModal({
         aria-labelledby="idea-modal-title"
         onMouseDown={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4">
           <div className="min-w-0">
             <h2 id="idea-modal-title" className="text-base font-semibold text-zinc-900">
               {headerTitle}
             </h2>
-            <p className="mt-1 text-sm text-zinc-500">{headerSubtitle}</p>
+            <p className="mt-1 text-sm text-zinc-500">
+              {mode === "view" ? "읽기 전용입니다. 수정하려면 편집을 눌러 주세요." : "아이디어를 기록하고 워크스페이스로 전환해보세요."}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
-            aria-label="닫기"
-          >
-            <span className="text-xl leading-none">×</span>
+          <button onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600">
+            <span className="text-xl">×</span>
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 [overflow-anchor:none]">
-          {mode === "view" ? (
-            currentNote ? (
-              <IdeaMemoReadOnlyPanel
-                note={currentNote}
-                memoFolders={memoFolders}
-                onPersistNote={
-                  effectiveNoteId
-                    ? (patch) => {
-                        updateNote(effectiveNoteId, patch);
-                        onSaved?.();
-                      }
-                    : undefined
-                }
-              />
-            ) : (
-              <p className="text-sm text-zinc-500">메모를 찾을 수 없습니다.</p>
-            )
+        {/* Content Area */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          {mode === "view" && currentNote ? (
+            <IdeaMemoReadOnlyPanel note={currentNote} memoFolders={memoFolders} />
           ) : (
             <IdeaFormFields memoFolders={memoFolders} form={form} setForm={setFormPatch} />
           )}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-zinc-100 px-5 py-4">
-          {showProjectStart ? (
-            <>
-              {workflowTemplates.length === 0 ? (
-                <>
-                  <p className="text-sm leading-snug text-zinc-600">
-                    등록된 워크플로우 템플릿이 없습니다.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onStartBlankOnly}
-                    className={cn(PROJECT_START_BTN_BASE, PROJECT_START_BTN_ENABLED)}
+        {/* Footer */}
+        <div className="flex flex-col gap-3 border-t border-zinc-100 bg-zinc-50/30 px-5 py-4">
+          {showProjectStart && (
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-tighter">프로젝트 전환</label>
+                <div className="flex gap-2">
+                  <select
+                    className={SELECT_CLASS}
+                    value={selectedWorkflowTemplateId}
+                    onChange={(e) => setSelectedWorkflowTemplateId(e.target.value)}
                   >
-                    빈 프로젝트로 시작
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label htmlFor="idea-workflow-template-select" className="text-xs font-semibold text-zinc-500">
-                      워크스페이스 템플릿
-                    </label>
-                    <select
-                      id="idea-workflow-template-select"
-                      className={SELECT_CLASS}
-                      value={selectedWorkflowTemplateId}
-                      onChange={(e) => setSelectedWorkflowTemplateId(e.target.value)}
-                    >
-                      <option value={TEMPLATE_PLACEHOLDER_VALUE}>템플릿 선택하기</option>
-                      <option value={PROMOTE_BLANK_SELECT_VALUE}>빈 프로젝트로 시작</option>
-                      {workflowTemplates.map((t) => (
-                        <option
-                          key={t.templateId}
-                          value={t.templateId}
-                          title={
-                            [t.subtitle, t.stepCount > 0 ? `${t.stepCount}단계` : ""].filter(Boolean).join(" · ") ||
-                            undefined
-                          }
-                        >
-                          {t.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    <option value={TEMPLATE_PLACEHOLDER_VALUE}>워크스페이스 템플릿 선택</option>
+                    <option value={PROMOTE_BLANK_SELECT_VALUE}>빈 워크스페이스로 시작</option>
+                    {availableTemplates.map((t) => (
+                      <option key={t.templateId} value={t.templateId}>{t.title}</option>
+                    ))}
+                  </select>
                   <button
-                    type="button"
                     disabled={!canStartProject}
                     onClick={onStartProject}
                     className={cn(
                       PROJECT_START_BTN_BASE,
-                      canStartProject ? PROJECT_START_BTN_ENABLED : PROJECT_START_BTN_DISABLED,
+                      canStartProject ? PROJECT_START_BTN_ENABLED : PROJECT_START_BTN_DISABLED
                     )}
                   >
-                    프로젝트 시작하기
+                    시작
                   </button>
-                </>
-              )}
-            </>
-          ) : null}
+                </div>
+              </div>
+            </div>
+          )}
 
-          <div className="flex flex-row items-center justify-between gap-3 pt-1">
-            <button
-              type="button"
-              onClick={copyAll}
-              className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
-            >
-              전체 복사
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <button onClick={copyAll} className="h-9 rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-50">
+              복사
             </button>
-            {mode === "view" ? (
-              <button
-                type="button"
-                onClick={() => onRequestEdit?.()}
-                disabled={!onRequestEdit}
-                className={WORKSPACE_HEADER_ADD_MATCH_BTN}
-              >
-                편집
-              </button>
-            ) : (
-              <button type="button" onClick={save} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
-                저장
-              </button>
-            )}
+            <div className="flex gap-2">
+              {mode === "view" ? (
+                <button onClick={onRequestEdit} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>편집</button>
+              ) : (
+                <button onClick={save} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>저장</button>
+              )}
+            </div>
           </div>
         </div>
       </div>
