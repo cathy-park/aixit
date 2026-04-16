@@ -432,6 +432,8 @@ export function IdeaMemosView() {
   const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>({});
   const [statusVisibility, setStatusVisibility] = useState<StatusVisibilityFilter>(() => ({
     ...DEFAULT_STATUS_VISIBILITY,
+    보류: false,
+    중단: false,
     완료: false,
   }));
   const [includeCompletedInAllView, setIncludeCompletedInAllView] = useState(false);
@@ -862,7 +864,7 @@ export function IdeaMemosView() {
                                 onDragLeave={memoDnD.onDragLeave}
                                 onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
                               >
-                                지금 노출 설정으로 이 폴더에 바로 보이는 메모가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                                지금 노출 설정으로 이 폴더에 바로 보이는 메모가 없어요. 보류 · 중단 · 완료 항목은 아래「보류 · 중단 · 완료 보기」에서 펼치거나, 다른
                                 폴더에서 카드를 끌어다 놓을 수 있어요.
                               </div>
                             ) : null;
@@ -963,7 +965,7 @@ export function IdeaMemosView() {
                             onDragLeave={memoDnD.onDragLeave}
                             onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
                           >
-                            지금 노출 설정으로 이 폴더에 바로 보이는 메모가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                            지금 노출 설정으로 이 폴더에 바로 보이는 메모가 없어요. 보류 · 중단 · 완료 항목은 아래「보류 · 중단 · 완료 보기」에서 펼치거나, 다른
                             폴더에서 카드를 끌어다 놓을 수 있어요.
                           </div>
                         ) : null}

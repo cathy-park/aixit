@@ -27,7 +27,7 @@ export function partitionMemoDisplayByExposure(
   const completedItems: IdeaNote[] = [];
   for (const n of displayList) {
     const rs = memoNoteRunStatus(n);
-    if (rs === "완료") {
+    if (rs === "완료" || rs === "보류" || rs === "중단") {
       completedItems.push(n);
     } else if (passesMemoVisibility(n, visibility)) {
       mainItems.push(n);

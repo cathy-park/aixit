@@ -24,7 +24,7 @@ export function DashboardCompletedRevealSection({ count, expanded, onToggle, chi
           aria-expanded={expanded}
         >
           <span className="min-w-0 truncate">
-            완료 보기 <span className="tabular-nums text-zinc-500">{count}</span>개
+            보류 · 중단 · 완료 보기 <span className="tabular-nums text-zinc-500">{count}</span>개
           </span>
           <svg
             width={14}

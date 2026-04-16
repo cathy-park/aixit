@@ -108,7 +108,7 @@ function buildGridNodes(
               APP_CARD_GRID_ITEM_CLASS,
               dnd && "cursor-grab rounded-[30px] active:cursor-grabbing",
               dnd && dnd.dropTargetKey === pinKey && "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
-              opts.dimCompleted && preview.status === "완료" && "opacity-[0.78]",
+              opts.dimCompleted && (preview.status === "완료" || preview.status === "보류" || preview.status === "중단") && "opacity-[0.78]",
             )}
             draggable={Boolean(dnd)}
             onDragStart={
@@ -171,6 +171,8 @@ export function DashboardExperience() {
   // "완료"는 폴더 내부의 가상 그룹(기본 collapsed)으로만 보여줍니다.
   const [statusVisibility, setStatusVisibility] = useState<StatusVisibilityFilter>(() => ({
     ...DEFAULT_STATUS_VISIBILITY,
+    보류: false,
+    중단: false,
     완료: false,
   }));
   /** 전체(all) 보기에서 완료 카드를 펼쳐서 보여줄지 */
@@ -280,9 +282,9 @@ export function DashboardExperience() {
       시작전: false,
       진행중: false,
       준비중: false,
-      보류: false,
+      보류: true,
       완료: true,
-      중단: false,
+      중단: true,
     };
     return folderRecords
       .filter((folder) => !folder.hidden)
@@ -327,9 +329,9 @@ export function DashboardExperience() {
       시작전: false,
       진행중: false,
       준비중: false,
-      보류: false,
+      보류: true,
       완료: true,
-      중단: false,
+      중단: true,
     };
     for (const folder of folderRecords) {
       if (folder.hidden) continue;
@@ -371,9 +373,9 @@ export function DashboardExperience() {
       시작전: false,
       진행중: false,
       준비중: false,
-      보류: false,
+      보류: true,
       완료: true,
-      중단: false,
+      중단: true,
     };
     return collectFilteredWorkflowItems(folder, entries, completedOnlyVisibility, pinnedKeys, resolvePreview, workflowSearch.trim()).map(
       (item) => ({ folder, ...item }),
@@ -667,7 +669,7 @@ export function DashboardExperience() {
                                 onDragLeave={layoutDnD.onDragLeave}
                                 onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
                               >
-                                지금 노출 설정으로 이 폴더에 바로 보이는 프로젝트가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                                지금 노출 설정으로 이 폴더에 바로 보이는 프로젝트가 없어요. 보류 · 중단 · 완료 항목은 아래「보류 · 중단 · 완료 보기」에서 펼치거나, 다른
                                 폴더에서 카드를 끌어다 놓을 수 있어요.
                               </div>
                             ) : null;
@@ -784,7 +786,7 @@ export function DashboardExperience() {
                             onDragLeave={layoutDnD.onDragLeave}
                             onDrop={(e) => layoutDnD.onDropToFolderEnd(e, folder.id)}
                           >
-                            지금 노출 설정으로 이 폴더에 바로 보이는 프로젝트가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                            지금 노출 설정으로 이 폴더에 바로 보이는 프로젝트가 없어요. 보류 · 중단 · 완료 항목은 아래「보류 · 중단 · 완료 보기」에서 펼치거나, 다른
                             폴더에서 카드를 끌어다 놓을 수 있어요.
                           </div>
                         ) : null;
