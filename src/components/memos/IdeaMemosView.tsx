@@ -99,6 +99,34 @@ function orderedNotesForFolder(
   return ordered;
 }
 
+function partitionPinned(list: IdeaNote[], pinned: Set<string>): IdeaNote[] {
+  const pin = list.filter((n) => pinned.has(n.id));
+  const rest = list.filter((n) => !pinned.has(n.id));
+  return [...pin, ...rest];
+}
+
+function noteMatchesSearch(n: IdeaNote, q: string, folderName: string): boolean {
+  const t = q.trim().toLowerCase();
+  if (!t) return true;
+  const meta = (n.metadata ?? {}) as Record<string, unknown>;
+  const sectionHay = metadataAllSectionsSearchText(meta);
+  const tagHay = (n.tags ?? []).join(" ");
+  const hay = `${n.title} ${n.content} ${n.category} ${tagHay} ${sectionHay} ${folderName}`.toLowerCase();
+  return hay.includes(t);
+}
+
+function buildDisplayList(
+  folderId: string,
+  folderName: string,
+  notes: IdeaNote[],
+  layout: MemoLayoutEntry[],
+  q: string,
+  pinned: Set<string>,
+): IdeaNote[] {
+  const ordered = partitionPinned(orderedNotesForFolder(notes, layout, folderId), pinned);
+  return ordered.filter((n) => noteMatchesSearch(n, q, folderName));
+}
+
 function IdeaMemoCard({
   note,
   folder,
@@ -131,7 +159,7 @@ function IdeaMemoCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Resize Persistence
-  const storedHeight = note.metadata?.cardHeight as number | undefined;
+  const storedHeight = (note.metadata?.cardHeight as number | undefined);
   const [currentHeight, setCurrentHeight] = useState<number | undefined>(storedHeight);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -389,248 +417,604 @@ export function IdeaMemosView() {
     mode: "create" | "edit";
     initial: DashboardFolderRecord | null;
     editFocus?: "name" | "icon" | "color";
-  }>({ mode: "create", initial: null });
+  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DashboardFolderRecord | null>(null);
   const [ideaModal, setIdeaModal] = useState<{
     open: boolean;
     mode: IdeaModalMode;
     noteId: string | null;
   }>({ open: false, mode: "create", noteId: null });
-  const [deleteTarget, setDeleteTarget] = useState<DashboardFolderRecord | null>(null);
-  const [visibility, setVisibility] = useState<StatusVisibilityFilter>(DEFAULT_STATUS_VISIBILITY);
-  const [compReveal, setCompReveal] = useState(false);
-
-  const bumpNotesAndLayout = useCallback(() => {
-    setNotes(loadNotes());
-    setMemoLayout(loadMemoLayout());
-    setPinnedIds(new Set(loadPinnedIdeaNoteIds()));
-  }, []);
+  const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>({});
+  const [statusVisibility, setStatusVisibility] = useState<StatusVisibilityFilter>(() => ({
+    ...DEFAULT_STATUS_VISIBILITY,
+    완료: false,
+  }));
+  const [includeCompletedInAllView, setIncludeCompletedInAllView] = useState(false);
+  const [completedExpandedByFolder, setCompletedExpandedByFolder] = useState<Record<string, boolean>>({});
 
   const refreshFolders = useCallback(() => {
     setFolderRecords(loadMemoFolders());
   }, []);
 
+  const bumpNotesAndLayout = useCallback(() => {
+    const folders = loadMemoFolders();
+    const fb = pickDefaultMemoFolderId(folders);
+    const n = loadNotes();
+    setNotes(n);
+    setMemoLayout(ensureMemoLayoutMerged(n, fb));
+  }, []);
+
   useEffect(() => {
+    const folders = loadMemoFolders();
+    setFolderRecords(folders);
+    const fb = pickDefaultMemoFolderId(folders);
+    const n = loadNotes();
+    setNotes(n);
+    setMemoLayout(ensureMemoLayoutMerged(n, fb));
+    setPinnedIds(loadPinnedIdeaNoteIds());
     setReady(true);
-    bumpNotesAndLayout();
-    refreshFolders();
+  }, []);
 
-    const onNoteUpd = () => bumpNotesAndLayout();
-    const onLayUpd = () => setMemoLayout(loadMemoLayout());
-    const onPinUpd = () => setPinnedIds(new Set(loadPinnedIdeaNoteIds()));
-    const onFoldUpd = () => refreshFolders();
-
-    window.addEventListener(NOTES_UPDATED_EVENT, onNoteUpd);
-    window.addEventListener(MEMO_LAYOUT_UPDATED_EVENT, onLayUpd);
-    window.addEventListener(PINNED_IDEA_NOTES_UPDATED_EVENT, onPinUpd);
-    window.addEventListener("aixit-memo-folders-updated", onFoldUpd);
-
+  useEffect(() => {
+    const onNotes = () => bumpNotesAndLayout();
+    const onMemoLayout = () => setMemoLayout(loadMemoLayout() ?? []);
+    const onMemoFolders = () => {
+      refreshFolders();
+      syncMemoNotesToMemoFolders();
+      bumpNotesAndLayout();
+    };
+    const onPinned = () => setPinnedIds(loadPinnedIdeaNoteIds());
+    window.addEventListener(NOTES_UPDATED_EVENT, onNotes);
+    window.addEventListener(MEMO_LAYOUT_UPDATED_EVENT, onMemoLayout);
+    window.addEventListener("aixit-memo-folders-updated", onMemoFolders);
+    window.addEventListener(PINNED_IDEA_NOTES_UPDATED_EVENT, onPinned);
     return () => {
-      window.removeEventListener(NOTES_UPDATED_EVENT, onNoteUpd);
-      window.removeEventListener(MEMO_LAYOUT_UPDATED_EVENT, onLayUpd);
-      window.removeEventListener(PINNED_IDEA_NOTES_UPDATED_EVENT, onPinUpd);
-      window.removeEventListener("aixit-memo-folders-updated", onFoldUpd);
+      window.removeEventListener(NOTES_UPDATED_EVENT, onNotes);
+      window.removeEventListener(MEMO_LAYOUT_UPDATED_EVENT, onMemoLayout);
+      window.removeEventListener("aixit-memo-folders-updated", onMemoFolders);
+      window.removeEventListener(PINNED_IDEA_NOTES_UPDATED_EVENT, onPinned);
     };
   }, [bumpNotesAndLayout, refreshFolders]);
 
-  const memoDnD: MemoLayoutDnD = useMemo(() => ({
-    dropTargetKey: memoDropTarget,
-    onDragStart: (e, id) => {
-      e.dataTransfer.setData(MEMO_ENTRY_MIME, id);
-    },
-    onDragOver: (e, key) => {
-      e.preventDefault();
-      setMemoDropTarget(key);
-    },
-    onDragLeave: () => setMemoDropTarget(null),
-    onDrop: (e, targetId) => {
-      e.preventDefault();
-      setMemoDropTarget(null);
-      const dragId = e.dataTransfer.getData(MEMO_ENTRY_MIME);
-      if (!dragId || dragId === targetId) return;
-      reorderMemoBeforeTarget(dragId, targetId);
-    },
-    onDropToFolderEnd: (e, folderId) => {
-      e.preventDefault();
-      setMemoDropTarget(null);
-      const dragId = e.dataTransfer.getData(MEMO_ENTRY_MIME);
-      if (!dragId) return;
-      moveMemoToFolderEnd(dragId, folderId);
-      bumpNotesAndLayout();
-    },
-    onDragEnd: () => setMemoDropTarget(null),
-  }), [memoDropTarget, bumpNotesAndLayout]);
+  useEffect(() => {
+    if (activeFolderId === "all") return;
+    const f = folderRecords.find((x) => x.id === activeFolderId);
+    if (f?.hidden) setActiveFolderId("all");
+  }, [activeFolderId, folderRecords]);
 
-  const filteredNotes = useMemo(() => {
-    let list = notes;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(n => 
-        n.title.toLowerCase().includes(q) || 
-        n.content.toLowerCase().includes(q) ||
-        n.tags.some(t => t.toLowerCase().includes(q)) ||
-        metadataAllSectionsSearchText(n.metadata).toLowerCase().includes(q)
-      );
+  const hiddenFolderIds = useMemo(
+    () => new Set(folderRecords.filter((f) => f.hidden).map((f) => f.id)),
+    [folderRecords],
+  );
+
+  const visibleFolderRecords = useMemo(() => folderRecords.filter((f) => !f.hidden), [folderRecords]);
+
+  const hiddenMemoFolders = useMemo(() => folderRecords.filter((f) => f.hidden), [folderRecords]);
+
+  const allVisibleMemoCount = useMemo(
+    () => notes.filter((n) => !hiddenFolderIds.has(n.folderId)).length,
+    [notes, hiddenFolderIds],
+  );
+
+  const folderBarItems: FolderBarItem[] = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const f of folderRecords) counts[f.id] = 0;
+    for (const n of notes) {
+      if (hiddenFolderIds.has(n.folderId)) continue;
+      counts[n.folderId] = (counts[n.folderId] ?? 0) + 1;
     }
-    return list;
-  }, [notes, search]);
-
-  const { visible: exposureNotes, completed: completedNotes } = useMemo(() => {
-    return partitionMemoDisplayByExposure(filteredNotes, visibility);
-  }, [filteredNotes, visibility]);
-
-  const folderSections = useMemo(() => {
-    const list = activeFolderId === "all" ? folderRecords : folderRecords.filter(f => f.id === activeFolderId);
-    return list.map(f => ({
-      folder: f,
-      notes: orderedNotesForFolder(exposureNotes, memoLayout, f.id)
-    })).filter(s => s.notes.length > 0 || activeFolderId !== "all");
-  }, [folderRecords, activeFolderId, exposureNotes, memoLayout]);
-
-  const handleDeleteFolder = (strategy: "delete" | "move", targetFolderId?: string) => {
-    if (!deleteTarget) return;
-    if (strategy === "move" && targetFolderId) {
-      reassignMemoNotesFromFolder(deleteTarget.id, targetFolderId);
-    }
-    removeMemoFolder(deleteTarget.id);
-    setDeleteTarget(null);
-    refreshFolders();
-    bumpNotesAndLayout();
-  };
+    return visibleFolderRecords.map((f) => ({ ...f, workflowCount: counts[f.id] ?? 0 }));
+  }, [notes, folderRecords, visibleFolderRecords, hiddenFolderIds]);
 
   const newMemoFolderId = useMemo(() => {
-    if (activeFolderId !== "all") return activeFolderId;
+    if (activeFolderId !== "all") {
+      const f = folderRecords.find((x) => x.id === activeFolderId);
+      if (f && !f.hidden) return activeFolderId;
+    }
     return pickDefaultMemoFolderId(folderRecords);
   }, [activeFolderId, folderRecords]);
 
-  if (!ready) return null;
+  const q = search.trim();
+  const memoSectionsAll = useMemo(() => {
+    return visibleFolderRecords.map((folder) => {
+      const displayList = buildDisplayList(folder.id, folder.name, notes, memoLayout, q, pinnedIds);
+      const { mainItems, completedItems } = partitionMemoDisplayByExposure(displayList, statusVisibility);
+      const entriesCount = notes.filter((n) => n.folderId === folder.id).length;
+      return { folder, mainItems, completedItems, entriesCount };
+    }).filter((x) => x.entriesCount === 0 || x.mainItems.length > 0 || x.completedItems.length > 0);
+  }, [visibleFolderRecords, notes, memoLayout, q, pinnedIds, statusVisibility]);
+
+  const singleFolderPartition = useMemo(() => {
+    if (activeFolderId === "all") {
+      return { mainItems: [] as IdeaNote[], completedItems: [] as IdeaNote[], entriesCount: 0 };
+    }
+    const folder = folderRecords.find((f) => f.id === activeFolderId);
+    if (!folder || folder.hidden) {
+      return { mainItems: [] as IdeaNote[], completedItems: [] as IdeaNote[], entriesCount: 0 };
+    }
+    const displayList = buildDisplayList(folder.id, folder.name, notes, memoLayout, q, pinnedIds);
+    const { mainItems, completedItems } = partitionMemoDisplayByExposure(displayList, statusVisibility);
+    const entriesCount = notes.filter((n) => n.folderId === folder.id).length;
+    return { mainItems, completedItems, entriesCount };
+  }, [activeFolderId, folderRecords, notes, memoLayout, q, pinnedIds, statusVisibility]);
+
+  const flatAllMemosAny = useMemo(
+    () => memoSectionsAll.reduce((acc, s) => acc + s.mainItems.length + s.completedItems.length, 0),
+    [memoSectionsAll],
+  );
+
+  const flatAllNonCompletedMemos = useMemo(
+    () => memoSectionsAll.reduce((acc, s) => acc + s.mainItems.length, 0),
+    [memoSectionsAll],
+  );
+
+  const headerCount =
+    activeFolderId === "all" ? flatAllNonCompletedMemos : singleFolderPartition.mainItems.length;
+
+  const isSectionExpanded = useCallback(
+    (id: string) => sectionExpanded[id] !== false,
+    [sectionExpanded],
+  );
+
+  const toggleSection = useCallback((id: string) => {
+    setSectionExpanded((prev) => {
+      const open = prev[id] !== false;
+      return { ...prev, [id]: open ? false : true };
+    });
+  }, []);
+
+  const handleToggleFolderHidden = useCallback(
+    (f: DashboardFolderRecord) => {
+      updateMemoFolder(f.id, { hidden: !f.hidden });
+      refreshFolders();
+    },
+    [refreshFolders],
+  );
+
+  const handleDeleteFolder = useCallback(
+    (strategy: "move_all" | "folder_only", targetFolderId: string) => {
+      if (!deleteTarget) return;
+      void strategy;
+      const tid = targetFolderId;
+      reassignMemoNotesFromFolder(deleteTarget.id, tid);
+      removeMemoFolder(deleteTarget.id);
+      refreshFolders();
+      bumpNotesAndLayout();
+      if (activeFolderId === deleteTarget.id) setActiveFolderId("all");
+      setDeleteTarget(null);
+    },
+    [deleteTarget, activeFolderId, refreshFolders, bumpNotesAndLayout],
+  );
+
+  const onMemoDragStart = useCallback((e: DragEvent, id: string) => {
+    if (cancelNativeCardLayoutDragIfInteractive(e)) return;
+    e.dataTransfer.setData(MEMO_ENTRY_MIME, JSON.stringify({ id }));
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
+
+  const onMemoDragOver = useCallback((e: DragEvent, key: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setMemoDropTarget(key);
+  }, []);
+
+  const onMemoDragLeave = useCallback((e: DragEvent) => {
+    const related = e.relatedTarget as Node | null;
+    if (related && (e.currentTarget as HTMLElement).contains(related)) return;
+    setMemoDropTarget(null);
+  }, []);
+
+  const onMemoDrop = useCallback((e: DragEvent, targetId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMemoDropTarget(null);
+    const raw = e.dataTransfer.getData(MEMO_ENTRY_MIME);
+    if (!raw) return;
+    let draggedId: string;
+    try {
+      draggedId = (JSON.parse(raw) as { id: string }).id;
+    } catch {
+      return;
+    }
+    if (draggedId === targetId) return;
+    const list = loadNotes();
+    const draggedNote = list.find((n) => n.id === draggedId);
+    const targetNote = list.find((n) => n.id === targetId);
+    if (!draggedNote || !targetNote) return;
+
+    let layout = loadMemoLayout() ?? [];
+    if (draggedNote.folderId !== targetNote.folderId) {
+      layout = moveMemoBeforeTargetInFolder(layout, draggedId, { id: targetId, folderId: targetNote.folderId });
+      saveMemoLayout(layout);
+      updateNote(draggedId, { folderId: targetNote.folderId });
+    } else {
+      layout = reorderMemoBeforeTarget(layout, draggedId, targetId);
+      saveMemoLayout(layout);
+    }
+    setMemoLayout(layout);
+    setNotes(loadNotes());
+  }, []);
+
+  const onMemoDropToFolderEnd = useCallback((e: DragEvent, folderId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMemoDropTarget(null);
+    const raw = e.dataTransfer.getData(MEMO_ENTRY_MIME);
+    if (!raw) return;
+    let draggedId: string;
+    try {
+      draggedId = (JSON.parse(raw) as { id: string }).id;
+    } catch {
+      return;
+    }
+    const list = loadNotes();
+    const d = list.find((x) => x.id === draggedId);
+    if (!d) return;
+    let layout = loadMemoLayout() ?? [];
+    layout = moveMemoToFolderEnd(layout, draggedId, folderId);
+    saveMemoLayout(layout);
+    if (d.folderId !== folderId) updateNote(draggedId, { folderId });
+    setMemoLayout(layout);
+    setNotes(loadNotes());
+  }, []);
+
+  const onMemoDragEnd = useCallback(() => setMemoDropTarget(null), []);
+
+  const memoDnD: MemoLayoutDnD = useMemo(
+    () => ({
+      dropTargetKey: memoDropTarget,
+      onDragStart: onMemoDragStart,
+      onDragOver: onMemoDragOver,
+      onDragLeave: onMemoDragLeave,
+      onDrop: onMemoDrop,
+      onDropToFolderEnd: onMemoDropToFolderEnd,
+      onDragEnd: onMemoDragEnd,
+    }),
+    [
+      memoDropTarget,
+      onMemoDragStart,
+      onMemoDragOver,
+      onMemoDragLeave,
+      onMemoDrop,
+      onMemoDropToFolderEnd,
+      onMemoDragEnd,
+    ],
+  );
+
+  const openCreate = () => setIdeaModal({ open: true, mode: "create", noteId: null });
+
+  const openView = (note: IdeaNote) => setIdeaModal({ open: true, mode: "view", noteId: note.id });
+  const openEdit = (note: IdeaNote) => setIdeaModal({ open: true, mode: "edit", noteId: note.id });
+
+  const togglePin = (id: string) => {
+    togglePinnedIdeaNoteId(id);
+    setPinnedIds(loadPinnedIdeaNoteIds());
+  };
+
+  const deleteNote = (note: IdeaNote) => {
+    if (typeof window !== "undefined" && !window.confirm("이 메모를 삭제할까요?")) return;
+    removeNote(note.id);
+    bumpNotesAndLayout();
+  };
+
+  const memoSectionToolbar = (folder: DashboardFolderRecord) => (
+    <FolderSectionToolbar
+      entityLabel="folder"
+      folder={folder}
+      onOpenEdit={(focus) => setFolderModal({ mode: "edit", initial: folder, editFocus: focus })}
+      onToggleHidden={() => handleToggleFolderHidden(folder)}
+      onDelete={() => setDeleteTarget(folder)}
+    />
+  );
+
+  const renderMemoGrid = (
+    items: IdeaNote[],
+    sectionFolder: DashboardFolderRecord,
+    endDropFolderId: string,
+    dimCompleted?: boolean,
+  ) => (
+    <div className="grid w-full grid-flow-row gap-4 grid-cols-1 @min-[800px]:grid-cols-2 @min-[1200px]:grid-cols-3 @min-[1600px]:grid-cols-4">
+      {items.map((note) => (
+        <IdeaMemoCard
+          key={note.id}
+          note={note}
+          folder={sectionFolder}
+          pinned={pinnedIds.has(note.id)}
+          dropTargetKey={memoDnD.dropTargetKey}
+          memoDnD={memoDnD}
+          dimCompleted={dimCompleted}
+          onOpenModal={() => openView(note)}
+          onTogglePin={() => togglePin(note.id)}
+          onEdit={() => openEdit(note)}
+          onDelete={() => deleteNote(note)}
+        />
+      ))}
+      <div
+        className={cn(
+          "col-span-full h-12 w-full rounded-2xl",
+          memoDnD.dropTargetKey === `__end__:${endDropFolderId}` &&
+            "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+        )}
+        onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${endDropFolderId}`)}
+        onDragLeave={memoDnD.onDragLeave}
+        onDrop={(e) => memoDnD.onDropToFolderEnd(e, endDropFolderId)}
+      />
+    </div>
+  );
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 text-sm text-zinc-600">불러오는 중…</div>
+    );
+  }
+
+  const foldersToRender =
+    activeFolderId === "all" ? visibleFolderRecords : folderRecords.filter((f) => f.id === activeFolderId);
 
   return (
-    <AppMainColumn gray>
-       <AdaptivePageHeader
-        title={
-          <div className="flex items-center gap-2">
-            메모 보드
-            <TitleCountChip count={exposureNotes.length} color="zinc" />
-          </div>
-        }
-        actions={
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIdeaModal({ open: true, mode: "create", noteId: null })}
-              className={cn(WORKSPACE_HEADER_ADD_MATCH_BTN, "h-9 px-4 rounded-lg font-bold shadow-sm")}
-            >
-              + 새 메모
-            </button>
-          </div>
+    <>
+      <AdaptivePageHeader
+        title="메모"
+        count={headerCount}
+        description="메모 전용 폴더로 정리하고, 노출 상태에 맞춰 목록을 볼 수 있어요. (프로젝트 폴더와 데이터는 분리됩니다.)"
+        hideOnMobile
+        rightSlot={
+          <button type="button" onClick={openCreate} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
+            추가
+          </button>
         }
       />
 
-      <div className="px-6 py-4 flex flex-col gap-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
-            <DashboardExposureStatusBar
-              visibility={visibility}
-              onChange={setVisibility}
-              compact
-            />
-            <div className="w-64">
-              <PillSearchField
-                value={search}
-                onChange={setSearch}
-                placeholder="제목, 내용, 태그 검색..."
-              />
-            </div>
-          </div>
+      <AppMainColumn className="min-w-0 pb-24 text-sm leading-relaxed text-zinc-900">
+        <div className="mb-6 space-y-4">
+          <DashboardPageHeader
+            allWorkflowCount={allVisibleMemoCount}
+            folders={folderBarItems}
+            activeFolderId={activeFolderId}
+            onFolderChange={setActiveFolderId}
+            onAddFolderClick={() => setFolderModal({ mode: "create", initial: null })}
+            hiddenFolderRecords={hiddenMemoFolders}
+            onUnhideHiddenFolder={(id) => {
+              updateMemoFolder(id, { hidden: false });
+              refreshFolders();
+            }}
+            onDeleteHiddenFolderRequest={(f) => setDeleteTarget(f)}
+            onFolderOpenEdit={(f, focus) => setFolderModal({ mode: "edit", initial: f, editFocus: focus })}
+            onFolderToggleHidden={handleToggleFolderHidden}
+            onFolderDeleteRequest={(f) => setDeleteTarget(f)}
+            onReorderFolders={(dragId, beforeId) => {
+              reorderMemoFolderBefore(dragId, beforeId);
+              refreshFolders();
+            }}
+          />
+
+          <PillSearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="메모 제목·본문·카테고리·폴더 이름 검색"
+            aria-label="메모 검색"
+          />
+
+          <DashboardExposureStatusBar
+            statusVisibility={statusVisibility}
+            setStatusVisibility={setStatusVisibility}
+            showIncludeCompletedToggle={activeFolderId === "all"}
+            includeCompletedInAllView={includeCompletedInAllView}
+            setIncludeCompletedInAllView={setIncludeCompletedInAllView}
+            entityLabel="메모"
+          />
         </div>
 
-        <div className="flex flex-col gap-10">
-          {folderSections.map(({ folder, notes }) => (
-            <div key={folder.id} className="flex flex-col gap-4">
-              <FolderSectionAccordionHeader
-                folder={folder}
-                count={notes.length}
-                isOpen={true} // For now always open in this view
-                onToggle={() => {}}
-                actions={
-                  <FolderSectionToolbar
-                    onEdit={() => setFolderModal({ mode: "edit", initial: folder })}
-                    onDelete={() => setDeleteTarget(folder)}
-                    onAddMemo={() => setIdeaModal({ open: true, mode: "create", noteId: null })}
-                  />
-                }
-              />
-              <div 
-                className={APP_CARD_GRID_CLASS}
-                onDragOver={memoDnD ? (e) => memoDnD.onDragOver(e, `folder-end:${folder.id}`) : undefined}
-                onDrop={memoDnD ? (e) => memoDnD.onDropToFolderEnd(e, folder.id) : undefined}
-              >
-                {notes.map(note => (
-                  <IdeaMemoCard
-                    key={note.id}
-                    note={note}
-                    folder={folder}
-                    pinned={pinnedIds.has(note.id)}
-                    dropTargetKey={memoDropTarget}
-                    memoDnD={memoDnD}
-                    onOpenModal={() => setIdeaModal({ open: true, mode: "view", noteId: note.id })}
-                    onTogglePin={() => togglePinnedIdeaNoteId(note.id)}
-                    onEdit={() => setIdeaModal({ open: true, mode: "edit", noteId: note.id })}
-                    onDelete={() => removeNote(note.id)}
-                  />
-                ))}
-                {notes.length === 0 && (
-                   <div 
-                    className="flex h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 text-zinc-400 transition-colors hover:border-zinc-300 hover:bg-zinc-100/50"
-                    onClick={() => setIdeaModal({ open: true, mode: "create", noteId: null })}
-                  >
-                    <span className="text-sm font-medium">여기에 첫 메모를 남겨보세요</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {completedNotes.length > 0 && (
-            <div className="mt-4">
-               <DashboardCompletedRevealSection
-                isRevealed={compReveal}
-                onToggle={() => setCompReveal(!compReveal)}
-                count={completedNotes.length}
-              >
-                <div className={APP_CARD_GRID_CLASS}>
-                  {completedNotes.map(note => {
-                    const folder = folderRecords.find(f => f.id === note.folderId) || folderRecords[0]!;
-                    return (
-                      <IdeaMemoCard
-                        key={note.id}
-                        note={note}
-                        folder={folder}
-                        pinned={pinnedIds.has(note.id)}
-                        dropTargetKey={null}
-                        memoDnD={null}
-                        dimCompleted
-                        onOpenModal={() => setIdeaModal({ open: true, mode: "view", noteId: note.id })}
-                        onTogglePin={() => togglePinnedIdeaNoteId(note.id)}
-                        onEdit={() => setIdeaModal({ open: true, mode: "edit", noteId: note.id })}
-                        onDelete={() => removeNote(note.id)}
-                      />
-                    );
-                  })}
+        <div className="min-w-0 pb-10">
+          {activeFolderId === "all" ? (
+            <div className="space-y-4">
+              {flatAllMemosAny === 0 ? (
+                <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
+                  조건에 맞는 메모가 없어요.
                 </div>
-              </DashboardCompletedRevealSection>
+              ) : (
+                memoSectionsAll.map(({ folder, mainItems, completedItems, entriesCount }) => (
+                  <section key={folder.id} className="space-y-3">
+                    <FolderSectionAccordionHeader
+                      folder={folder}
+                      count={mainItems.length}
+                      showHiddenBadge={folder.hidden}
+                      expanded={isSectionExpanded(folder.id)}
+                      onToggle={() => toggleSection(folder.id)}
+                      actions={memoSectionToolbar(folder)}
+                    />
+                    {isSectionExpanded(folder.id) ? (
+                      entriesCount === 0 ? (
+                        <div
+                          className={cn(
+                            "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                            memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                              "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                          )}
+                          onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                          onDragLeave={memoDnD.onDragLeave}
+                          onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                        >
+                          이 폴더에 메모가 없어요. 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {(() => {
+                            const explicit = completedExpandedByFolder[folder.id];
+                            const expanded = explicit ?? includeCompletedInAllView;
+                            const open = expanded ?? false;
+                            const onlyCompletedCollapsed =
+                              mainItems.length === 0 && completedItems.length > 0 && !open;
+                            return onlyCompletedCollapsed ? (
+                              <div
+                                className={cn(
+                                  "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                                  memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                    "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                                )}
+                                onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                                onDragLeave={memoDnD.onDragLeave}
+                                onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                              >
+                                지금 노출 설정으로 이 폴더에 바로 보이는 메모가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                                폴더에서 카드를 끌어다 놓을 수 있어요.
+                              </div>
+                            ) : null;
+                          })()}
+                          {mainItems.length > 0 ? renderMemoGrid(mainItems, folder, folder.id) : null}
+                          {completedItems.length > 0 ? (
+                            (() => {
+                              const explicit = completedExpandedByFolder[folder.id];
+                              const expanded = explicit ?? includeCompletedInAllView;
+                              const open = expanded ?? false;
+                              return (
+                                <DashboardCompletedRevealSection
+                                  count={completedItems.length}
+                                  expanded={open}
+                                  onToggle={() => {
+                                    setCompletedExpandedByFolder((prev) => ({
+                                      ...prev,
+                                      [folder.id]: !open,
+                                    }));
+                                  }}
+                                >
+                                  {renderMemoGrid(completedItems, folder, folder.id, true)}
+                                </DashboardCompletedRevealSection>
+                              );
+                            })()
+                          ) : null}
+                          {mainItems.length === 0 && completedItems.length === 0 ? (
+                            <div
+                              className={cn(
+                                "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                                memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                  "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                              )}
+                              onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                              onDragLeave={memoDnD.onDragLeave}
+                              onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                            >
+                              선택한 조건에 맞는 메모가 없어요. 필터를 바꿔 보거나, 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
+                            </div>
+                          ) : null}
+                        </div>
+                      )
+                    ) : null}
+                  </section>
+                ))
+              )}
             </div>
+          ) : (
+            foldersToRender.map((folder, folderIdx) => {
+              const { mainItems, completedItems, entriesCount } = singleFolderPartition;
+              const explicit = completedExpandedByFolder[folder.id];
+              const completedOpen = explicit ?? false;
+              const onlyCompletedCollapsed =
+                mainItems.length === 0 && completedItems.length > 0 && !completedOpen;
+
+              return (
+                <div key={folder.id} className={cn("space-y-4 rounded-2xl", folderIdx > 0 && "mt-4")}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3 py-1.5 pl-1">
+                      <FolderGlyph folder={folder} size="md" accentColor={folder.color} />
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-base font-bold text-zinc-950">{folder.name}</span>
+                        {folder.hidden ? (
+                          <span className="shrink-0 rounded-full bg-zinc-200/80 px-2 py-0.5 text-[11px] font-bold text-zinc-600">
+                            숨김
+                          </span>
+                        ) : null}
+                        <TitleCountChip count={mainItems.length} />
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-0.5">{memoSectionToolbar(folder)}</div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {entriesCount === 0 ? (
+                      <div
+                        className={cn(
+                          "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                          memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                            "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                        )}
+                        onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                        onDragLeave={memoDnD.onDragLeave}
+                        onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                      >
+                        이 폴더에 메모가 없어요. 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
+                      </div>
+                    ) : (
+                      <>
+                        {onlyCompletedCollapsed ? (
+                          <div
+                            className={cn(
+                              "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                              memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                            )}
+                            onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                            onDragLeave={memoDnD.onDragLeave}
+                            onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                          >
+                            지금 노출 설정으로 이 폴더에 바로 보이는 메모가 없어요. 완료 항목은 아래「완료 보기」에서 펼치거나, 다른
+                            폴더에서 카드를 끌어다 놓을 수 있어요.
+                          </div>
+                        ) : null}
+                        {mainItems.length > 0 ? renderMemoGrid(mainItems, folder, folder.id) : null}
+
+                        {mainItems.length === 0 && completedItems.length === 0 ? (
+                          <div
+                            className={cn(
+                              "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500",
+                              memoDnD.dropTargetKey === `__end__:${folder.id}` &&
+                                "ring-2 ring-sky-400 ring-offset-2 ring-offset-zinc-50",
+                            )}
+                            onDragOver={(e) => memoDnD.onDragOver(e, `__end__:${folder.id}`)}
+                            onDragLeave={memoDnD.onDragLeave}
+                            onDrop={(e) => memoDnD.onDropToFolderEnd(e, folder.id)}
+                          >
+                            선택한 조건에 맞는 메모가 없어요. 필터를 바꿔 보거나, 다른 폴더에서 카드를 끌어다 놓으면 이쪽으로 옮겨집니다.
+                          </div>
+                        ) : null}
+
+                        {completedItems.length > 0 ? (
+                          <DashboardCompletedRevealSection
+                            count={completedItems.length}
+                            expanded={completedOpen}
+                            onToggle={() => {
+                              setCompletedExpandedByFolder((prev) => ({
+                                ...prev,
+                                [folder.id]: !completedOpen,
+                              }));
+                            }}
+                          >
+                            {renderMemoGrid(completedItems, folder, folder.id, true)}
+                          </DashboardCompletedRevealSection>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
-      </div>
+      </AppMainColumn>
+      <FloatingAddButton onClick={() => openCreate()} label="추가" />
 
       <FolderFormModal
-        open={folderModal.initial != null || folderModal.mode === "create"}
-        mode={folderModal.mode}
-        initial={folderModal.initial}
-        onClose={() => setFolderModal({ mode: "create", initial: null })}
-        onConfirm={(payload) => {
-          if (folderModal.mode === "edit" && folderModal.initial) {
-             updateMemoFolder(folderModal.initial.id, payload);
+        open={folderModal != null}
+        mode={folderModal?.mode ?? "create"}
+        initial={folderModal?.initial ?? null}
+        highlightSection={folderModal?.editFocus ?? null}
+        onClose={() => setFolderModal(null)}
+        onSave={(payload) => {
+          if (payload.id) {
+            const { id, ...rest } = payload;
+            updateMemoFolder(id, rest);
+            syncMemoNoteCategoriesForMemoFolder(id);
           } else {
             addMemoFolder({
               name: payload.name,

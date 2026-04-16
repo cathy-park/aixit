@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { 
   loadMemoFolders 
 } from "@/lib/memo-folders-store";
@@ -37,6 +37,8 @@ export interface IdeaModalProps {
   onRequestEdit?: () => void;
 }
 
+const MODAL_HEIGHT_KEY = "aixit-idea-modal-height";
+
 export function IdeaModal({
   open,
   mode,
@@ -49,8 +51,22 @@ export function IdeaModal({
   const [memoFolders] = useState<DashboardFolderRecord[]>(() => loadMemoFolders());
   const [form, setForm] = useState<IdeaFormState>(() => emptyIdeaFormState(folderIdForCreate || "memo-folder-s1"));
   const [resolvedNoteId, setResolvedNoteId] = useState<string | null>(null);
+  
+  // Resize State
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [modalHeight, setModalHeight] = useState<number>(640);
+  const [isResizing, setIsResizing] = useState(false);
 
   const effectiveNoteId = resolvedNoteId ?? noteId;
+
+  // Load persistence
+  useEffect(() => {
+    const saved = localStorage.getItem(MODAL_HEIGHT_KEY);
+    if (saved) {
+      const h = parseInt(saved, 10);
+      if (h >= 400 && h <= 1200) setModalHeight(h);
+    }
+  }, []);
 
   // Initialize form state
   useEffect(() => {
@@ -133,6 +149,40 @@ export function IdeaModal({
     }
   };
 
+  // Resize Handlers
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!modalRef.current) return;
+      const rect = modalRef.current.getBoundingClientRect();
+      const newHeight = e.clientY - rect.top;
+      // Limits: Min 400, Max 90vh
+      const maxH = window.innerHeight * 0.9;
+      if (newHeight >= 400 && newHeight <= maxH) {
+        setModalHeight(newHeight);
+      }
+    };
+
+    const onMouseUp = () => {
+      setIsResizing(false);
+      localStorage.setItem(MODAL_HEIGHT_KEY, modalHeight.toString());
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [isResizing, modalHeight]);
+
   const headerTitle = mode === "create" ? "새 아이디어" : form.title.trim() || "아이디어";
   const currentNote: IdeaNote | null = (effectiveNoteId && open) ? (getNote(effectiveNoteId) || null) : null;
 
@@ -146,13 +196,21 @@ export function IdeaModal({
       }}
     >
       <div
-        className="relative z-10 flex max-h-[min(90vh,760px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200"
+        ref={modalRef}
+        className={cn(
+          "relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200 transition-all",
+          isResizing && "transition-none select-none"
+        )}
+        style={{
+          height: `${modalHeight}px`,
+          maxHeight: "90vh"
+        }}
         role="dialog"
         aria-labelledby="idea-modal-title"
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4">
           <div className="min-w-0">
             <h2 id="idea-modal-title" className="text-base font-semibold text-zinc-900">
               {headerTitle}
@@ -176,7 +234,7 @@ export function IdeaModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/30 px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-zinc-100 bg-zinc-50/30 px-5 py-4">
           <button 
             type="button"
             onClick={copyAll} 
@@ -210,6 +268,16 @@ export function IdeaModal({
             )}
           </div>
         </div>
+
+        {/* Resize Handle */}
+        <div
+          onMouseDown={startResizing}
+          className={cn(
+            "absolute bottom-0 inset-x-0 h-1.5 cursor-ns-resize z-50 transition-colors",
+            isResizing ? "bg-zinc-400/30" : "hover:bg-zinc-100"
+          )}
+          title="높이 조절"
+        />
       </div>
     </div>
   );
