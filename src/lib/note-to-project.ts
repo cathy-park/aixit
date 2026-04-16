@@ -2,16 +2,9 @@ import type { WorkspaceMemoItem, WorkspaceStep } from "@/lib/workspace-store";
 import {
   createBlankProject,
   createProjectFromTemplate,
-  getDashboardWorkflow,
   saveDashboardWorkflow,
 } from "@/lib/workflows-store";
-import type { IdeaNote, NoteStructureKey } from "@/lib/notes-store";
-import {
-  getEffectivePlanTemplate,
-  getSectionsForStructure,
-  structuredSectionsToMemoBlocks,
-  structuredSectionsToStepTitlesAndBodies,
-} from "@/lib/structured-memo-sections";
+import type { IdeaNote } from "@/lib/notes-store";
 import { appendTodayTodos } from "@/lib/today-todos-store";
 import {
   createProjectFromUserTemplate,
@@ -20,12 +13,12 @@ import {
 import { isBracketLabelPlaceholder } from "@/lib/memo-subtitle-placeholders";
 
 function newMemoId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  if (typeof window !== "undefined" && typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `m_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
 
 function newStepId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  if (typeof window !== "undefined" && typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `s_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
 
@@ -48,136 +41,38 @@ function firstLine(s?: string): string {
   return t.split(/\n/)[0]?.trim() ?? "";
 }
 
-/** 프로젝트 카드·워크스페이스 상단에 보이는 한 줄 설명(설명 영역). */
-function planForNote(note: IdeaNote): NoteStructureKey {
-  return getEffectivePlanTemplate(note.metadata as Record<string, unknown>, note.category) as NoteStructureKey;
-}
-
 function buildProjectSubtitle(note: IdeaNote, templateFallback: string): string {
-  const join = (a: string, b: string) => {
-    const out = [a, b].filter(Boolean).join(" · ");
-    return out.length > 180 ? `${out.slice(0, 177)}…` : out;
-  };
   const firstMeaningfulLine = (raw?: string) => {
     const line = firstLine(raw);
     if (!line || isBracketLabelPlaceholder(line)) return "";
     return line;
   };
-  const st = planForNote(note);
-  if (st === "일반") {
-    return firstMeaningfulLine(note.content) || templateFallback;
-  }
-  const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
-  const lines = sections.map((s) => firstMeaningfulLine(s.value)).filter(Boolean);
-  if (st === "MVP") {
-    return join(lines[0] ?? "", lines[1] ?? "") || firstMeaningfulLine(note.content) || templateFallback;
-  }
-  if (st === "강의") {
-    return join(lines[0] ?? "", lines[1] ?? "") || templateFallback;
-  }
-  if (st === "소설") {
-    return (lines[0] ?? "") || templateFallback;
-  }
   return firstMeaningfulLine(note.content) || templateFallback;
 }
 
 function workflowMemosFromNote(note: IdeaNote): WorkspaceMemoItem[] {
   const out: WorkspaceMemoItem[] = [];
   if (note.content.trim()) {
-    out.push(memoItem(`[자유 메모]\n${note.content.trim()}`));
-  }
-  const st = planForNote(note);
-  if (st !== "일반") {
-    const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
-    for (const { label, value } of structuredSectionsToMemoBlocks(sections)) {
-      out.push(memoItem(`[${label}]\n${value}`));
-    }
+    out.push(memoItem(`[메모본문]\n${note.content.trim()}`));
   }
   return out;
 }
 
 function stepsForCategory(note: IdeaNote): WorkspaceStep[] {
-  const st = planForNote(note);
-  if (st === "일반") {
-    return [stepWithMemo("메모", note.content)];
-  }
-  const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
-  const pairs = structuredSectionsToStepTitlesAndBodies(sections);
-  if (pairs.length === 0) {
-    return [stepWithMemo("메모", note.content)];
-  }
-  return pairs.map(({ title, body }) => stepWithMemo(title, body));
-}
-
-function emojiForCategory(category: NoteStructureKey): string {
-  switch (category) {
-    case "MVP":
-      return "🚀";
-    case "강의":
-      return "📚";
-    case "소설":
-      return "✍️";
-    default:
-      return "💡";
-  }
-}
-
-function splitTodoLines(raw: string, max: number): string[] {
-  return raw
-    .split(/\n+/)
-    .map((l) => l.replace(/^[-*•\d.)]+\s*/u, "").trim())
-    .filter(Boolean)
-    .slice(0, max);
-}
-
-/** 홈「이번 주 할 일」에 넣을 초기 태스크(줄 단위 분할 우선). */
-function sectionBodyByKey(note: IdeaNote, st: NoteStructureKey, key: string): string {
-  if (st === "일반") return "";
-  const sections = getSectionsForStructure(note.metadata as Record<string, unknown>, st);
-  return sections.find((s) => s.key === key)?.value ?? "";
+  return [stepWithMemo("메모", note.content)];
 }
 
 export function buildInitialTodosFromNote(note: IdeaNote): { text: string }[] {
   const title = note.title.trim() || "프로젝트";
   const prefix = `[${title}]`;
-  const st = planForNote(note);
-  switch (st) {
-    case "MVP": {
-      const raw = sectionBodyByKey(note, st, "features");
-      const lines = splitTodoLines(raw, 12);
-      if (lines.length) return lines.map((t) => ({ text: `${prefix} ${t}` }));
-      return [
-        { text: `${prefix} 가설 검증 계획 수립` },
-        { text: `${prefix} MVP 기능 범위 확정` },
-      ];
-    }
-    case "강의": {
-      const raw = sectionBodyByKey(note, st, "assignment");
-      const lines = splitTodoLines(raw, 12);
-      if (lines.length) return lines.map((t) => ({ text: `${prefix} ${t}` }));
-      return [
-        { text: `${prefix} 커리큘럼 차시별 상세안 작성` },
-        { text: `${prefix} 학습 목표·과제 정합성 검토` },
-      ];
-    }
-    case "소설":
-      return [
-        { text: `${prefix} 플롯·씬 목록 구체화` },
-        { text: `${prefix} 세계관 규칙 정리` },
-      ];
-    default:
-      if (note.content.trim()) return [{ text: `${prefix} ${note.content.trim().slice(0, 120)}` }];
-      return [];
-  }
+  if (note.content.trim()) return [{ text: `${prefix} ${note.content.trim().slice(0, 120)}` }];
+  return [];
 }
 
 export type PromoteTemplateChoice = "blank" | string;
 
 /**
- * 메모를 프로젝트로 승격합니다.
- * - `blank`: 기획 필드 → 단계(steps) + 워크플로 메모로 이관
- * - 템플릿 id: 내장 워크플로 템플릿 단계는 유지하고, 메모 본문·메타는 워크플로 메모 앞에 합칩니다.
- * - 공통: `subtitle`에 기획 요약, 오늘의 할 일 스토어에 초기 To-do 추가
+ * 메모를 프로젝트로 승격합니다. (구조형 필드 연동 중단 - 자유 메모 기반)
  */
 export function promoteNoteToProject(
   note: IdeaNote,
@@ -187,7 +82,7 @@ export function promoteNoteToProject(
   if (typeof window === "undefined") return null;
   if (note.isConverted) return null;
 
-  let base = null as ReturnType<typeof getDashboardWorkflow>;
+  let base = null;
   if (templateChoice === "blank") {
     base = createBlankProject(folderId);
   } else if (getUserWorkflowTemplateById(templateChoice)) {
@@ -213,7 +108,7 @@ export function promoteNoteToProject(
           projectStatus: "waiting" as const,
           currentStepIndex: 0,
           completedAt: undefined,
-          emoji: emojiForCategory(planForNote(note)),
+          emoji: "💡",
           workflowMemos: mergedMemos,
           steps: stepsForCategory(note),
           origin: "idea" as const,
@@ -227,7 +122,7 @@ export function promoteNoteToProject(
           projectStatus: "waiting" as const,
           currentStepIndex: 0,
           completedAt: undefined,
-          emoji: emojiForCategory(planForNote(note)),
+          emoji: "💡",
           workflowMemos: mergedMemos,
           origin: "idea" as const,
           originIdeaId: note.id,
@@ -242,9 +137,9 @@ export function promoteNoteToProject(
 /** 메모 → 프로젝트 필드 매핑 요약(기획 보고용). */
 export const NOTE_TO_PROJECT_FIELD_MAP = {
   name: "note.title",
-  subtitle: "카테고리별 요약 (MVP: problem·hypothesis 첫 줄, 강의: target·goal, 소설: logline, 일반: 본문)",
-  workflowMemos: "[자유 메모] + 각 metadata 블록(라벨 접두)",
-  steps_blank: "카테고리별 4단계(또는 일반 1단계), 필드 본문 → 해당 단계 memos",
-  steps_template: "템플릿 단계 유지, 메모는 workflowMemos로만 합류",
-  todayTodos: "MVP: features 줄 단위 / 강의: assignment 줄 단위 / 소설·기본: 고정 2건(+본문)",
+  subtitle: "본문 첫 줄",
+  workflowMemos: "[메모본문] 필드 전체",
+  steps_blank: "단일 '메모' 단계 생성",
+  steps_template: "템플릿 단계 유지, 메모는 workflowMemos로 합류",
+  todayTodos: "기본: 본문에서 추출된 할 일 1건",
 } as const;

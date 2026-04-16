@@ -16,10 +16,7 @@ import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/Workspace
 import { appendUserLayoutEntry } from "@/lib/dashboard-layout-store";
 import { loadDashboardFolders, pickDefaultProjectFolderId } from "@/lib/dashboard-folders-store";
 import { promoteNoteToProject, type PromoteTemplateChoice } from "@/lib/note-to-project";
-import { TEMPLATE_CATEGORY_OVERRIDE_EVENT } from "@/lib/workflow-template-category-override-store";
 import { listWorkflowTemplatesForMenu } from "@/lib/workflow-templates-menu-list";
-import { REMOVED_WORKFLOW_TEMPLATES_EVENT } from "@/lib/user-removed-workflow-templates-store";
-import { USER_WORKFLOW_TEMPLATES_EVENT } from "@/lib/user-workflow-templates-store";
 import { cn } from "@/components/ui/cn";
 import {
   addNote,
@@ -71,29 +68,14 @@ export function IdeaModal({
   const router = useRouter();
   const [form, setForm] = useState<IdeaFormState>(() => emptyIdeaFormState("memo-folder-s1"));
   const [resolvedNoteId, setResolvedNoteId] = useState<string | null>(null);
-  const [selectedWorkflowTemplateId, setSelectedWorkflowTemplateId] = useState(TEMPLATE_PLACEHOLDER_VALUE);
-  const [templateMenuTick, setTemplateMenuTick] = useState(0);
 
   const effectiveNoteId = resolvedNoteId ?? noteId;
 
   const memoFolders = useMemo(() => (open ? loadMemoFolders() : []), [open]);
 
-  const workflowTemplates = useMemo(() => listWorkflowTemplatesForMenu(), [templateMenuTick, open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const bump = () => setTemplateMenuTick((x) => x + 1);
-    window.addEventListener(USER_WORKFLOW_TEMPLATES_EVENT, bump);
-    window.addEventListener(REMOVED_WORKFLOW_TEMPLATES_EVENT, bump);
-    window.addEventListener(TEMPLATE_CATEGORY_OVERRIDE_EVENT, bump);
-    window.addEventListener("aixit-workflow-template-folders-updated", bump);
-    return () => {
-      window.removeEventListener(USER_WORKFLOW_TEMPLATES_EVENT, bump);
-      window.removeEventListener(REMOVED_WORKFLOW_TEMPLATES_EVENT, bump);
-      window.removeEventListener(TEMPLATE_CATEGORY_OVERRIDE_EVENT, bump);
-      window.removeEventListener("aixit-workflow-template-folders-updated", bump);
-    };
-  }, [open]);
+  const availableTemplates = useMemo(() => {
+    return listWorkflowTemplatesForMenu();
+  }, []);
 
   const resetFromProps = useCallback(() => {
     if (mode === "create") {

@@ -30,20 +30,20 @@ const MEMO_FORM_SELECT_CLASS =
 export type IdeaFormState = {
   title: string;
   content: string;
-  folderId: string;
+  category: string;
   tags: string[];
   color: string;
-  status: string;
+  projectStatus: string;
 };
 
-export function emptyIdeaFormState(defaultFolderId: string): IdeaFormState {
+export function emptyIdeaFormState(category: string): IdeaFormState {
   return {
     title: "",
     content: "",
-    folderId: defaultFolderId,
+    category,
     tags: [],
     color: "yellow",
-    status: "준비중",
+    projectStatus: "준비중",
   };
 }
 
@@ -51,19 +51,20 @@ export function noteToFormState(note: IdeaNote): IdeaFormState {
   return {
     title: note.title,
     content: note.content,
-    folderId: note.folderId,
+    category: note.category,
     tags: [...note.tags],
     color: note.color || "yellow",
-    status: note.projectStatus || "준비중",
+    projectStatus: note.projectStatus || "준비중",
   };
 }
 
-export function formMetadataFromState(form: IdeaFormState): IdeaNote["metadata"] {
+/** 폼 상태 → 저장용 메타데이터 (자유 메모는 빈 객체) */
+export function formMetadataFromState(state: IdeaFormState): Record<string, unknown> {
   return {};
 }
 
 export function buildIdeaCopyText(form: IdeaFormState): string {
-  const lines: string[] = [`제목:\n${form.title}`, `상태: ${form.status}`, `본문:\n${form.content}`];
+  const lines: string[] = [`제목:\n${form.title}`, `상태: ${form.projectStatus}`, `본문:\n${form.content}`];
   if (form.tags.length > 0) {
     lines.push(`태그:\n${form.tags.map((t) => `#${t}`).join("  ")}`);
   }
