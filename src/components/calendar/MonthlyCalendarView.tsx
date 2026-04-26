@@ -948,16 +948,6 @@ function TodoItem({
         )}
 
         <div className="flex shrink-0 items-center gap-1">
-          {!isEditing && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-              title="수정"
-              className={cn(actionIconButtonClass, "h-7 w-7 text-current/50 hover:text-current")}
-            >
-              <IconEdit />
-            </button>
-          )}
           <CategorySelect
             categories={categories}
             currentId={todo.categoryId}
@@ -1066,16 +1056,6 @@ function ProjectItem({
         )}
 
         <div className="flex shrink-0 items-center gap-1">
-          {!isEditing && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-              title="수정"
-              className={cn(actionIconButtonClass, "h-7 w-7 text-current/50 hover:text-current")}
-            >
-              <IconEdit />
-            </button>
-          )}
           <CategorySelect
             categories={categories}
             currentId={project.categoryId}
