@@ -23,6 +23,8 @@ export type TodayTodo = {
   dailySheetDate?: string;
   /** 캘린더에서 지정한 카테고리 ID */
   categoryId?: string;
+  /** 상세 메모 (마크다운 형식 권장) */
+  memo?: string;
 };
 
 function safeParse<T>(raw: string | null): T | null {
@@ -60,6 +62,7 @@ function normalizeTodo(raw: unknown): TodayTodo | null {
     ...(scheduledDate ? { scheduledDate } : {}),
     ...(dailySheetDate ? { dailySheetDate } : {}),
     ...(typeof t.categoryId === "string" ? { categoryId: t.categoryId } : {}),
+    ...(typeof t.memo === "string" ? { memo: t.memo } : {}),
   };
 }
 
@@ -319,6 +322,19 @@ export function renameTodayTodo(id: string, newText: string): boolean {
     if (t.id !== id) return t;
     hit = true;
     return { ...t, text: trimmed };
+  });
+  if (!hit) return false;
+  saveTodayTodos(next);
+  return true;
+}
+/** 캘린더에서 할 일 메모 수정 */
+export function updateTodoMemo(id: string, memo: string): boolean {
+  const all = loadTodayTodos();
+  let hit = false;
+  const next = all.map((t) => {
+    if (t.id !== id) return t;
+    hit = true;
+    return { ...t, memo };
   });
   if (!hit) return false;
   saveTodayTodos(next);

@@ -21,6 +21,7 @@ import {
   renameTodayTodo,
   setTodayTodoDone,
   setTodoCategory,
+  updateTodoMemo,
   type TodayTodo,
 } from "@/lib/today-todos-store";
 import {
@@ -866,13 +867,19 @@ function TodoItem({
   onDragEnd: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [editText, setEditText] = useState(todo.text);
+  const [memo, setMemo] = useState(todo.memo ?? "");
   const cat = todo.categoryId ? categories.find((c) => c.id === todo.categoryId) : undefined;
 
-  const onSave = () => {
+  const onSaveName = () => {
     if (renameTodayTodo(todo.id, editText)) {
       setIsEditing(false);
     }
+  };
+
+  const onSaveMemo = () => {
+    updateTodoMemo(todo.id, memo);
   };
 
   return (
@@ -881,81 +888,120 @@ function TodoItem({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
-        "flex items-center gap-2 rounded-xl border px-3 py-2.5 active:cursor-grabbing",
+        "flex flex-col rounded-xl border transition-all active:cursor-grabbing",
         !isEditing && "cursor-grab",
         cat
           ? cat.colorClass
           : isPlanned
             ? "border-sky-100 bg-sky-50/90"
             : "border-emerald-100 bg-emerald-50/80",
+        isExpanded && "ring-2 ring-zinc-200 ring-offset-2",
       )}
       title={isEditing ? undefined : "드래그하여 다른 날로 이동"}
     >
-      {isEditing ? (
-        <input
-          autoFocus
-          className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none ring-2 ring-sky-300 ring-offset-2"
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          onBlur={onSave}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onSave();
-            if (e.key === "Escape") {
-              setEditText(todo.text);
-              setIsEditing(false);
-            }
-          }}
-        />
-      ) : (
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          {isPlanned && (
-            <input
-              type="checkbox"
-              checked={false}
-              onChange={() => setTodayTodoDone(todo.id, true)}
-              className="h-4 w-4 shrink-0 rounded border-zinc-300 text-sky-700 focus:ring-sky-400"
-            />
-          )}
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span
-              onClick={() => setIsEditing(true)}
-              className={cn(
-                "cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70",
-                isPlanned ? "text-sky-950" : "text-emerald-950",
-              )}
-            >
-              {todo.text}
-            </span>
-          </div>
-        </div>
-      )}
-      <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-        {!isEditing && (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            title="수정"
-            className={cn(actionIconButtonClass, "text-zinc-400 hover:text-zinc-600")}
-          >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-          </button>
-        )}
-        <CategorySelect
-          categories={categories}
-          currentId={todo.categoryId}
-          onSelect={(catId) => setTodoCategory(todo.id, catId)}
-        />
+      <div className="flex items-center gap-2 px-3 py-2.5">
         <button
           type="button"
-          onClick={() => removeTodayTodoById(todo.id)}
-          title="삭제"
-          className={actionIconButtonClass}
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex h-5 w-5 items-center justify-center rounded-md transition hover:bg-black/5"
+          aria-label={isExpanded ? "메모 접기" : "메모 펼치기"}
         >
-          <IconTrash />
+          <svg
+            className={cn("h-3 w-3 transition-transform", isExpanded ? "rotate-90" : "")}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+          </svg>
         </button>
+
+        {isEditing ? (
+          <input
+            autoFocus
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none ring-2 ring-sky-300 ring-offset-2"
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onBlur={onSaveName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSaveName();
+              if (e.key === "Escape") {
+                setEditText(todo.text);
+                setIsEditing(false);
+              }
+            }}
+          />
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {isPlanned && (
+              <input
+                type="checkbox"
+                checked={false}
+                onChange={() => setTodayTodoDone(todo.id, true)}
+                className="h-4 w-4 shrink-0 rounded border-zinc-300 text-sky-700 focus:ring-sky-400"
+              />
+            )}
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span
+                onClick={() => setIsEditing(true)}
+                className={cn(
+                  "cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70",
+                  isPlanned ? "text-sky-950" : "text-emerald-950",
+                )}
+              >
+                {todo.text}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              title="수정"
+              className={cn(actionIconButtonClass, "text-zinc-400 hover:text-zinc-600")}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
+          )}
+          <CategorySelect
+            categories={categories}
+            currentId={todo.categoryId}
+            onSelect={(catId) => setTodoCategory(todo.id, catId)}
+          />
+          <button
+            type="button"
+            onClick={() => removeTodayTodoById(todo.id)}
+            title="삭제"
+            className={actionIconButtonClass}
+          >
+            <IconTrash />
+          </button>
+        </div>
       </div>
+
+      {isExpanded && (
+        <div className="border-t border-black/5 px-4 pb-4 pt-3">
+          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider opacity-50">상세 메모 (Markdown)</label>
+          <textarea
+            className="w-full resize-none bg-transparent text-[13px] leading-relaxed outline-none placeholder:text-black/20"
+            rows={4}
+            placeholder="상세 내용을 마크다운으로 적어보세요..."
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            onBlur={onSaveMemo}
+          />
+        </div>
+      )}
     </li>
   );
 }
