@@ -346,6 +346,36 @@ export function saveDashboardWorkflow(workflow: DashboardWorkflow) {
     writeAll([next, ...list]);
     return;
   }
+  const copy = [...list];
+  copy[idx] = next;
+  writeAll(copy);
+}
+
+/** 대시보드 카드 등에서 워크스페이스 없이 실행 상태만 갱신 */
+export function setDashboardWorkflowRunStatus(workflowId: string, status: WorkflowRunStatus): boolean {
+  if (typeof window === "undefined") return false;
+  const w = getDashboardWorkflow(workflowId);
+  if (!w) return false;
+  if (!isWorkflowRunStatus(status)) return false;
+  const completedAt = status === "완료" ? (w.completedAt ?? getTodayIsoLocal()) : undefined;
+  const projectStatus = runStatusToProjectLifecycle(status);
+  saveDashboardWorkflow({ ...w, status, projectStatus, completedAt });
+  return true;
+}
+
+/** 카드 칩(대기/진행중/완료)에서 상태 변경 */
+export function setDashboardProjectLifecycleStatus(workflowId: string, ps: ProjectLifecycleStatus): boolean {
+  if (typeof window === "undefined") return false;
+  let w = getDashboardWorkflow(workflowId);
+  // 홈/추천 등 "미리보기 카드"에서 상태를 바꿀 때 아직 워크플로우가 시드되지 않았을 수 있어요.
+  // 내장 템플릿 id라면 한 번 시드한 뒤 다시 시도합니다.
+  if (!w) {
+    seedBuiltinDashboardWorkflow(workflowId);
+    w = getDashboardWorkflow(workflowId);
+  }
+  if (!w) return false;
+  const status = projectLifecycleToRunStatus(ps);
+  const completedAt = ps === "completed" ? (w.completedAt ?? getTodayIsoLocal()) : undefined;
   saveDashboardWorkflow({ ...w, projectStatus: ps, status, completedAt });
   return true;
 }
