@@ -308,3 +308,19 @@ export function reassignTodayTodoCalendarDate(id: string, newDateIso: string): b
   saveTodayTodos(next);
   return true;
 }
+
+/** 캘린더에서 할 일 이름 수정 */
+export function renameTodayTodo(id: string, newText: string): boolean {
+  const trimmed = newText.trim();
+  if (!trimmed) return false;
+  const all = loadTodayTodos();
+  let hit = false;
+  const next = all.map((t) => {
+    if (t.id !== id) return t;
+    hit = true;
+    return { ...t, text: trimmed };
+  });
+  if (!hit) return false;
+  saveTodayTodos(next);
+  return true;
+}

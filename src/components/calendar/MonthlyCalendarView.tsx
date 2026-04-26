@@ -18,6 +18,7 @@ import {
   getPlannedTodosGroupedByDate,
   reassignTodayTodoCalendarDate,
   removeTodayTodoById,
+  renameTodayTodo,
   setTodayTodoDone,
   setTodoCategory,
   type TodayTodo,
@@ -370,9 +371,6 @@ export function MonthlyCalendarView() {
                 </li>
               );
             })}
-            <li className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-indigo-400" aria-hidden />
-            </li>
           </ul>
           <div className="flex items-center gap-2">
             <button
@@ -556,43 +554,14 @@ export function MonthlyCalendarView() {
                 ) : (
                   <ul className="mt-3 space-y-2">
                     {popupPlanned.map((t) => (
-                      <li
+                      <TodoItem
                         key={t.id}
-                        draggable
+                        todo={t}
+                        categories={categories}
+                        isPlanned
                         onDragStart={(e) => onCalItemDragStart(e, "planned", t.id)}
                         onDragEnd={onCalItemDragEnd}
-                        className={cn(
-                          "flex cursor-grab items-center gap-2 rounded-xl border px-3 py-2.5 active:cursor-grabbing",
-                          t.categoryId && categories.find(c => c.id === t.categoryId)
-                            ? categories.find(c => c.id === t.categoryId)?.colorClass
-                            : "border-sky-100 bg-sky-50/90"
-                        )}
-                        title="드래그하여 다른 날로 이동"
-                      >
-                        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={false}
-                            onChange={() => setTodayTodoDone(t.id, true)}
-                            className="h-4 w-4 shrink-0 rounded border-zinc-300 text-sky-700 focus:ring-sky-400"
-                          />
-                          <span className="text-sm font-medium leading-snug text-sky-950">{t.text}</span>
-                        </label>
-                        <CategorySelect
-                          categories={categories}
-                          currentId={t.categoryId}
-                          onSelect={(catId) => setTodoCategory(t.id, catId)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeTodayTodoById(t.id)}
-                          title="삭제"
-                          aria-label="예정 할 일 삭제"
-                          className={actionIconButtonClass}
-                        >
-                          <IconTrash />
-                        </button>
-                      </li>
+                      />
                     ))}
                   </ul>
                 )}
@@ -606,37 +575,14 @@ export function MonthlyCalendarView() {
                     </h3>
                     <ul className="mt-2 space-y-2">
                       {popupCompletedTodos.map((t) => (
-                        <li
+                        <TodoItem
                           key={t.id}
-                          draggable
+                          todo={t}
+                          categories={categories}
+                          isPlanned={false}
                           onDragStart={(e) => onCalItemDragStart(e, "todo", t.id)}
                           onDragEnd={onCalItemDragEnd}
-                          className={cn(
-                            "flex cursor-grab items-center gap-2 rounded-xl border px-4 py-3 active:cursor-grabbing",
-                            t.categoryId && categories.find(c => c.id === t.categoryId)
-                              ? categories.find(c => c.id === t.categoryId)?.colorClass
-                              : "border-emerald-100 bg-emerald-50/80"
-                          )}
-                          title="드래그하여 다른 날로 이동"
-                        >
-                          <span className="flex-1 text-sm font-medium leading-snug text-emerald-950">
-                            {t.text}
-                          </span>
-                          <CategorySelect
-                            categories={categories}
-                            currentId={t.categoryId}
-                            onSelect={(catId) => setTodoCategory(t.id, catId)}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeTodayTodoById(t.id)}
-                            title="삭제"
-                            aria-label="완료한 할 일 삭제"
-                            className={actionIconButtonClass}
-                          >
-                            <IconTrash />
-                          </button>
-                        </li>
+                        />
                       ))}
                     </ul>
                   </section>
@@ -929,5 +875,96 @@ function CategorySettingsModal({
         </div>
       </div>
     </div>
+  );
+}
+function TodoItem({
+  todo,
+  categories,
+  isPlanned,
+  onDragStart,
+  onDragEnd,
+}: {
+  todo: TodayTodo;
+  categories: TodoCategory[];
+  isPlanned: boolean;
+  onDragStart: (e: DragEvent) => void;
+  onDragEnd: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(todo.text);
+  const cat = todo.categoryId ? categories.find((c) => c.id === todo.categoryId) : undefined;
+
+  const onSave = () => {
+    if (renameTodayTodo(todo.id, editText)) {
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <li
+      draggable={!isEditing}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "flex items-center gap-2 rounded-xl border px-3 py-2.5 active:cursor-grabbing",
+        !isEditing && "cursor-grab",
+        cat
+          ? cat.colorClass
+          : isPlanned
+            ? "border-sky-100 bg-sky-50/90"
+            : "border-emerald-100 bg-emerald-50/80",
+      )}
+      title={isEditing ? undefined : "드래그하여 다른 날로 이동"}
+    >
+      {isEditing ? (
+        <input
+          autoFocus
+          className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none"
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          onBlur={onSave}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSave();
+            if (e.key === "Escape") {
+              setEditText(todo.text);
+              setIsEditing(false);
+            }
+          }}
+        />
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {isPlanned && (
+            <input
+              type="checkbox"
+              checked={false}
+              onChange={() => setTodayTodoDone(todo.id, true)}
+              className="h-4 w-4 shrink-0 rounded border-zinc-300 text-sky-700 focus:ring-sky-400"
+            />
+          )}
+          <span
+            onClick={() => setIsEditing(true)}
+            className={cn(
+              "cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70",
+              isPlanned ? "text-sky-950" : "text-emerald-950",
+            )}
+          >
+            {todo.text}
+          </span>
+        </div>
+      )}
+      <CategorySelect
+        categories={categories}
+        currentId={todo.categoryId}
+        onSelect={(catId) => setTodoCategory(todo.id, catId)}
+      />
+      <button
+        type="button"
+        onClick={() => removeTodayTodoById(todo.id)}
+        title="삭제"
+        className={actionIconButtonClass}
+      >
+        <IconTrash />
+      </button>
+    </li>
   );
 }
