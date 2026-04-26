@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/components/ui/cn";
-import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
+import { actionIconButtonClass, IconTrash, IconEdit } from "@/components/ui/action-icons";
 import { formatKoreanShortDateWithWeekday, getTodayIsoLocal } from "@/lib/today-project-filter";
 import { shouldCommitTagOnEnter } from "@/lib/tag-input-keydown";
 import {
@@ -525,7 +525,7 @@ export function MonthlyCalendarView() {
                 </button>
               </div>
             </div>
-            <div className="max-h-[min(58vh,24rem)] overflow-y-auto px-5 py-4">
+            <div className="max-h-[min(65vh,30rem)] overflow-y-auto px-5 pt-4 pb-12">
               <section aria-labelledby="cal-popup-planned" className="border-b border-zinc-100 pb-5">
                 <h3 id="cal-popup-planned" className="text-xs font-bold uppercase tracking-wide text-sky-700">
                   예정 할 일 (홈 이번 주와 연동)
@@ -656,12 +656,11 @@ function CategorySelect({
       <button
         ref={buttonRef}
         type="button"
-        onClick={toggle}
         className={cn(
-          "h-6 min-w-[3rem] rounded px-1.5 text-[10px] font-bold ring-1 ring-inset transition",
+          "h-6 min-w-[3.5rem] rounded-md px-2 text-[10px] font-bold transition-colors border border-current/20",
           current
-            ? `${current.colorClass} ring-opacity-20`
-            : "bg-zinc-100 text-zinc-500 ring-zinc-200 hover:bg-zinc-200",
+            ? "bg-transparent text-current hover:bg-black/5"
+            : "bg-transparent text-zinc-500 hover:bg-black/5",
         )}
       >
         {current?.name || "분류 없음"}
@@ -888,38 +887,35 @@ function TodoItem({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
-        "flex flex-col rounded-xl border transition-all active:cursor-grabbing",
-        !isEditing && "cursor-grab",
+        "group flex flex-col rounded-xl border transition-all",
+        !isEditing && "cursor-grab active:cursor-grabbing",
         cat
-          ? cat.colorClass
-          : isPlanned
-            ? "border-sky-100 bg-sky-50/90"
-            : "border-emerald-100 bg-emerald-50/80",
-        isExpanded && "ring-2 ring-zinc-200 ring-offset-2",
+          ? `${cat.colorClass} border-current/20`
+          : "bg-emerald-50/50 text-emerald-950 border-emerald-200/60"
       )}
       title={isEditing ? undefined : "드래그하여 다른 날로 이동"}
     >
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button
           type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex h-5 w-5 items-center justify-center rounded-md transition hover:bg-black/5"
+          onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-current/50 hover:bg-black/5 hover:text-current transition-colors"
           aria-label={isExpanded ? "메모 접기" : "메모 펼치기"}
         >
           <svg
-            className={cn("h-3 w-3 transition-transform", isExpanded ? "rotate-90" : "")}
+            className={cn("h-4 w-4 transition-transform", isExpanded ? "rotate-90" : "")}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
 
         {isEditing ? (
           <input
             autoFocus
-            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none ring-2 ring-sky-300 ring-offset-2"
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none ring-1 ring-current/30 rounded px-1 py-0.5"
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             onBlur={onSaveName}
@@ -938,39 +934,28 @@ function TodoItem({
                 type="checkbox"
                 checked={false}
                 onChange={() => setTodayTodoDone(todo.id, true)}
-                className="h-4 w-4 shrink-0 rounded border-zinc-300 text-sky-700 focus:ring-sky-400"
+                onClick={(e) => e.stopPropagation()}
+                className="h-4 w-4 shrink-0 rounded border-current/30 text-current focus:ring-current/50 bg-transparent"
               />
             )}
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span
-                onClick={() => setIsEditing(true)}
-                className={cn(
-                  "cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70",
-                  isPlanned ? "text-sky-950" : "text-emerald-950",
-                )}
-              >
-                {todo.text}
-              </span>
-            </div>
+            <span
+              onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+              className="min-w-0 flex-1 cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70"
+            >
+              {todo.text}
+            </span>
           </div>
         )}
 
-        <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <div className="flex shrink-0 items-center gap-1">
           {!isEditing && (
             <button
               type="button"
-              onClick={() => setIsEditing(true)}
+              onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
               title="수정"
-              className={cn(actionIconButtonClass, "text-zinc-400 hover:text-zinc-600")}
+              className={cn(actionIconButtonClass, "h-7 w-7 text-current/50 hover:text-current")}
             >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
+              <IconEdit />
             </button>
           )}
           <CategorySelect
@@ -980,9 +965,9 @@ function TodoItem({
           />
           <button
             type="button"
-            onClick={() => removeTodayTodoById(todo.id)}
+            onClick={(e) => { e.stopPropagation(); removeTodayTodoById(todo.id); }}
             title="삭제"
-            className={actionIconButtonClass}
+            className={cn(actionIconButtonClass, "h-7 w-7 text-current/50 hover:text-rose-600")}
           >
             <IconTrash />
           </button>
@@ -990,15 +975,14 @@ function TodoItem({
       </div>
 
       {isExpanded && (
-        <div className="border-t border-black/5 px-4 pb-4 pt-3">
-          <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider opacity-50">상세 메모 (Markdown)</label>
+        <div className="border-t border-current/10 px-4 py-3">
           <textarea
-            className="w-full resize-none bg-transparent text-[13px] leading-relaxed outline-none placeholder:text-black/20"
-            rows={4}
-            placeholder="상세 내용을 마크다운으로 적어보세요..."
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             onBlur={onSaveMemo}
+            placeholder="메모를 입력하세요..."
+            className="w-full resize-none bg-transparent text-sm text-current/80 placeholder:text-current/40 outline-none focus:ring-1 focus:ring-current/30 rounded p-1"
+            rows={3}
           />
         </div>
       )}
@@ -1023,7 +1007,7 @@ function ProjectItem({
   const [editText, setEditText] = useState(project.name);
   const cat = project.categoryId ? categories.find((c) => c.id === project.categoryId) : undefined;
 
-  const onSave = () => {
+  const onSaveName = () => {
     if (renameDashboardWorkflow(project.id, editText)) {
       setIsEditing(false);
     }
@@ -1034,63 +1018,70 @@ function ProjectItem({
       draggable={!isEditing}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="group flex items-center gap-2"
+      className={cn(
+        "group flex flex-col rounded-xl border transition-all",
+        !isEditing && "cursor-grab active:cursor-grabbing",
+        cat
+          ? `${cat.colorClass} border-current/20`
+          : "bg-indigo-50/50 text-indigo-950 border-indigo-200/60"
+      )}
       title={isEditing ? undefined : "드래그하여 다른 날로 이동"}
     >
-      <div className="flex-1">
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); openProject(project.id); }}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-current/50 hover:bg-black/5 hover:text-current transition-colors"
+          title="워크스페이스로 이동"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </button>
+
         {isEditing ? (
-          <div className={cn("rounded-xl border p-4", cat ? cat.colorClass : "border-indigo-200 bg-indigo-50/90")}>
-            <input
-              autoFocus
-              className="w-full bg-transparent text-sm font-semibold outline-none ring-2 ring-indigo-400 ring-offset-2"
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              onBlur={onSave}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onSave();
-                if (e.key === "Escape") {
-                  setEditText(project.name);
-                  setIsEditing(false);
-                }
-              }}
-            />
-          </div>
+          <input
+            autoFocus
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none ring-1 ring-current/30 rounded px-1 py-0.5"
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onBlur={onSaveName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSaveName();
+              if (e.key === "Escape") {
+                setEditText(project.name);
+                setIsEditing(false);
+              }
+            }}
+          />
         ) : (
-          <button
-            type="button"
-            onClick={() => openProject(project.id)}
-            className={cn(
-              "w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold leading-snug transition focus-visible:outline-none focus-visible:ring-2",
-              cat
-                ? `${cat.colorClass} border-transparent hover:opacity-90 focus-visible:ring-zinc-400`
-                : "border-indigo-200 bg-indigo-50/90 text-indigo-950 hover:bg-indigo-100/90 focus-visible:ring-indigo-400",
-            )}
-          >
-            {project.name}
-            <span className="mt-1 block text-[11px] font-medium opacity-70">워크스페이스로 이동</span>
-          </button>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span
+              onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+              className="min-w-0 flex-1 cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70"
+            >
+              {project.name}
+            </span>
+          </div>
         )}
-      </div>
-      <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-        {!isEditing && (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            title="수정"
-            className={cn(actionIconButtonClass, "text-zinc-400 hover:text-zinc-600")}
-          >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-          </button>
-        )}
-        <CategorySelect
-          categories={categories}
-          currentId={project.categoryId}
-          onSelect={(catId) => {
-            updateDashboardWorkflowCategory(project.id, catId);
-          }}
-        />
+
+        <div className="flex shrink-0 items-center gap-1">
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+              title="수정"
+              className={cn(actionIconButtonClass, "h-7 w-7 text-current/50 hover:text-current")}
+            >
+              <IconEdit />
+            </button>
+          )}
+          <CategorySelect
+            categories={categories}
+            currentId={project.categoryId}
+            onSelect={(catId) => updateDashboardWorkflowCategory(project.id, catId)}
+          />
+        </div>
       </div>
     </li>
   );
