@@ -697,7 +697,7 @@ function CategorySelect({
               className="fixed z-[1001] mt-1 w-36 overflow-hidden rounded-xl bg-white p-1 shadow-2xl ring-1 ring-zinc-200"
               style={{
                 top: coords.top,
-                left: Math.max(10, coords.left + coords.width - 144), // right align to button
+                left: Math.max(10, coords.left + coords.width - 144),
               }}
             >
               <li>
@@ -707,19 +707,33 @@ function CategorySelect({
                     onSelect(undefined);
                     setOpen(false);
                   }}
-                  className={cn(
-                    "w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-bold transition",
-                    c.colorClass,
-                    "ring-1 ring-inset ring-transparent hover:ring-zinc-200",
-                  )}
+                  className="w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-medium text-zinc-500 hover:bg-zinc-50"
                 >
-                  {c.name}
+                  분류 없음
                 </button>
               </li>
-            ))}
-          </ul>
-        </>
-      )}
+              {categories.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelect(c.id);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-bold transition",
+                      c.colorClass,
+                      "ring-1 ring-inset ring-transparent hover:ring-zinc-200",
+                    )}
+                  >
+                    {c.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }
