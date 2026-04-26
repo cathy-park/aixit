@@ -36,6 +36,7 @@ import {
   getCompletedProjectsGroupedByDate,
   reassignCompletedProjectCalendarDate,
   updateDashboardWorkflowCategory,
+  renameDashboardWorkflow,
   type CalendarCompletedProject,
 } from "@/lib/workflows-store";
 
@@ -593,42 +594,16 @@ export function MonthlyCalendarView() {
                       프로젝트
                     </h3>
                     <ul className="mt-2 space-y-2">
-                      {popupProjects.map((p) => {
-                        const cat = p.categoryId ? categories.find((c) => c.id === p.categoryId) : undefined;
-                        return (
-                          <li
-                            key={p.id}
-                            draggable
-                            onDragStart={(e) => onCalItemDragStart(e, "project", p.id)}
-                            onDragEnd={onCalItemDragEnd}
-                            className="group flex items-center gap-2"
-                            title="드래그하여 다른 날로 이동"
-                          >
-                            <div className="flex-1">
-                              <button
-                                type="button"
-                                onClick={() => openProject(p.id)}
-                                className={cn(
-                                  "w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold leading-snug transition focus-visible:outline-none focus-visible:ring-2",
-                                  cat
-                                    ? `${cat.colorClass} border-transparent hover:opacity-90 focus-visible:ring-zinc-400`
-                                    : "border-indigo-200 bg-indigo-50/90 text-indigo-950 hover:bg-indigo-100/90 focus-visible:ring-indigo-400",
-                                )}
-                              >
-                                {p.name}
-                                <span className="mt-1 block text-[11px] font-medium opacity-70">워크스페이스로 이동</span>
-                              </button>
-                            </div>
-                            <CategorySelect
-                              categories={categories}
-                              currentId={p.categoryId}
-                              onSelect={(catId) => {
-                                updateDashboardWorkflowCategory(p.id, catId);
-                              }}
-                            />
-                          </li>
-                        );
-                      })}
+                      {popupProjects.map((p) => (
+                        <ProjectItem
+                          key={p.id}
+                          project={p}
+                          categories={categories}
+                          openProject={openProject}
+                          onDragStart={(e) => onCalItemDragStart(e, "project", p.id)}
+                          onDragEnd={onCalItemDragEnd}
+                        />
+                      ))}
                     </ul>
                   </section>
                 ) : null}
@@ -919,7 +894,7 @@ function TodoItem({
       {isEditing ? (
         <input
           autoFocus
-          className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none"
+          className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none ring-2 ring-sky-300 ring-offset-2"
           value={editText}
           onChange={(e) => setEditText(e.target.value)}
           onBlur={onSave}
@@ -941,30 +916,136 @@ function TodoItem({
               className="h-4 w-4 shrink-0 rounded border-zinc-300 text-sky-700 focus:ring-sky-400"
             />
           )}
-          <span
-            onClick={() => setIsEditing(true)}
-            className={cn(
-              "cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70",
-              isPlanned ? "text-sky-950" : "text-emerald-950",
-            )}
-          >
-            {todo.text}
-          </span>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span
+              onClick={() => setIsEditing(true)}
+              className={cn(
+                "cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70",
+                isPlanned ? "text-sky-950" : "text-emerald-950",
+              )}
+            >
+              {todo.text}
+            </span>
+          </div>
         </div>
       )}
-      <CategorySelect
-        categories={categories}
-        currentId={todo.categoryId}
-        onSelect={(catId) => setTodoCategory(todo.id, catId)}
-      />
-      <button
-        type="button"
-        onClick={() => removeTodayTodoById(todo.id)}
-        title="삭제"
-        className={actionIconButtonClass}
-      >
-        <IconTrash />
-      </button>
+      <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        {!isEditing && (
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            title="수정"
+            className={cn(actionIconButtonClass, "text-zinc-400 hover:text-zinc-600")}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+        )}
+        <CategorySelect
+          categories={categories}
+          currentId={todo.categoryId}
+          onSelect={(catId) => setTodoCategory(todo.id, catId)}
+        />
+        <button
+          type="button"
+          onClick={() => removeTodayTodoById(todo.id)}
+          title="삭제"
+          className={actionIconButtonClass}
+        >
+          <IconTrash />
+        </button>
+      </div>
+    </li>
+  );
+}
+
+function ProjectItem({
+  project,
+  categories,
+  openProject,
+  onDragStart,
+  onDragEnd,
+}: {
+  project: CalendarCompletedProject;
+  categories: TodoCategory[];
+  openProject: (id: string) => void;
+  onDragStart: (e: DragEvent) => void;
+  onDragEnd: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(project.name);
+  const cat = project.categoryId ? categories.find((c) => c.id === project.categoryId) : undefined;
+
+  const onSave = () => {
+    if (renameDashboardWorkflow(project.id, editText)) {
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <li
+      draggable={!isEditing}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className="group flex items-center gap-2"
+      title={isEditing ? undefined : "드래그하여 다른 날로 이동"}
+    >
+      <div className="flex-1">
+        {isEditing ? (
+          <div className={cn("rounded-xl border p-4", cat ? cat.colorClass : "border-indigo-200 bg-indigo-50/90")}>
+            <input
+              autoFocus
+              className="w-full bg-transparent text-sm font-semibold outline-none ring-2 ring-indigo-400 ring-offset-2"
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onBlur={onSave}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onSave();
+                if (e.key === "Escape") {
+                  setEditText(project.name);
+                  setIsEditing(false);
+                }
+              }}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => openProject(project.id)}
+            className={cn(
+              "w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold leading-snug transition focus-visible:outline-none focus-visible:ring-2",
+              cat
+                ? `${cat.colorClass} border-transparent hover:opacity-90 focus-visible:ring-zinc-400`
+                : "border-indigo-200 bg-indigo-50/90 text-indigo-950 hover:bg-indigo-100/90 focus-visible:ring-indigo-400",
+            )}
+          >
+            {project.name}
+            <span className="mt-1 block text-[11px] font-medium opacity-70">워크스페이스로 이동</span>
+          </button>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        {!isEditing && (
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            title="수정"
+            className={cn(actionIconButtonClass, "text-zinc-400 hover:text-zinc-600")}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+        )}
+        <CategorySelect
+          categories={categories}
+          currentId={project.categoryId}
+          onSelect={(catId) => {
+            updateDashboardWorkflowCategory(project.id, catId);
+          }}
+        />
+      </div>
     </li>
   );
 }
