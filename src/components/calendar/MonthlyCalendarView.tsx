@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
 import { formatKoreanShortDateWithWeekday, getTodayIsoLocal } from "@/lib/today-project-filter";
+import { shouldCommitTagOnEnter } from "@/lib/tag-input-keydown";
 import {
   addPlannedTodoForDate,
   getCompletedTodosGroupedByDate,
@@ -449,10 +450,9 @@ export function MonthlyCalendarView() {
                     value={planDraft}
                     onChange={(e) => setPlanDraft(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addPlanned();
-                      }
+                      if (!shouldCommitTagOnEnter(e)) return;
+                      e.preventDefault();
+                      addPlanned();
                     }}
                     placeholder="할 일을 입력하세요"
                     className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"

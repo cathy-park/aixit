@@ -254,7 +254,7 @@ export function HomeTodayDashboard() {
                       onChange={(e) => setGreetDraft(e.target.value)}
                       onBlur={commitGreet}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                        if (shouldCommitTagOnEnter(e)) {
                           e.preventDefault();
                           commitGreet();
                         }

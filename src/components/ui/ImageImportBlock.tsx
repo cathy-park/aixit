@@ -3,10 +3,43 @@
 import { useCallback, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
 
+async function resizeImage(dataUrl: string, maxWidth = 800, maxHeight = 800): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.8)); // 80% 화질의 JPEG로 압축
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
+    r.onload = async () => {
+      const result = r.result as string;
+      // 이미지가 너무 크면 리사이징 처리
+      if (result.length > 500 * 1024) { // 500KB 이상일 때
+        resolve(await resizeImage(result));
+      } else {
+        resolve(result);
+      }
+    };
     r.onerror = () => reject(new Error("read failed"));
     r.readAsDataURL(file);
   });
