@@ -301,14 +301,16 @@ export function MonthlyCalendarView() {
             className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-zinc-500"
             aria-label="일정 색 범례"
           >
-            <li className="flex items-center gap-1">
-              <span className="h-2 w-2 shrink-0 rounded-sm bg-emerald-400" aria-hidden />
-              완료
-            </li>
-            <li className="flex items-center gap-1">
-              <span className="h-2 w-2 shrink-0 rounded-sm bg-sky-400" aria-hidden />
-              예정
-            </li>
+            {categories.map((c) => {
+              const dotMatch = c.colorClass.match(/bg-(\w+)-/);
+              const dotColor = dotMatch ? `bg-${dotMatch[1]}-400` : "bg-zinc-400";
+              return (
+                <li key={c.id} className="flex items-center gap-1">
+                  <span className={cn("h-2 w-2 shrink-0 rounded-sm", dotColor)} aria-hidden />
+                  {c.name}
+                </li>
+              );
+            })}
             <li className="flex items-center gap-1">
               <span className="h-2 w-2 shrink-0 rounded-sm bg-indigo-400" aria-hidden />
               프로젝트
