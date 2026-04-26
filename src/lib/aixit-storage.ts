@@ -12,7 +12,6 @@ export type AixitStorageSnapshot = {
 export const AIXIT_LOCAL_STORAGE_KEYS = [
   "aixit.userWorkflowTemplates.v1",
   "aixit.dashboardWorkflows.v1",
-  "aixit.inspirationSites.v1",
   "aixit.pinnedInspirationIds.v1",
   "aixit.pinnedToolIds.v1",
   "aixit.todayTodos.v1",
@@ -92,7 +91,6 @@ export function isAixitCoreDataEmpty(): boolean {
   const CORE_KEYS = [
     "aixit.dashboardWorkflows.v1",
     "aixit.userWorkflowTemplates.v1",
-    "aixit.inspirationSites.v1",
     "aixit.todayTodos.v1",
     "aixit.dashboardLayout.v1",
   ] as const;

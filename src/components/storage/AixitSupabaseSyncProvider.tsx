@@ -103,7 +103,12 @@ export function AixitSupabaseSyncProvider() {
     // setItem
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ls as any).setItem = (key: string, value: string) => {
-      originalSetItem(key, value);
+      try {
+        originalSetItem(key, value);
+      } catch (e) {
+        // 용량 초과 등의 에러 발생 시 무시하고 다음 로직(원격 저장 시도 등)을 진행할 수 있게 합니다.
+        console.warn(`LocalStorage setItem failed for key "${key}":`, e);
+      }
       if (remoteApplyingRef.current) return;
       if (!keysSet.has(key)) return;
       queueRef.current.set(key, value);
@@ -133,7 +138,6 @@ function isRemoteCoreEmpty(remoteMap: Record<string, string>) {
   const CORE_KEYS = [
     "aixit.dashboardWorkflows.v1",
     "aixit.userWorkflowTemplates.v1",
-    "aixit.inspirationSites.v1",
     "aixit.todayTodos.v1",
     "aixit.dashboardLayout.v1",
   ] as const;

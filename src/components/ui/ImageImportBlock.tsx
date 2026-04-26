@@ -3,6 +3,8 @@
 import { useCallback, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
 
+import { shouldCommitTagOnEnter } from "@/lib/tag-input-keydown";
+
 async function resizeImage(dataUrl: string, maxWidth = 800, maxHeight = 800): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -147,10 +149,9 @@ export function ImageImportBlock({
                   value={urlDraft}
                   onChange={(e) => setUrlDraft(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      applyUrl();
-                    }
+                    if (!shouldCommitTagOnEnter(e)) return;
+                    e.preventDefault();
+                    applyUrl();
                   }}
                   placeholder="https://…"
                   className="mt-1 w-full rounded-xl border-0 bg-white px-3 py-2.5 text-sm font-medium text-zinc-900 outline-none ring-1 ring-zinc-200 focus:ring-2 focus:ring-blue-500/30"
