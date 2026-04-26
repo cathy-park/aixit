@@ -515,10 +515,21 @@ export function MonthlyCalendarView() {
                           draggable
                           onDragStart={(e) => onCalItemDragStart(e, "todo", t.id)}
                           onDragEnd={onCalItemDragEnd}
-                          className="cursor-grab rounded-xl border border-emerald-100 bg-emerald-50/80 px-4 py-3 text-sm font-medium leading-snug text-emerald-950 active:cursor-grabbing"
+                          className="flex cursor-grab items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/80 px-4 py-3 active:cursor-grabbing"
                           title="드래그하여 다른 날로 이동"
                         >
-                          {t.text}
+                          <span className="flex-1 text-sm font-medium leading-snug text-emerald-950">
+                            {t.text}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeTodayTodoById(t.id)}
+                            title="삭제"
+                            aria-label="완료한 할 일 삭제"
+                            className={actionIconButtonClass}
+                          >
+                            <IconTrash />
+                          </button>
                         </li>
                       ))}
                     </ul>
