@@ -7,6 +7,7 @@
 import type { DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
 import { formatKoreanShortDateWithWeekday, getTodayIsoLocal } from "@/lib/today-project-filter";
@@ -652,13 +653,29 @@ function CategorySelect({
   onSelect: (id?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const current = categories.find((c) => c.id === currentId);
+
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+    setOpen(!open);
+  };
 
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggle}
         className={cn(
           "h-6 min-w-[3rem] rounded px-1.5 text-[10px] font-bold ring-1 ring-inset transition",
           current
@@ -668,32 +685,26 @@ function CategorySelect({
       >
         {current?.name || "분류 없음"}
       </button>
-      {open && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 z-[210] cursor-default"
-            onClick={() => setOpen(false)}
-          />
-          <ul className="absolute right-0 top-full z-[220] mt-1 w-32 overflow-hidden rounded-xl bg-white p-1 shadow-xl ring-1 ring-zinc-200">
-            <li>
-              <button
-                type="button"
-                onClick={() => {
-                  onSelect(undefined);
-                  setOpen(false);
-                }}
-                className="w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-medium text-zinc-500 hover:bg-zinc-50"
-              >
-                분류 없음
-              </button>
-            </li>
-            {categories.map((c) => (
-              <li key={c.id}>
+      {open &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-[1000] cursor-default bg-transparent"
+              onClick={() => setOpen(false)}
+            />
+            <ul
+              className="fixed z-[1001] mt-1 w-36 overflow-hidden rounded-xl bg-white p-1 shadow-2xl ring-1 ring-zinc-200"
+              style={{
+                top: coords.top,
+                left: Math.max(10, coords.left + coords.width - 144), // right align to button
+              }}
+            >
+              <li>
                 <button
                   type="button"
                   onClick={() => {
-                    onSelect(c.id);
+                    onSelect(undefined);
                     setOpen(false);
                   }}
                   className={cn(
@@ -720,8 +731,26 @@ function CategorySettingsModal({
   categories: TodoCategory[];
   onClose: () => void;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftColor, setDraftColor] = useState(CATEGORY_COLOR_OPTIONS[0]);
+
+  const onSave = () => {
+    if (!draftName.trim()) return;
+    if (editingId) {
+      updateTodoCategory(editingId, draftName.trim(), draftColor);
+    } else {
+      addTodoCategory(draftName.trim(), draftColor);
+    }
+    setDraftName("");
+    setEditingId(null);
+  };
+
+  const startEdit = (c: TodoCategory) => {
+    setEditingId(c.id);
+    setDraftName(c.name);
+    setDraftColor(c.colorClass);
+  };
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -742,25 +771,42 @@ function CategorySettingsModal({
         <div className="p-5">
           <div className="space-y-4">
             <div className="space-y-2">
-              <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">추가하기</div>
+              <div className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                {editingId ? "수정하기" : "추가하기"}
+              </div>
               <div className="flex gap-2">
                 <input
+                  autoFocus
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (shouldCommitTagOnEnter(e)) {
+                      e.preventDefault();
+                      onSave();
+                    }
+                  }}
                   placeholder="카테고리 이름"
                   className="flex-1 rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-100"
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!draftName.trim()) return;
-                    addTodoCategory(draftName.trim(), draftColor);
-                    setDraftName("");
-                  }}
+                  onClick={onSave}
                   className="rounded-xl bg-sky-700 px-4 py-2 text-sm font-bold text-white hover:bg-sky-800"
                 >
-                  추가
+                  {editingId ? "저장" : "추가"}
                 </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingId(null);
+                      setDraftName("");
+                    }}
+                    className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-bold text-zinc-600 hover:bg-zinc-200"
+                  >
+                    취소
+                  </button>
+                )}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {CATEGORY_COLOR_OPTIONS.map((c) => (
@@ -786,13 +832,22 @@ function CategorySettingsModal({
                     <div className={cn("rounded-lg px-2 py-1 text-xs font-bold ring-1 ring-inset", c.colorClass)}>
                       {c.name}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => deleteTodoCategory(c.id)}
-                      className="text-xs font-semibold text-rose-600 hover:underline"
-                    >
-                      삭제
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(c)}
+                        className="text-xs font-semibold text-zinc-500 hover:underline"
+                      >
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteTodoCategory(c.id)}
+                        className="text-xs font-semibold text-rose-600 hover:underline"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
