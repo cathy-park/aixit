@@ -34,6 +34,7 @@ import {
 import {
   getCompletedProjectsGroupedByDate,
   reassignCompletedProjectCalendarDate,
+  updateDashboardWorkflowCategory,
   type CalendarCompletedProject,
 } from "@/lib/workflows-store";
 
@@ -139,7 +140,12 @@ function cellPreviewLines(
       label: t.text,
       colorClass: getCatColor(t.categoryId),
     })),
-    ...projects.map((p) => ({ kind: "project" as const, id: p.id, label: p.name })),
+    ...projects.map((p) => ({
+      kind: "project" as const,
+      id: p.id,
+      label: p.name,
+      colorClass: getCatColor(p.categoryId),
+    })),
   ].slice(0, max);
   return { lines, total: planned.length + todos.length + projects.length };
 }
@@ -303,7 +309,18 @@ export function MonthlyCalendarView() {
           >
             {categories.map((c) => {
               const dotMatch = c.colorClass.match(/bg-(\w+)-/);
-              const dotColor = dotMatch ? `bg-${dotMatch[1]}-400` : "bg-zinc-400";
+              const colorName = dotMatch ? dotMatch[1] : "zinc";
+              // Use explicit classes to ensure Tailwind includes them
+              const dotColor = {
+                emerald: "bg-emerald-400",
+                sky: "bg-sky-400",
+                amber: "bg-amber-400",
+                indigo: "bg-indigo-400",
+                rose: "bg-rose-400",
+                violet: "bg-violet-400",
+                zinc: "bg-zinc-400",
+              }[colorName] || "bg-zinc-400";
+
               return (
                 <li key={c.id} className="flex items-center gap-1">
                   <span className={cn("h-2 w-2 shrink-0 rounded-sm", dotColor)} aria-hidden />
@@ -313,7 +330,7 @@ export function MonthlyCalendarView() {
             })}
             <li className="flex items-center gap-1">
               <span className="h-2 w-2 shrink-0 rounded-sm bg-indigo-400" aria-hidden />
-              프로젝트
+              기타(프로젝트)
             </li>
           </ul>
           <div className="flex flex-wrap items-center gap-2">
@@ -607,25 +624,42 @@ export function MonthlyCalendarView() {
                       프로젝트
                     </h3>
                     <ul className="mt-2 space-y-2">
-                      {popupProjects.map((p) => (
-                        <li
-                          key={p.id}
-                          draggable
-                          onDragStart={(e) => onCalItemDragStart(e, "project", p.id)}
-                          onDragEnd={onCalItemDragEnd}
-                          className="cursor-grab active:cursor-grabbing"
-                          title="드래그하여 다른 날로 이동"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => openProject(p.id)}
-                            className="w-full rounded-xl border border-indigo-200 bg-indigo-50/90 px-4 py-3 text-left text-sm font-semibold leading-snug text-indigo-950 transition hover:bg-indigo-100/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                      {popupProjects.map((p) => {
+                        const cat = p.categoryId ? categories.find((c) => c.id === p.categoryId) : undefined;
+                        return (
+                          <li
+                            key={p.id}
+                            draggable
+                            onDragStart={(e) => onCalItemDragStart(e, "project", p.id)}
+                            onDragEnd={onCalItemDragEnd}
+                            className="group flex items-center gap-2"
+                            title="드래그하여 다른 날로 이동"
                           >
-                            {p.name}
-                            <span className="mt-1 block text-[11px] font-medium text-indigo-600/90">워크스페이스로 이동</span>
-                          </button>
-                        </li>
-                      ))}
+                            <div className="flex-1">
+                              <button
+                                type="button"
+                                onClick={() => openProject(p.id)}
+                                className={cn(
+                                  "w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold leading-snug transition focus-visible:outline-none focus-visible:ring-2",
+                                  cat
+                                    ? `${cat.colorClass} border-transparent hover:opacity-90 focus-visible:ring-zinc-400`
+                                    : "border-indigo-200 bg-indigo-50/90 text-indigo-950 hover:bg-indigo-100/90 focus-visible:ring-indigo-400",
+                                )}
+                              >
+                                {p.name}
+                                <span className="mt-1 block text-[11px] font-medium opacity-70">워크스페이스로 이동</span>
+                              </button>
+                            </div>
+                            <CategorySelect
+                              categories={categories}
+                              currentId={p.categoryId}
+                              onSelect={(catId) => {
+                                updateDashboardWorkflowCategory(p.id, catId);
+                              }}
+                            />
+                          </li>
+                        );
+                      })}
                     </ul>
                   </section>
                 ) : null}

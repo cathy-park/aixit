@@ -18,6 +18,8 @@ export type DashboardWorkflow = WorkspaceWorkflow & {
   updatedAt: number;
   /** 대시보드 폴더 (드래그로 변경 가능) */
   folderId?: string;
+  /** 할 일 카테고리 (일정 관리를 위해 공유) */
+  categoryId?: string;
 };
 
 function makeSeedId() {
@@ -170,6 +172,7 @@ export function normalizeDashboardWorkflow(wf: DashboardWorkflow): DashboardWork
     templateId: typeof wf.templateId === "string" ? wf.templateId : undefined,
     origin: typeof wf.origin === "string" && wf.origin.trim() ? wf.origin.trim() : undefined,
     originIdeaId: typeof wf.originIdeaId === "string" && wf.originIdeaId.trim() ? wf.originIdeaId.trim() : undefined,
+    categoryId: typeof wf.categoryId === "string" ? wf.categoryId : undefined,
   };
 }
 
@@ -184,6 +187,7 @@ function isoDateFromTimestamp(ts: number): string {
 export type CalendarCompletedProject = {
   id: string;
   name: string;
+  categoryId?: string;
 };
 
 /** 완료 상태 프로젝트를 완료일(로컬) 기준으로 묶음. `completedAt` 없으면 `updatedAt` 날짜로 보정 */
@@ -196,7 +200,7 @@ export function getCompletedProjectsGroupedByDate(): Record<string, CalendarComp
     const iso = w.completedAt ?? isoDateFromTimestamp(w.updatedAt);
     if (!map[iso]) map[iso] = [];
     const name = (w.name || "프로젝트").replace(/\s*workflow\s*$/i, "").trim() || w.name || "프로젝트";
-    map[iso].push({ id: w.id, name });
+    map[iso].push({ id: w.id, name, categoryId: w.categoryId });
   }
   return map;
 }
@@ -210,6 +214,15 @@ export function reassignCompletedProjectCalendarDate(workflowId: string, newDate
   const w = getDashboardWorkflow(workflowId);
   if (!w || w.status !== "완료") return false;
   saveDashboardWorkflow({ ...w, completedAt: newDateIso });
+  return true;
+}
+
+/** 캘린더에서 프로젝트 카테고리 지정 */
+export function updateDashboardWorkflowCategory(workflowId: string, categoryId?: string): boolean {
+  if (typeof window === "undefined") return false;
+  const w = getDashboardWorkflow(workflowId);
+  if (!w) return false;
+  saveDashboardWorkflow({ ...w, categoryId });
   return true;
 }
 
