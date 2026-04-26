@@ -21,6 +21,8 @@ export type TodayTodo = {
    * 목록에서는 `today === dailySheetDate`로만 보여 필터링됩니다.
    */
   dailySheetDate?: string;
+  /** 캘린더에서 지정한 카테고리 ID */
+  categoryId?: string;
 };
 
 function safeParse<T>(raw: string | null): T | null {
@@ -57,6 +59,7 @@ function normalizeTodo(raw: unknown): TodayTodo | null {
     ...(weekStartIso ? { weekStartIso } : {}),
     ...(scheduledDate ? { scheduledDate } : {}),
     ...(dailySheetDate ? { dailySheetDate } : {}),
+    ...(typeof t.categoryId === "string" ? { categoryId: t.categoryId } : {}),
   };
 }
 
@@ -275,6 +278,14 @@ export function setTodayTodoDone(id: string, done: boolean) {
     return done
       ? { ...t, done: true, completedAt: getTodayIsoLocal() }
       : { ...t, done: false, completedAt: undefined };
+  });
+  saveTodayTodos(all);
+}
+
+export function setTodoCategory(id: string, categoryId: string | undefined) {
+  const all = loadTodayTodos().map((t) => {
+    if (t.id !== id) return t;
+    return { ...t, categoryId };
   });
   saveTodayTodos(all);
 }

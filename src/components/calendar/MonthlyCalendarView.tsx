@@ -18,8 +18,18 @@ import {
   reassignTodayTodoCalendarDate,
   removeTodayTodoById,
   setTodayTodoDone,
+  setTodoCategory,
   type TodayTodo,
 } from "@/lib/today-todos-store";
+import {
+  loadTodoCategories,
+  saveTodoCategories,
+  addTodoCategory,
+  updateTodoCategory,
+  deleteTodoCategory,
+  CATEGORY_COLOR_OPTIONS,
+  type TodoCategory,
+} from "@/lib/todo-categories-store";
 import {
   getCompletedProjectsGroupedByDate,
   reassignCompletedProjectCalendarDate,
@@ -97,23 +107,37 @@ function monthTitle(year: number, monthIndex: number) {
 }
 
 type CalCellLine =
-  | { kind: "planned"; id: string; label: string }
-  | { kind: "todo"; id: string; label: string }
-  | { kind: "project"; id: string; label: string };
+  | { kind: "planned"; id: string; label: string; colorClass?: string }
+  | { kind: "todo"; id: string; label: string; colorClass?: string }
+  | { kind: "project"; id: string; label: string; colorClass?: string };
 
 function cellPreviewLines(
   iso: string,
   plannedByDate: Record<string, TodayTodo[]>,
   todosByDate: Record<string, TodayTodo[]>,
   projectsByDate: Record<string, CalendarCompletedProject[]>,
+  categories: TodoCategory[],
   max = 3,
 ): { lines: CalCellLine[]; total: number } {
   const planned = plannedByDate[iso] ?? [];
   const todos = todosByDate[iso] ?? [];
   const projects = projectsByDate[iso] ?? [];
+
+  const getCatColor = (catId?: string) => categories.find((c) => c.id === catId)?.colorClass;
+
   const lines: CalCellLine[] = [
-    ...planned.map((t) => ({ kind: "planned" as const, id: t.id, label: t.text })),
-    ...todos.map((t) => ({ kind: "todo" as const, id: t.id, label: t.text })),
+    ...planned.map((t) => ({
+      kind: "planned" as const,
+      id: t.id,
+      label: t.text,
+      colorClass: getCatColor(t.categoryId),
+    })),
+    ...todos.map((t) => ({
+      kind: "todo" as const,
+      id: t.id,
+      label: t.text,
+      colorClass: getCatColor(t.categoryId),
+    })),
     ...projects.map((p) => ({ kind: "project" as const, id: p.id, label: p.name })),
   ].slice(0, max);
   return { lines, total: planned.length + todos.length + projects.length };
@@ -129,6 +153,16 @@ export function MonthlyCalendarView() {
   const [planDraft, setPlanDraft] = useState("");
   const [calDropTargetIso, setCalDropTargetIso] = useState<string | null>(null);
   const calItemDraggingRef = useRef(false);
+
+  const [categories, setCategories] = useState<TodoCategory[]>([]);
+  const [isCatSettingsOpen, setIsCatSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    setCategories(loadTodoCategories());
+    const onCatsUpdated = () => setCategories(loadTodoCategories());
+    window.addEventListener("aixit-todo-categories-updated", onCatsUpdated);
+    return () => window.removeEventListener("aixit-todo-categories-updated", onCatsUpdated);
+  }, []);
 
   useEffect(() => {
     const bump = () => setRefreshKey((k) => k + 1);
@@ -282,6 +316,13 @@ export function MonthlyCalendarView() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={() => setIsCatSettingsOpen(true)}
+              className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-200"
+            >
+              카테고리 관리
+            </button>
+            <button
+              type="button"
               onClick={goThisMonth}
               className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-200"
             >
@@ -328,7 +369,7 @@ export function MonthlyCalendarView() {
           const inCurrentMonth = cell.getMonth() === monthIndex && cell.getFullYear() === year;
           const isToday = iso === todayIso;
           const weekendDow = cell.getDay();
-          const { lines, total } = cellPreviewLines(iso, plannedByDate, todosByDate, projectsByDate);
+          const { lines, total } = cellPreviewLines(iso, plannedByDate, todosByDate, projectsByDate, categories);
 
           return (
             <div
@@ -382,11 +423,13 @@ export function MonthlyCalendarView() {
                       onDragEnd={onCalItemDragEnd}
                       className={cn(
                         "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 sm:text-[11px]",
-                        line.kind === "planned"
-                          ? "bg-sky-50 text-sky-950 ring-sky-100"
-                          : line.kind === "todo"
-                            ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
-                            : "bg-indigo-50 text-indigo-900 ring-indigo-100",
+                        line.colorClass
+                          ? `${line.colorClass} ring-opacity-30`
+                          : line.kind === "planned"
+                            ? "bg-sky-50 text-sky-950 ring-sky-100"
+                            : line.kind === "todo"
+                              ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
+                              : "bg-indigo-50 text-indigo-900 ring-indigo-100",
                         "cursor-grab active:cursor-grabbing",
                       )}
                       title={`${line.label} — 드래그하여 다른 날로 이동`}
@@ -475,7 +518,12 @@ export function MonthlyCalendarView() {
                         draggable
                         onDragStart={(e) => onCalItemDragStart(e, "planned", t.id)}
                         onDragEnd={onCalItemDragEnd}
-                        className="flex cursor-grab items-center gap-2 rounded-xl border border-sky-100 bg-sky-50/90 px-3 py-2.5 active:cursor-grabbing"
+                        className={cn(
+                          "flex cursor-grab items-center gap-2 rounded-xl border px-3 py-2.5 active:cursor-grabbing",
+                          t.categoryId && categories.find(c => c.id === t.categoryId)
+                            ? categories.find(c => c.id === t.categoryId)?.colorClass
+                            : "border-sky-100 bg-sky-50/90"
+                        )}
                         title="드래그하여 다른 날로 이동"
                       >
                         <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
@@ -487,6 +535,11 @@ export function MonthlyCalendarView() {
                           />
                           <span className="text-sm font-medium leading-snug text-sky-950">{t.text}</span>
                         </label>
+                        <CategorySelect
+                          categories={categories}
+                          currentId={t.categoryId}
+                          onSelect={(catId) => setTodoCategory(t.id, catId)}
+                        />
                         <button
                           type="button"
                           onClick={() => removeTodayTodoById(t.id)}
@@ -515,12 +568,22 @@ export function MonthlyCalendarView() {
                           draggable
                           onDragStart={(e) => onCalItemDragStart(e, "todo", t.id)}
                           onDragEnd={onCalItemDragEnd}
-                          className="flex cursor-grab items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/80 px-4 py-3 active:cursor-grabbing"
+                          className={cn(
+                            "flex cursor-grab items-center gap-2 rounded-xl border px-4 py-3 active:cursor-grabbing",
+                            t.categoryId && categories.find(c => c.id === t.categoryId)
+                              ? categories.find(c => c.id === t.categoryId)?.colorClass
+                              : "border-emerald-100 bg-emerald-50/80"
+                          )}
                           title="드래그하여 다른 날로 이동"
                         >
                           <span className="flex-1 text-sm font-medium leading-snug text-emerald-950">
                             {t.text}
                           </span>
+                          <CategorySelect
+                            categories={categories}
+                            currentId={t.categoryId}
+                            onSelect={(catId) => setTodoCategory(t.id, catId)}
+                          />
                           <button
                             type="button"
                             onClick={() => removeTodayTodoById(t.id)}
@@ -568,6 +631,175 @@ export function MonthlyCalendarView() {
           </div>
         </div>
       ) : null}
+
+      {isCatSettingsOpen && (
+        <CategorySettingsModal
+          categories={categories}
+          onClose={() => setIsCatSettingsOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CategorySelect({
+  categories,
+  currentId,
+  onSelect,
+}: {
+  categories: TodoCategory[];
+  currentId?: string;
+  onSelect: (id?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = categories.find((c) => c.id === currentId);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "h-6 min-w-[3rem] rounded px-1.5 text-[10px] font-bold ring-1 ring-inset transition",
+          current
+            ? `${current.colorClass} ring-opacity-20`
+            : "bg-zinc-100 text-zinc-500 ring-zinc-200 hover:bg-zinc-200",
+        )}
+      >
+        {current?.name || "분류 없음"}
+      </button>
+      {open && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-[210] cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <ul className="absolute right-0 top-full z-[220] mt-1 w-32 overflow-hidden rounded-xl bg-white p-1 shadow-xl ring-1 ring-zinc-200">
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelect(undefined);
+                  setOpen(false);
+                }}
+                className="w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-medium text-zinc-500 hover:bg-zinc-50"
+              >
+                분류 없음
+              </button>
+            </li>
+            {categories.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelect(c.id);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-bold transition",
+                    c.colorClass,
+                    "ring-1 ring-inset ring-transparent hover:ring-zinc-200",
+                  )}
+                >
+                  {c.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CategorySettingsModal({
+  categories,
+  onClose,
+}: {
+  categories: TodoCategory[];
+  onClose: () => void;
+}) {
+  const [draftName, setDraftName] = useState("");
+  const [draftColor, setDraftColor] = useState(CATEGORY_COLOR_OPTIONS[0]);
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <button type="button" className="absolute inset-0 cursor-default" onClick={onClose} />
+      <div className="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-zinc-200">
+        <div className="border-b border-zinc-100 px-5 py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-zinc-950">카테고리 관리</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full bg-zinc-50 p-2 text-zinc-500 hover:bg-zinc-100"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div className="p-5">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">추가하기</div>
+              <div className="flex gap-2">
+                <input
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  placeholder="카테고리 이름"
+                  className="flex-1 rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!draftName.trim()) return;
+                    addTodoCategory(draftName.trim(), draftColor);
+                    setDraftName("");
+                  }}
+                  className="rounded-xl bg-sky-700 px-4 py-2 text-sm font-bold text-white hover:bg-sky-800"
+                >
+                  추가
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {CATEGORY_COLOR_OPTIONS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setDraftColor(c)}
+                    className={cn(
+                      "h-6 w-6 rounded-full ring-2 ring-offset-1 transition",
+                      c.split(" ")[0], // get bg color class
+                      draftColor === c ? "ring-sky-500" : "ring-transparent",
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">목록</div>
+              <ul className="space-y-2">
+                {categories.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-3">
+                    <div className={cn("rounded-lg px-2 py-1 text-xs font-bold ring-1 ring-inset", c.colorClass)}>
+                      {c.name}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => deleteTodoCategory(c.id)}
+                      className="text-xs font-semibold text-rose-600 hover:underline"
+                    >
+                      삭제
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
