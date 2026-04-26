@@ -300,17 +300,59 @@ export function MonthlyCalendarView() {
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 pb-3">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-950">{monthTitle(year, monthIndex)}</h2>
-        <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center rounded-xl bg-zinc-50 p-1 ring-1 ring-zinc-200/60">
+            <button
+              type="button"
+              onClick={goPrev}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-white hover:text-zinc-950 hover:shadow-sm"
+              aria-label="이전 달"
+            >
+              ‹
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById("cal-month-picker") as HTMLInputElement;
+                  if (input) input.showPicker();
+                }}
+                className="px-3 py-1 text-base font-bold tracking-tight text-zinc-950 transition hover:opacity-70 sm:text-lg"
+              >
+                {monthTitle(year, monthIndex)}
+              </button>
+              <input
+                id="cal-month-picker"
+                type="month"
+                className="pointer-events-none absolute inset-0 opacity-0"
+                value={`${year}-${String(monthIndex + 1).padStart(2, "0")}`}
+                onChange={(e) => {
+                  const [y, m] = e.target.value.split("-").map(Number);
+                  setYear(y);
+                  setMonthIndex(m - 1);
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={goNext}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-white hover:text-zinc-950 hover:shadow-sm"
+              aria-label="다음 달"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-wrap items-center justify-end gap-x-6 gap-y-3">
           <ul
-            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium text-zinc-500"
+            className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-semibold text-zinc-500"
             aria-label="일정 색 범례"
           >
             {categories.map((c) => {
               const dotMatch = c.colorClass.match(/bg-(\w+)-/);
               const colorName = dotMatch ? dotMatch[1] : "zinc";
-              // Use explicit classes to ensure Tailwind includes them
               const dotColor = {
                 emerald: "bg-emerald-400",
                 sky: "bg-sky-400",
@@ -322,50 +364,31 @@ export function MonthlyCalendarView() {
               }[colorName] || "bg-zinc-400";
 
               return (
-                <li key={c.id} className="flex items-center gap-1">
-                  <span className={cn("h-2 w-2 shrink-0 rounded-sm", dotColor)} aria-hidden />
+                <li key={c.id} className="flex items-center gap-1.5">
+                  <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", dotColor)} aria-hidden />
                   {c.name}
                 </li>
               );
             })}
-            <li className="flex items-center gap-1">
-              <span className="h-2 w-2 shrink-0 rounded-sm bg-indigo-400" aria-hidden />
-              기타(프로젝트)
+            <li className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-indigo-400" aria-hidden />
             </li>
           </ul>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setIsCatSettingsOpen(true)}
-              className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-200"
+              className="rounded-xl bg-sky-50 px-4 py-2 text-xs font-bold text-sky-700 transition hover:bg-sky-100"
             >
               카테고리 관리
             </button>
             <button
               type="button"
               onClick={goThisMonth}
-              className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-200"
+              className="rounded-xl bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-200"
             >
               이번 달
             </button>
-            <div className="flex items-center rounded-full ring-1 ring-zinc-200">
-              <button
-                type="button"
-                onClick={goPrev}
-                className="px-3 py-1.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
-                aria-label="이전 달"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                onClick={goNext}
-                className="px-3 py-1.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
-                aria-label="다음 달"
-              >
-                ›
-              </button>
-            </div>
           </div>
         </div>
       </div>
