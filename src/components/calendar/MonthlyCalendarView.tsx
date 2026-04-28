@@ -656,6 +656,7 @@ function CategorySelect({
       <button
         ref={buttonRef}
         type="button"
+        onClick={toggle}
         className={cn(
           "h-6 min-w-[3.5rem] rounded-md px-2 text-[10px] font-bold transition-colors border border-current/20",
           current
