@@ -484,14 +484,14 @@ export function MonthlyCalendarView() {
                       onDragStart={(e) => onCalItemDragStart(e, line.kind, line.id)}
                       onDragEnd={onCalItemDragEnd}
                       className={cn(
-                        "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 sm:text-[11px]",
+                        "truncate rounded-md border border-black/[0.06] px-1 py-0.5 text-[10px] font-medium leading-tight sm:text-[11px]",
                         line.colorClass
-                          ? `${line.colorClass} ring-opacity-30`
+                          ? line.colorClass.split(" ").filter((cls) => !cls.startsWith("ring")).join(" ")
                           : line.kind === "planned"
-                            ? "bg-sky-50 text-sky-950 ring-sky-100"
+                            ? "bg-sky-50 text-sky-950"
                             : line.kind === "todo"
-                              ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
-                              : "bg-indigo-50 text-indigo-900 ring-indigo-100",
+                              ? "bg-emerald-50 text-emerald-900"
+                              : "bg-indigo-50 text-indigo-900",
                         "cursor-grab active:cursor-grabbing",
                       )}
                       title={`${line.label} — 드래그하여 다른 날로 이동`}
@@ -721,9 +721,8 @@ function CategorySelect({
                       setOpen(false);
                     }}
                     className={cn(
-                      "w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-bold transition",
-                      c.colorClass,
-                      "ring-1 ring-inset ring-transparent hover:ring-zinc-200",
+                      "w-full rounded-lg border border-black/[0.06] px-2 py-1.5 text-left text-[11px] font-bold transition hover:border-zinc-200",
+                      c.colorClass.split(" ").filter((cls) => !cls.startsWith("ring")).join(" "),
                     )}
                   >
                     {c.name}
@@ -843,7 +842,7 @@ function CategorySettingsModal({
               <ul className="space-y-2">
                 {categories.map((c) => (
                   <li key={c.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-3">
-                    <div className={cn("rounded-lg px-2 py-1 text-xs font-bold ring-1 ring-inset", c.colorClass)}>
+                    <div className={cn("rounded-lg border border-black/[0.06] px-2 py-1 text-xs font-bold", c.colorClass.split(" ").filter((cls) => !cls.startsWith("ring")).join(" "))}>
                       {c.name}
                     </div>
                     <div className="flex items-center gap-3">
