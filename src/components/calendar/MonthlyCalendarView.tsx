@@ -305,25 +305,26 @@ export function MonthlyCalendarView() {
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 sm:p-6">
       {/* 헤더 영역 */}
       <div className="border-b border-zinc-100 pb-3">
-        {/* 첫째 줄: 달력 피커(좌) + 버튼들(우) — 모바일·PC 모두 한 줄 */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center rounded-xl bg-zinc-50 p-1 ring-1 ring-zinc-200/60">
+        {/* 첫째 줄: 달력 피커(좌) + 버튼들(우) — 항상 한 줄 */}
+        <div className="flex items-center gap-2">
+          {/* 달력 피커: 좌화살표 / 연월 텍스트 / 우화살표 */}
+          <div className="flex min-w-0 flex-1 items-center rounded-xl bg-zinc-50 p-1 ring-1 ring-zinc-200/60">
             <button
               type="button"
               onClick={goPrev}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-white hover:text-zinc-950 hover:shadow-sm"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-white hover:text-zinc-950 hover:shadow-sm"
               aria-label="이전 달"
             >
               ‹
             </button>
-            <div className="relative">
+            <div className="relative min-w-0 flex-1">
               <button
                 type="button"
                 onClick={() => {
                   const input = document.getElementById("cal-month-picker") as HTMLInputElement;
                   if (input) input.showPicker();
                 }}
-                className="px-3 py-1 text-base font-bold tracking-tight text-zinc-950 transition hover:opacity-70 sm:text-lg"
+                className="w-full whitespace-nowrap px-2 py-1 text-sm font-bold tracking-tight text-zinc-950 transition hover:opacity-70 sm:text-base"
               >
                 {monthTitle(year, monthIndex)}
               </button>
@@ -342,28 +343,27 @@ export function MonthlyCalendarView() {
             <button
               type="button"
               onClick={goNext}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-white hover:text-zinc-950 hover:shadow-sm"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-white hover:text-zinc-950 hover:shadow-sm"
               aria-label="다음 달"
             >
               ›
             </button>
           </div>
 
-          {/* 버튼 그룹 */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* 버튼 그룹: shrink-0으로 절대 줄바꿈 안 됨 */}
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
               onClick={() => setIsCatSettingsOpen(true)}
-              className="rounded-xl bg-sky-50 px-2.5 py-2 text-xs font-bold text-sky-700 transition hover:bg-sky-100 sm:px-4"
+              className="whitespace-nowrap rounded-xl bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 transition hover:bg-sky-100 sm:px-4"
             >
-              {/* 모바일: '카테고리', PC: '카테고리 관리' */}
               <span className="sm:hidden">카테고리</span>
               <span className="hidden sm:inline">카테고리 관리</span>
             </button>
             <button
               type="button"
               onClick={goThisMonth}
-              className="rounded-xl bg-zinc-100 px-2.5 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-200 sm:px-4"
+              className="whitespace-nowrap rounded-xl bg-zinc-100 px-3 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-200 sm:px-4"
             >
               이번 달
             </button>
@@ -380,20 +380,23 @@ export function MonthlyCalendarView() {
               const dotMatch = c.colorClass.match(/bg-(\w+)-/);
               const colorName = dotMatch ? dotMatch[1] : "zinc";
               const dotColorMap: Record<string, string> = {
-                emerald: "bg-emerald-400",
-                sky: "bg-sky-400",
+                red: "bg-red-500",
+                orange: "bg-orange-500",
                 amber: "bg-amber-400",
-                indigo: "bg-indigo-400",
-                rose: "bg-rose-400",
-                violet: "bg-violet-400",
-                pink: "bg-pink-400",
-                teal: "bg-teal-400",
-                orange: "bg-orange-400",
-                cyan: "bg-cyan-400",
-                lime: "bg-lime-400",
-                fuchsia: "bg-fuchsia-400",
                 yellow: "bg-yellow-400",
-                red: "bg-red-400",
+                lime: "bg-lime-500",
+                emerald: "bg-emerald-500",
+                teal: "bg-teal-500",
+                cyan: "bg-cyan-500",
+                sky: "bg-sky-500",
+                blue: "bg-blue-500",
+                indigo: "bg-indigo-500",
+                violet: "bg-violet-500",
+                purple: "bg-purple-500",
+                fuchsia: "bg-fuchsia-500",
+                pink: "bg-pink-500",
+                rose: "bg-rose-500",
+                stone: "bg-stone-500",
                 zinc: "bg-zinc-400",
               };
               const dot = dotColorMap[colorName] ?? "bg-zinc-400";
