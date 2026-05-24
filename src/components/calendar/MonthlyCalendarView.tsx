@@ -385,6 +385,7 @@ export function MonthlyCalendarView() {
                 amber: "bg-amber-400",
                 yellow: "bg-yellow-400",
                 lime: "bg-lime-500",
+                green: "bg-green-500",
                 emerald: "bg-emerald-500",
                 teal: "bg-teal-500",
                 cyan: "bg-cyan-500",
