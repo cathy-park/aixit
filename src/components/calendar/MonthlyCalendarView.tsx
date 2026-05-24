@@ -484,14 +484,14 @@ export function MonthlyCalendarView() {
                       onDragStart={(e) => onCalItemDragStart(e, line.kind, line.id)}
                       onDragEnd={onCalItemDragEnd}
                       className={cn(
-                        "truncate rounded-md border border-black/[0.06] px-1 py-0.5 text-[10px] font-medium leading-tight sm:text-[11px]",
+                        "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 ring-inset sm:text-[11px]",
                         line.colorClass
-                          ? line.colorClass.split(" ").filter((cls) => !cls.startsWith("ring")).join(" ")
+                          ? `${line.colorClass} ring-opacity-65`
                           : line.kind === "planned"
-                            ? "bg-sky-50 text-sky-950"
+                            ? "bg-sky-50 text-sky-950 ring-sky-100"
                             : line.kind === "todo"
-                              ? "bg-emerald-50 text-emerald-900"
-                              : "bg-indigo-50 text-indigo-900",
+                              ? "bg-emerald-50 text-emerald-900 ring-emerald-100"
+                              : "bg-indigo-50 text-indigo-900 ring-indigo-100",
                         "cursor-grab active:cursor-grabbing",
                       )}
                       title={`${line.label} — 드래그하여 다른 날로 이동`}
@@ -721,8 +721,8 @@ function CategorySelect({
                       setOpen(false);
                     }}
                     className={cn(
-                      "w-full rounded-lg border border-black/[0.06] px-2 py-1.5 text-left text-[11px] font-bold transition hover:border-zinc-200",
-                      c.colorClass.split(" ").filter((cls) => !cls.startsWith("ring")).join(" "),
+                      "w-full rounded-lg px-2 py-1.5 text-left text-[11px] font-bold transition ring-1 ring-inset hover:ring-zinc-200",
+                      c.colorClass,
                     )}
                   >
                     {c.name}
@@ -822,18 +822,25 @@ function CategorySettingsModal({
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {CATEGORY_COLOR_OPTIONS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setDraftColor(c)}
-                    className={cn(
-                      "h-6 w-6 rounded-full ring-2 ring-offset-1 transition",
-                      c.split(" ")[0], // get bg color class
-                      draftColor === c ? "ring-sky-500" : "ring-transparent",
-                    )}
-                  />
-                ))}
+                {CATEGORY_COLOR_OPTIONS.map((c) => {
+                  const parts = c.split(" ");
+                  const bgClass = parts[0];
+                  const ringClass = parts[2] || "ring-zinc-100";
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setDraftColor(c)}
+                      className={cn(
+                        "h-6 w-6 rounded-full transition ring-offset-1",
+                        bgClass,
+                        draftColor === c
+                          ? "ring-2 ring-sky-500 scale-110"
+                          : cn("ring-1 ring-inset", ringClass),
+                      )}
+                    />
+                  );
+                })}
               </div>
             </div>
 
@@ -842,7 +849,7 @@ function CategorySettingsModal({
               <ul className="space-y-2">
                 {categories.map((c) => (
                   <li key={c.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-3">
-                    <div className={cn("rounded-lg border border-black/[0.06] px-2 py-1 text-xs font-bold", c.colorClass.split(" ").filter((cls) => !cls.startsWith("ring")).join(" "))}>
+                    <div className={cn("rounded-lg px-2 py-1 text-xs font-bold ring-1 ring-inset", c.colorClass)}>
                       {c.name}
                     </div>
                     <div className="flex items-center gap-3">

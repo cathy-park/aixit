@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { APP_NAV_ITEMS } from "@/components/layout/app-nav-items";
+import { useNavVisibility } from "@/lib/use-nav-visibility";
 
 /** layout.tsx icons와 동일 (앱 아이콘 / 파비콘) */
 const APP_ICON_SRC = "/favicon-v2.png?v=8";
@@ -17,11 +18,19 @@ export const MOBILE_TOPBAR_HEIGHT_PX = 50;
 export function MobileTopNav({ topbarHeightPx = MOBILE_TOPBAR_HEIGHT_PX }: { topbarHeightPx?: number }) {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
+  const { isVisible } = useNavVisibility();
+
+  const visibleNavItems = useMemo(
+    () => APP_NAV_ITEMS.filter((item) => isVisible(item.id)),
+    [isVisible],
+  );
 
   const activeLabel = useMemo(() => {
+    for (const item of visibleNavItems) if (item.match(pathname)) return item.label;
+    // 숨겨진 아이템이라도 현재 경로면 레이블 표시
     for (const item of APP_NAV_ITEMS) if (item.match(pathname)) return item.label;
     return "AIXIT";
-  }, [pathname]);
+  }, [pathname, visibleNavItems]);
 
   useEffect(() => {
     if (!open) return;
@@ -112,7 +121,7 @@ export function MobileTopNav({ topbarHeightPx = MOBILE_TOPBAR_HEIGHT_PX }: { top
               </button>
             </div>
             <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-3" aria-label="주요 메뉴">
-              {APP_NAV_ITEMS.map((item) => {
+              {visibleNavItems.map((item) => {
                 const active = item.match(pathname);
                 const Icon = item.icon;
                 return (
