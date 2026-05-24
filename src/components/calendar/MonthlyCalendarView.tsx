@@ -303,8 +303,10 @@ export function MonthlyCalendarView() {
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 pb-4">
-        <div className="flex items-center gap-3">
+      {/* 헤더 영역 */}
+      <div className="border-b border-zinc-100 pb-3">
+        {/* 첫째 줄: 달력 피커(좌) + 버튼들(우) — 모바일·PC 모두 한 줄 */}
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center rounded-xl bg-zinc-50 p-1 ring-1 ring-zinc-200/60">
             <button
               type="button"
@@ -346,51 +348,65 @@ export function MonthlyCalendarView() {
               ›
             </button>
           </div>
+
+          {/* 버튼 그룹 */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setIsCatSettingsOpen(true)}
+              className="rounded-xl bg-sky-50 px-2.5 py-2 text-xs font-bold text-sky-700 transition hover:bg-sky-100 sm:px-4"
+            >
+              {/* 모바일: '카테고리', PC: '카테고리 관리' */}
+              <span className="sm:hidden">카테고리</span>
+              <span className="hidden sm:inline">카테고리 관리</span>
+            </button>
+            <button
+              type="button"
+              onClick={goThisMonth}
+              className="rounded-xl bg-zinc-100 px-2.5 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-200 sm:px-4"
+            >
+              이번 달
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-1 flex-wrap items-center justify-end gap-x-6 gap-y-3">
+        {/* 둘째 줄: 범례 (카테고리가 있을 때만 표시) */}
+        {categories.length > 0 && (
           <ul
-            className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-semibold text-zinc-500"
+            className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-semibold text-zinc-500"
             aria-label="일정 색 범례"
           >
             {categories.map((c) => {
               const dotMatch = c.colorClass.match(/bg-(\w+)-/);
               const colorName = dotMatch ? dotMatch[1] : "zinc";
-              const dotColor = {
+              const dotColorMap: Record<string, string> = {
                 emerald: "bg-emerald-400",
                 sky: "bg-sky-400",
                 amber: "bg-amber-400",
                 indigo: "bg-indigo-400",
                 rose: "bg-rose-400",
                 violet: "bg-violet-400",
+                pink: "bg-pink-400",
+                teal: "bg-teal-400",
+                orange: "bg-orange-400",
+                cyan: "bg-cyan-400",
+                lime: "bg-lime-400",
+                fuchsia: "bg-fuchsia-400",
+                yellow: "bg-yellow-400",
+                red: "bg-red-400",
                 zinc: "bg-zinc-400",
-              }[colorName] || "bg-zinc-400";
+              };
+              const dot = dotColorMap[colorName] ?? "bg-zinc-400";
 
               return (
                 <li key={c.id} className="flex items-center gap-1.5">
-                  <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", dotColor)} aria-hidden />
+                  <span className={cn("h-2 w-2 shrink-0 rounded-full", dot)} aria-hidden />
                   {c.name}
                 </li>
               );
             })}
           </ul>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsCatSettingsOpen(true)}
-              className="rounded-xl bg-sky-50 px-4 py-2 text-xs font-bold text-sky-700 transition hover:bg-sky-100"
-            >
-              카테고리 관리
-            </button>
-            <button
-              type="button"
-              onClick={goThisMonth}
-              className="rounded-xl bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-200"
-            >
-              이번 달
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="mt-3 grid grid-cols-7 gap-px overflow-hidden rounded-xl bg-zinc-200 ring-1 ring-zinc-200">

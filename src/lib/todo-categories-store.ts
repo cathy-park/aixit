@@ -55,11 +55,27 @@ export function deleteTodoCategory(id: string) {
 }
 
 export const CATEGORY_COLOR_OPTIONS = [
+  // 파스텔
   "bg-emerald-50 text-emerald-900 ring-emerald-100",
   "bg-sky-50 text-sky-900 ring-sky-100",
   "bg-indigo-50 text-indigo-900 ring-indigo-100",
   "bg-amber-50 text-amber-900 ring-amber-100",
   "bg-rose-50 text-rose-900 ring-rose-100",
   "bg-violet-50 text-violet-900 ring-violet-100",
+  "bg-pink-50 text-pink-900 ring-pink-100",
+  "bg-teal-50 text-teal-900 ring-teal-100",
+  "bg-orange-50 text-orange-900 ring-orange-100",
+  "bg-cyan-50 text-cyan-900 ring-cyan-100",
+  "bg-lime-50 text-lime-900 ring-lime-100",
+  "bg-fuchsia-50 text-fuchsia-900 ring-fuchsia-100",
+  "bg-yellow-50 text-yellow-900 ring-yellow-100",
+  "bg-red-50 text-red-900 ring-red-100",
+  // 비비드
+  "bg-emerald-100 text-emerald-800 ring-emerald-200",
+  "bg-sky-100 text-sky-800 ring-sky-200",
+  "bg-violet-100 text-violet-800 ring-violet-200",
+  "bg-rose-100 text-rose-800 ring-rose-200",
+  "bg-amber-100 text-amber-800 ring-amber-200",
+  // 무채색
   "bg-zinc-100 text-zinc-900 ring-zinc-200",
 ];
