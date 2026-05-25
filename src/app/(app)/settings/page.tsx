@@ -7,11 +7,64 @@ import { supabase, supabaseEnabled } from "@/lib/supabase/supabaseClient";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { APP_NAV_ITEMS } from "@/components/layout/app-nav-items";
 import { useNavVisibility } from "@/lib/use-nav-visibility";
+import { AIXIT_LOCAL_STORAGE_KEYS, dispatchAixitStorageUpdatedEvents } from "@/lib/aixit-storage";
+import { flushAixitKvQueue, fetchAixitKvMap } from "@/lib/supabase/aixitKv";
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
   const [status, setStatus] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const { isVisible, toggle } = useNavVisibility();
+
+  /** PC → Supabase: 현재 localStorage 전체를 Remote에 강제 업로드 */
+  async function forcePushToRemote() {
+    if (!supabaseEnabled || !user) {
+      setSyncStatus("❌ Supabase 연결이 필요합니다.");
+      return;
+    }
+    setSyncing(true);
+    setSyncStatus("⏳ 업로드 중...");
+    try {
+      const queue = new Map<string, string>();
+      for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
+        const v = window.localStorage.getItem(k);
+        if (v != null) queue.set(k, v);
+      }
+      await flushAixitKvQueue(queue);
+      setSyncStatus(`✅ ${queue.size}개 항목을 Supabase에 업로드했어요. 모바일에서 새로고침하세요.`);
+    } catch (e) {
+      setSyncStatus(`❌ 업로드 실패: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  /** Supabase → PC: Remote 데이터를 내려받아 localStorage에 적용 */
+  async function forcePullFromRemote() {
+    if (!supabaseEnabled || !user) {
+      setSyncStatus("❌ Supabase 연결이 필요합니다.");
+      return;
+    }
+    setSyncing(true);
+    setSyncStatus("⏳ 다운로드 중...");
+    try {
+      const remoteMap = await fetchAixitKvMap();
+      let applied = 0;
+      for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(remoteMap, k)) {
+          window.localStorage.setItem(k, remoteMap[k]);
+          applied++;
+        }
+      }
+      dispatchAixitStorageUpdatedEvents();
+      setSyncStatus(`✅ ${applied}개 항목을 내려받았어요. 화면이 갱신됩니다.`);
+    } catch (e) {
+      setSyncStatus(`❌ 다운로드 실패: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   return (
     <>
@@ -76,6 +129,37 @@ export default function SettingsPage() {
               <span className="font-mono">SUPABASE_SETUP.md</span>를 참고하세요.
             </div>
           </div>
+
+          {/* 데이터 동기화 섹션 */}
+          {supabaseEnabled && user && (
+            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200">
+              <div className="text-base font-semibold text-zinc-950">데이터 동기화</div>
+              <div className="mt-1 text-xs text-zinc-500">
+                PC ↔ 모바일 간 데이터가 맞지 않을 때 수동으로 동기화할 수 있어요.
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={syncing}
+                  onClick={forcePushToRemote}
+                  className="rounded-full bg-zinc-900 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-700 disabled:opacity-50"
+                >
+                  ↑ 이 기기 → Supabase 업로드
+                </button>
+                <button
+                  type="button"
+                  disabled={syncing}
+                  onClick={forcePullFromRemote}
+                  className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-zinc-800 ring-1 ring-zinc-200 hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  ↓ Supabase → 이 기기 다운로드
+                </button>
+              </div>
+              {syncStatus && (
+                <div className="mt-3 text-xs font-medium text-zinc-700">{syncStatus}</div>
+              )}
+            </div>
+          )}
 
           {/* 메뉴 표시 설정 섹션 */}
           <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200">

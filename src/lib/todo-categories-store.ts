@@ -18,10 +18,22 @@ const DEFAULT_CATEGORIES: TodoCategory[] = [
 export function loadTodoCategories(): TodoCategory[] {
   if (typeof window === "undefined") return DEFAULT_CATEGORIES;
   const raw = window.localStorage.getItem(KEY);
-  if (!raw) return DEFAULT_CATEGORIES;
+  if (!raw) {
+    // localStorage에 없으면 기본값을 저장해서 Supabase 동기화 대상으로 만듬
+    // (CustomEvent는 발사하지 않음 — 무한 루프 방지)
+    window.localStorage.setItem(KEY, JSON.stringify(DEFAULT_CATEGORIES));
+    return DEFAULT_CATEGORIES;
+  }
   try {
-    return JSON.parse(raw) as TodoCategory[];
+    const parsed = JSON.parse(raw) as TodoCategory[];
+    // 파싱된 값이 비어있는 배열이면 기본값으로 복원
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      window.localStorage.setItem(KEY, JSON.stringify(DEFAULT_CATEGORIES));
+      return DEFAULT_CATEGORIES;
+    }
+    return parsed;
   } catch {
+    window.localStorage.setItem(KEY, JSON.stringify(DEFAULT_CATEGORIES));
     return DEFAULT_CATEGORIES;
   }
 }
