@@ -45,17 +45,34 @@ export function AixitSupabaseSyncProvider() {
         }
       }
 
-      // 2) remote에 데이터가 있으면 -> remote 값을 local로 적용(캐시)
+      // 2) remote에 데이터가 있으면 → remote 값을 local로 적용(캐시)
+      //    단, remote에 없는 키는 local 값이 있을 경우 remote로 올림 (삭제하지 않음)
       const shouldApplyRemote = !remoteCoreEmpty;
       if (shouldApplyRemote) {
         remoteApplyingRef.current = true;
+        const localOnlyQueue = new Map<string, QueuedValue>();
         try {
           for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
-            if (Object.prototype.hasOwnProperty.call(remoteMap, k)) window.localStorage.setItem(k, remoteMap[k]);
-            else window.localStorage.removeItem(k);
+            if (Object.prototype.hasOwnProperty.call(remoteMap, k)) {
+              // remote 값을 local에 적용
+              window.localStorage.setItem(k, remoteMap[k]);
+            } else {
+              // remote에 해당 키가 없을 때:
+              // local에 값이 있으면 remote로 올리고, 없으면 그대로 둠 (삭제 안 함)
+              const localVal = window.localStorage.getItem(k);
+              if (localVal != null) localOnlyQueue.set(k, localVal);
+            }
           }
         } finally {
           remoteApplyingRef.current = false;
+        }
+
+        // remote에 없었던 local 데이터를 remote에 업로드 (백그라운드)
+        if (localOnlyQueue.size > 0) {
+          flushAixitKvQueue(localOnlyQueue).catch((e) => {
+            // eslint-disable-next-line no-console
+            console.warn("AixitSupabaseSyncProvider: local→remote upload failed:", e);
+          });
         }
       }
 
