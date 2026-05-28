@@ -16,7 +16,10 @@ export async function createKakaoCalendarEvent(
   event: KakaoCalendarEvent,
 ): Promise<string | null> {
   const accessToken = await getValidAccessToken();
-  if (!accessToken) return null;
+  if (!accessToken) {
+    if (typeof window !== "undefined") alert("카카오 로그인 토큰이 만료되었거나 올바르지 않습니다. 다시 로그인해주세요.");
+    return null;
+  }
 
   const startAt = `${event.dateIso}T00:00:00+09:00`;
   
@@ -55,8 +58,14 @@ export async function createKakaoCalendarEvent(
   const json = await res.json();
   if (!res.ok) {
     console.warn("카카오 캘린더 일정 생성 실패:", json);
+    if (typeof window !== "undefined") {
+      alert(`카카오 캘린더 전송 실패: ${json.msg ?? json.message ?? JSON.stringify(json)}`);
+    }
     return null;
   }
 
+  if (typeof window !== "undefined") {
+    alert("카카오 캘린더에 일정이 성공적으로 전송되었습니다!");
+  }
   return (json.event_id as string) ?? null;
 }
