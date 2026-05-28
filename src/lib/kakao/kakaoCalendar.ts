@@ -93,3 +93,56 @@ export async function deleteKakaoCalendarEvent(eventId: string): Promise<boolean
   return true;
 }
 
+/**
+ * 카카오 캘린더 일정 수정
+ * @param eventId 카카오 캘린더의 event_id
+ * @param event 업데이트할 일정 정보
+ * @returns 성공 여부 boolean
+ */
+export async function updateKakaoCalendarEvent(
+  eventId: string,
+  event: KakaoCalendarEvent,
+): Promise<boolean> {
+  const accessToken = await getValidAccessToken();
+  if (!accessToken) return false;
+
+  const startAt = `${event.dateIso}T00:00:00Z`;
+  const dateObj = new Date(event.dateIso);
+  dateObj.setDate(dateObj.getDate() + 1);
+  const nextDayIso = dateObj.toISOString().split("T")[0];
+  const endAt = `${nextDayIso}T00:00:00Z`;
+
+  const eventBody = {
+    title: event.title,
+    time: {
+      start_at: startAt,
+      end_at: endAt,
+      time_zone: "Asia/Seoul",
+      all_day: true,
+      lunar: false,
+    },
+    ...(event.description ? { description: event.description } : {}),
+  };
+
+  const params = new URLSearchParams({
+    event_id: eventId,
+    event: JSON.stringify(eventBody),
+  });
+
+  // 호스트용 이벤트 업데이트 API 호출
+  const res = await fetch("https://kapi.kakao.com/v2/api/calendar/update/event/host", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+    },
+    body: params.toString(),
+  });
+
+  if (!res.ok) {
+    console.warn("카카오 캘린더 일정 수정 실패:", await res.json().catch(() => ({})));
+    return false;
+  }
+  return true;
+}
+

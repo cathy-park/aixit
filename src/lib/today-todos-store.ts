@@ -65,6 +65,7 @@ function normalizeTodo(raw: unknown): TodayTodo | null {
     ...(dailySheetDate ? { dailySheetDate } : {}),
     ...(typeof t.categoryId === "string" ? { categoryId: t.categoryId } : {}),
     ...(typeof t.memo === "string" ? { memo: t.memo } : {}),
+    ...(typeof t.kakaoEventId === "string" ? { kakaoEventId: t.kakaoEventId } : {}),
   };
 }
 

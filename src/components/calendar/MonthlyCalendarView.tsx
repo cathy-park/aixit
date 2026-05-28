@@ -16,6 +16,7 @@ import {
   addPlannedTodoForDate,
   getCompletedTodosGroupedByDate,
   getPlannedTodosGroupedByDate,
+  loadTodayTodos,
   reassignTodayTodoCalendarDate,
   removeTodayTodoById,
   renameTodayTodo,
@@ -41,7 +42,7 @@ import {
   renameDashboardWorkflow,
   type CalendarCompletedProject,
 } from "@/lib/workflows-store";
-import { createKakaoCalendarEvent, deleteKakaoCalendarEvent } from "@/lib/kakao/kakaoCalendar";
+import { createKakaoCalendarEvent, deleteKakaoCalendarEvent, updateKakaoCalendarEvent } from "@/lib/kakao/kakaoCalendar";
 import { isKakaoConnected } from "@/lib/kakao/kakaoClient";
 
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
@@ -295,7 +296,18 @@ export function MonthlyCalendarView() {
     if (parsed.kind === "project") {
       ok = reassignCompletedProjectCalendarDate(parsed.id, iso);
     } else {
-      ok = reassignTodayTodoCalendarDate(parsed.id, iso);
+      if (reassignTodayTodoCalendarDate(parsed.id, iso)) {
+        ok = true;
+        if (isKakaoConnected()) {
+          const t = loadTodayTodos().find((t) => t.id === parsed.id);
+          if (t && t.kakaoEventId && t.scheduledDate) {
+            updateKakaoCalendarEvent(t.kakaoEventId, {
+              title: t.text,
+              dateIso: t.scheduledDate,
+            }).catch(() => {});
+          }
+        }
+      }
     }
     if (ok) setRefreshKey((k) => k + 1);
   }, []);
@@ -913,6 +925,12 @@ function TodoItem({
 
   const onSaveName = () => {
     if (renameTodayTodo(todo.id, editText)) {
+      if (todo.kakaoEventId && isKakaoConnected() && todo.scheduledDate) {
+        updateKakaoCalendarEvent(todo.kakaoEventId, {
+          title: editText,
+          dateIso: todo.scheduledDate,
+        }).catch(() => {});
+      }
       setIsEditing(false);
     }
   };
