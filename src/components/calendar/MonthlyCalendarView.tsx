@@ -21,6 +21,7 @@ import {
   renameTodayTodo,
   setTodayTodoDone,
   setTodoCategory,
+  setTodoKakaoEventId,
   updateTodoMemo,
   type TodayTodo,
 } from "@/lib/today-todos-store";
@@ -40,7 +41,7 @@ import {
   renameDashboardWorkflow,
   type CalendarCompletedProject,
 } from "@/lib/workflows-store";
-import { createKakaoCalendarEvent } from "@/lib/kakao/kakaoCalendar";
+import { createKakaoCalendarEvent, deleteKakaoCalendarEvent } from "@/lib/kakao/kakaoCalendar";
 import { isKakaoConnected } from "@/lib/kakao/kakaoClient";
 
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
@@ -255,11 +256,17 @@ export function MonthlyCalendarView() {
     if (!dayPopupIso) return;
     const text = planDraft.trim();
     if (!text) return;
-    addPlannedTodoForDate(text, dayPopupIso);
+    const newTodo = addPlannedTodoForDate(text, dayPopupIso);
     setPlanDraft("");
     // 카카오 캘린더 연결된 경우 자동 등록 (백그라운드)
-    if (isKakaoConnected()) {
-      createKakaoCalendarEvent({ title: text, dateIso: dayPopupIso }).catch(() => {});
+    if (isKakaoConnected() && newTodo) {
+      createKakaoCalendarEvent({ title: text, dateIso: dayPopupIso })
+        .then((eventId) => {
+          if (eventId) {
+            setTodoKakaoEventId(newTodo.id, eventId);
+          }
+        })
+        .catch(() => {});
     }
   }, [dayPopupIso, planDraft]);
 
@@ -988,7 +995,13 @@ function TodoItem({
           />
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); removeTodayTodoById(todo.id); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (todo.kakaoEventId && isKakaoConnected()) {
+                deleteKakaoCalendarEvent(todo.kakaoEventId).catch(() => {});
+              }
+              removeTodayTodoById(todo.id); 
+            }}
             title="삭제"
             className={cn(actionIconButtonClass, "h-7 w-7 text-current/50 hover:text-rose-600")}
           >

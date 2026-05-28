@@ -35,6 +35,8 @@ import {
 import { ensureDashboardWorkflow } from "@/lib/workflows-store";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
+import { deleteKakaoCalendarEvent } from "@/lib/kakao/kakaoCalendar";
+import { isKakaoConnected } from "@/lib/kakao/kakaoClient";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 import {
@@ -211,6 +213,11 @@ export function HomeTodayDashboard() {
   };
 
   const removeTodo = (id: string) => {
+    const todo = todos.find((t) => t.id === id);
+    if (todo?.kakaoEventId && isKakaoConnected()) {
+      deleteKakaoCalendarEvent(todo.kakaoEventId).catch(() => {});
+    }
+
     const sheet = selectedSheetIso;
     const next = todos.filter((t) => t.id !== id);
     setTodos(next);

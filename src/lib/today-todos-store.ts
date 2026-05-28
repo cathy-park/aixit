@@ -25,6 +25,8 @@ export type TodayTodo = {
   categoryId?: string;
   /** 상세 메모 (마크다운 형식 권장) */
   memo?: string;
+  /** 카카오 캘린더 연동 시 발급된 event_id */
+  kakaoEventId?: string;
 };
 
 function safeParse<T>(raw: string | null): T | null {
@@ -281,6 +283,14 @@ export function setTodayTodoDone(id: string, done: boolean) {
     return done
       ? { ...t, done: true, completedAt: getTodayIsoLocal() }
       : { ...t, done: false, completedAt: undefined };
+  });
+  saveTodayTodos(all);
+}
+
+export function setTodoKakaoEventId(id: string, eventId: string) {
+  const all = loadTodayTodos().map((t) => {
+    if (t.id !== id) return t;
+    return { ...t, kakaoEventId: eventId };
   });
   saveTodayTodos(all);
 }

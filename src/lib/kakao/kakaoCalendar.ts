@@ -69,3 +69,27 @@ export async function createKakaoCalendarEvent(
   }
   return (json.event_id as string) ?? null;
 }
+
+/**
+ * 카카오 캘린더 일정 삭제
+ * @param eventId 카카오 캘린더의 event_id
+ * @returns 성공 여부 boolean
+ */
+export async function deleteKakaoCalendarEvent(eventId: string): Promise<boolean> {
+  const accessToken = await getValidAccessToken();
+  if (!accessToken) return false;
+
+  const res = await fetch(`https://kapi.kakao.com/v2/api/calendar/delete/event?event_id=${eventId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok) {
+    console.warn("카카오 캘린더 일정 삭제 실패:", await res.json().catch(() => ({})));
+    return false;
+  }
+  return true;
+}
+
