@@ -1,6 +1,9 @@
 "use client";
 
-export const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY ?? "";
+export const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY && process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY.length > 5 ? process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY : "efdf71a5bb1be6ae9d52c876f9fbaa16";
+
+// 만약 Vercel 환경변수에 과거 키(87a3f2...)가 남아있을 경우 새 키로 강제 덮어쓰기
+const FINAL_KAKAO_KEY = KAKAO_REST_API_KEY === "87a3f2a0ad48aaa7dfbfa6f9fac4a526" ? "efdf71a5bb1be6ae9d52c876f9fbaa16" : KAKAO_REST_API_KEY;
 
 const TOKEN_KEY = "aixit.kakaoToken.v1";
 
@@ -53,7 +56,7 @@ export function getKakaoRedirectUri(): string {
 
 export function getKakaoAuthUrl(): string {
   const params = new URLSearchParams({
-    client_id: KAKAO_REST_API_KEY,
+    client_id: FINAL_KAKAO_KEY,
     redirect_uri: getKakaoRedirectUri(),
     response_type: "code",
     scope: "talk_calendar",
@@ -64,7 +67,7 @@ export function getKakaoAuthUrl(): string {
 export async function exchangeKakaoCode(code: string): Promise<KakaoToken> {
   const params = new URLSearchParams({
     grant_type: "authorization_code",
-    client_id: KAKAO_REST_API_KEY,
+    client_id: FINAL_KAKAO_KEY,
     redirect_uri: getKakaoRedirectUri(),
     code,
   });
@@ -88,7 +91,7 @@ export async function refreshKakaoToken(): Promise<KakaoToken | null> {
 
   const params = new URLSearchParams({
     grant_type: "refresh_token",
-    client_id: KAKAO_REST_API_KEY,
+    client_id: FINAL_KAKAO_KEY,
     refresh_token: token.refresh_token,
   });
 
