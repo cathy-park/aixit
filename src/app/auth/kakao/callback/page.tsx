@@ -30,7 +30,7 @@ function KakaoCallbackInner() {
         setMsg(`❌ 연결 실패: ${e.message}`);
         setTimeout(() => router.replace("/settings"), 2500);
       });
-  }, [code, error, router, searchParams]);
+  }, [searchParams, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50">
