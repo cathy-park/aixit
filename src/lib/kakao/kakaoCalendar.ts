@@ -19,7 +19,12 @@ export async function createKakaoCalendarEvent(
   if (!accessToken) return null;
 
   const startAt = `${event.dateIso}T00:00:00+09:00`;
-  const endAt = `${event.dateIso}T00:00:00+09:00`;
+  
+  // 카카오 캘린더 종일 일정(all_day: true)의 경우, end_at은 다음 날짜 이상이어야 함
+  const dateObj = new Date(event.dateIso);
+  dateObj.setDate(dateObj.getDate() + 1);
+  const nextDayIso = dateObj.toISOString().split("T")[0];
+  const endAt = `${nextDayIso}T00:00:00+09:00`;
 
   const eventBody = {
     title: event.title,
