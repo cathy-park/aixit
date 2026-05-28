@@ -40,6 +40,8 @@ import {
   renameDashboardWorkflow,
   type CalendarCompletedProject,
 } from "@/lib/workflows-store";
+import { createKakaoCalendarEvent } from "@/lib/kakao/kakaoCalendar";
+import { isKakaoConnected } from "@/lib/kakao/kakaoClient";
 
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -255,6 +257,10 @@ export function MonthlyCalendarView() {
     if (!text) return;
     addPlannedTodoForDate(text, dayPopupIso);
     setPlanDraft("");
+    // 카카오 캘린더 연결된 경우 자동 등록 (백그라운드)
+    if (isKakaoConnected()) {
+      createKakaoCalendarEvent({ title: text, dateIso: dayPopupIso }).catch(() => {});
+    }
   }, [dayPopupIso, planDraft]);
 
   const onCalDragOver = useCallback((e: DragEvent, iso: string) => {

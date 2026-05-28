@@ -2,13 +2,14 @@
 
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase, supabaseEnabled } from "@/lib/supabase/supabaseClient";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { APP_NAV_ITEMS } from "@/components/layout/app-nav-items";
 import { useNavVisibility } from "@/lib/use-nav-visibility";
 import { AIXIT_LOCAL_STORAGE_KEYS, dispatchAixitStorageUpdatedEvents } from "@/lib/aixit-storage";
 import { flushAixitKvQueue, fetchAixitKvMap } from "@/lib/supabase/aixitKv";
+import { KAKAO_REST_API_KEY, getKakaoAuthUrl, isKakaoConnected, clearKakaoToken } from "@/lib/kakao/kakaoClient";
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -16,6 +17,15 @@ export default function SettingsPage() {
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const { isVisible, toggle } = useNavVisibility();
+  const [kakaoConnected, setKakaoConnected] = useState(false);
+  const kakaoEnabled = Boolean(KAKAO_REST_API_KEY);
+
+  useEffect(() => {
+    setKakaoConnected(isKakaoConnected());
+    const onUpdate = () => setKakaoConnected(isKakaoConnected());
+    window.addEventListener("aixit-kakao-token-updated", onUpdate);
+    return () => window.removeEventListener("aixit-kakao-token-updated", onUpdate);
+  }, []);
 
   /** PC → Supabase: 현재 localStorage 전체를 Remote에 강제 업로드 */
   async function forcePushToRemote() {
@@ -129,6 +139,48 @@ export default function SettingsPage() {
               <span className="font-mono">SUPABASE_SETUP.md</span>를 참고하세요.
             </div>
           </div>
+
+          {/* 카카오 캘린더 연동 섹션 */}
+          {kakaoEnabled && (
+            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🟡</span>
+                <div className="text-base font-semibold text-zinc-950">카카오 캘린더 연동</div>
+                {kakaoConnected && (
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                    연결됨
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-xs text-zinc-500">
+                AIXIT에 예정 일정을 추가하면 카카오톡 캘린더에도 자동으로 등록돼요.
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {kakaoConnected ? (
+                  <button
+                    type="button"
+                    onClick={() => clearKakaoToken()}
+                    className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200 hover:bg-zinc-50"
+                  >
+                    카카오 연결 해제
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { window.location.href = getKakaoAuthUrl(); }}
+                    className="rounded-full bg-[#FEE500] px-4 py-2 text-xs font-bold text-[#191919] hover:bg-yellow-300 transition"
+                  >
+                    🟡 카카오 계정으로 연결
+                  </button>
+                )}
+              </div>
+              {!kakaoConnected && (
+                <div className="mt-3 text-[11px] text-zinc-400">
+                  연결 후 캘린더에서 일정을 추가하면 자동으로 카카오 캘린더에 동기화됩니다.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 데이터 동기화 섹션 */}
           {supabaseEnabled && user && (
