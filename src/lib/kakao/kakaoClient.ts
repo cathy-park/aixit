@@ -40,16 +40,8 @@ export function clearKakaoToken() {
 }
 
 export function isKakaoConnected(): boolean {
-  const token = getKakaoToken();
-  if (!token) return false;
-  
-  // refresh_token의 만료 여부로 연결 상태를 판단합니다. (보통 2달 유지)
-  if (token.refresh_token_expires_in) {
-    const refreshExpiresAt = token.saved_at + token.refresh_token_expires_in * 1000;
-    return Date.now() < refreshExpiresAt;
-  }
-  
-  return true;
+  // 토큰이 존재하기만 하면 (사용자가 직접 해제하기 전까지는) 영구적으로 연결된 것으로 간주합니다.
+  return getKakaoToken() !== null;
 }
 
 export function getKakaoRedirectUri(): string {
