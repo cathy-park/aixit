@@ -42,9 +42,14 @@ export function clearKakaoToken() {
 export function isKakaoConnected(): boolean {
   const token = getKakaoToken();
   if (!token) return false;
-  // access_token 만료 여부 확인 (expires_in 초 단위)
-  const expiresAt = token.saved_at + token.expires_in * 1000;
-  return Date.now() < expiresAt;
+  
+  // refresh_token의 만료 여부로 연결 상태를 판단합니다. (보통 2달 유지)
+  if (token.refresh_token_expires_in) {
+    const refreshExpiresAt = token.saved_at + token.refresh_token_expires_in * 1000;
+    return Date.now() < refreshExpiresAt;
+  }
+  
+  return true;
 }
 
 export function getKakaoRedirectUri(): string {
@@ -117,7 +122,15 @@ export async function refreshKakaoToken(): Promise<KakaoToken | null> {
 
 /** 유효한 access_token 반환 (만료 시 자동 갱신) */
 export async function getValidAccessToken(): Promise<string | null> {
-  if (isKakaoConnected()) return getKakaoToken()!.access_token;
+  const token = getKakaoToken();
+  if (!token) return null;
+
+  // access_token 만료 여부 확인 (여유 시간 1분)
+  const expiresAt = token.saved_at + token.expires_in * 1000;
+  if (Date.now() < expiresAt - 60000) {
+    return token.access_token;
+  }
+
   const refreshed = await refreshKakaoToken();
   return refreshed?.access_token ?? null;
 }
