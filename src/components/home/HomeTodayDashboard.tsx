@@ -30,12 +30,13 @@ import {
   loadTodosForHomeTodaySheet,
   migrateLegacyHomeTodosDailySheet,
   saveHomeTodaySheet,
+  setTodoKakaoEventId,
   type TodayTodo,
 } from "@/lib/today-todos-store";
 import { ensureDashboardWorkflow } from "@/lib/workflows-store";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash } from "@/components/ui/action-icons";
-import { deleteKakaoCalendarEvent } from "@/lib/kakao/kakaoCalendar";
+import { createKakaoCalendarEvent, deleteKakaoCalendarEvent } from "@/lib/kakao/kakaoCalendar";
 import { isKakaoConnected } from "@/lib/kakao/kakaoClient";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
@@ -193,10 +194,24 @@ export function HomeTodayDashboard() {
     if (!text) return;
     const sheet = selectedSheetIso;
     const ws = getLocalSundayWeekStartIso();
-    const next = [...todos, { id: newTodoId(), text, done: false, weekStartIso: ws, dailySheetDate: sheet }];
+    const newId = newTodoId();
+    // scheduledDate를 추가하여 캘린더에도 즉시 표시되도록 함
+    const next = [...todos, { id: newId, text, done: false, weekStartIso: ws, dailySheetDate: sheet, scheduledDate: sheet }];
     setTodos(next);
     saveHomeTodaySheet(sheet, next);
     setTodoDraft("");
+
+    if (isKakaoConnected()) {
+      createKakaoCalendarEvent({ title: text, dateIso: sheet })
+        .then((eventId) => {
+          if (eventId) {
+            setTodoKakaoEventId(newId, eventId);
+            // eventId가 업데이트된 상태를 로컬 state에도 반영
+            setTodos((prev) => prev.map(t => t.id === newId ? { ...t, kakaoEventId: eventId } : t));
+          }
+        })
+        .catch(() => {});
+    }
   };
 
   const toggleTodo = (id: string) => {
