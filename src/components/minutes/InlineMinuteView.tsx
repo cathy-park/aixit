@@ -256,9 +256,11 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                     className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-[130px]"
                   />
                 </div>
-                {!isNew && (
-                  <button
-                    onClick={() => {
+                <button
+                  onClick={() => {
+                    if (isNew) {
+                      onClose();
+                    } else {
                       if (minute) {
                         setTitle(minute.title);
                         setDate(minute.date);
@@ -266,12 +268,12 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                         setAttachments(minute.attachments || []);
                       }
                       setIsEditing(false);
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg transition"
-                  >
-                    취소
-                  </button>
-                )}
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg transition"
+                >
+                  취소
+                </button>
                 <button onClick={handleSave} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm">
                   <SaveIcon className="w-4 h-4" />저장
                 </button>
