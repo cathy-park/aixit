@@ -385,9 +385,9 @@ export function MinutesView() {
                           ) : (
                             <div className="flex flex-col gap-2">
                               {links.map((link) => (
-                                <div key={link.id} className="flex items-center justify-between group/link rounded-lg bg-white px-3 py-2 text-sm border border-zinc-200 shadow-sm">
+                                <div key={link.id} className="flex items-center justify-between group/link rounded-lg bg-white px-3 py-2 text-sm border border-zinc-200">
                                   <a href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-700 hover:underline min-w-0 flex-1">
-                                    <LinkIcon className="w-4 h-4 shrink-0 text-indigo-400" />
+                                    <FaviconImage url={link.url} />
                                     <span className="truncate">{link.title}</span>
                                   </a>
                                   <button
@@ -400,7 +400,7 @@ export function MinutesView() {
                                 </div>
                               ))}
                               {attachments.map((att) => (
-                                <div key={att.id} className="flex items-center justify-between group/att rounded-lg bg-white px-3 py-2 text-sm border border-zinc-200 shadow-sm">
+                                <div key={att.id} className="flex items-center justify-between group/att rounded-lg bg-white px-3 py-2 text-sm border border-zinc-200">
                                   <button
                                     onClick={() => handleDownloadAttachment(att.storagePath)}
                                     className="flex items-center gap-2 text-blue-700 hover:underline min-w-0 flex-1 text-left"
