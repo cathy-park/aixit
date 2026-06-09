@@ -18,11 +18,12 @@ import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 import { FolderSectionAccordionHeader } from "@/components/dashboard/FolderSectionAccordionHeader";
 import { FolderSectionToolbar } from "@/components/dashboard/FolderSectionToolbar";
+import { DashboardPageHeader } from "@/components/dashboard/DashboardPageHeader";
 import { PillSearchField } from "@/components/ui/PillSearchField";
 import { FolderFormModal } from "@/components/dashboard/FolderFormModal";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
-import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MoreVertical } from "lucide-react";
+import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon } from "lucide-react";
 
 export function MinutesView() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export function MinutesView() {
   const [minutes, setMinutes] = useState<MeetingMinute[]>([]);
   const [search, setSearch] = useState("");
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   
   const [folderModal, setFolderModal] = useState<{
     mode: "create" | "edit";
@@ -206,7 +208,6 @@ export function MinutesView() {
     }
   };
 
-
   if (!ready) {
     return <div className="flex min-h-dvh items-center justify-center bg-zinc-50 text-sm text-zinc-600">불러오는 중…</div>;
   }
@@ -233,6 +234,45 @@ export function MinutesView() {
 
       <AppMainColumn className="min-w-0 pb-24 text-sm leading-relaxed text-zinc-900">
         <div className="mb-6 space-y-4">
+          <DashboardPageHeader
+            allWorkflowCount={headerCount}
+            folders={visibleFolders.map(f => ({
+              id: f.id,
+              name: f.name,
+              iconType: f.iconUrl ? "image_url" : "emoji",
+              emoji: "📁",
+              imageDataUrl: f.iconUrl,
+              color: "#64748b",
+              workflowCount: 0
+            }))}
+            activeFolderId={activeFolderId || ""}
+            onFolderChange={(id: string) => {
+              if (id === activeFolderId) {
+                setActiveFolderId(null);
+                setExpandedFolders(visibleFolders.reduce((acc, f) => ({ ...acc, [f.id]: true }), {}));
+              } else {
+                setActiveFolderId(id);
+                setExpandedFolders({ [id]: true });
+              }
+            }}
+            onAddFolderClick={() => setFolderModal({ mode: "create", initial: null })}
+            hiddenFolderRecords={folders.filter(f => f.hidden).map(f => ({
+              id: f.id,
+              name: f.name,
+              iconType: f.iconUrl ? "image_url" : "emoji",
+              emoji: "📁",
+              imageDataUrl: f.iconUrl,
+              color: "#64748b",
+              workflowCount: 0
+            }))}
+            onUnhideHiddenFolder={(id) => {
+              updateMinutesFolder(id, { hidden: false });
+              refreshData();
+            }}
+            onDeleteHiddenFolderRequest={(folder) => {
+              handleDeleteFolder(folder.id, folder.name);
+            }}
+          />
           <PillSearchField
             value={search}
             onChange={setSearch}
@@ -245,8 +285,9 @@ export function MinutesView() {
             <span className="text-zinc-400">폴더가 없습니다. 우측 상단의 '폴더 추가' 버튼을 눌러보세요.</span>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
+          <div className="flex flex-col gap-6 w-full">
             {visibleFolders.map((folder) => {
+              if (activeFolderId && folder.id !== activeFolderId) return null;
               const fMinutes = displayMinutes.filter(m => m.folderId === folder.id);
               const isExpanded = expandedFolders[folder.id];
               
@@ -355,6 +396,28 @@ export function MinutesView() {
                             ))}
                           </div>
                         )}
+                        <div className="mt-3">
+                          <textarea
+                            className="w-full text-sm border border-transparent bg-transparent hover:border-zinc-200 focus:border-zinc-300 focus:bg-white rounded-lg p-2 transition resize-y min-h-[60px]"
+                            placeholder="이 폴더에 대한 요약이나 메모를 마크다운으로 간략히 작성해 보세요..."
+                            defaultValue={folder.summary}
+                            onBlur={(e) => {
+                              if (e.target.value !== folder.summary) {
+                                updateMinutesFolder(folder.id, { summary: e.target.value });
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* 폴더 내 회의록 추가 버튼 */}
+                      <div className="flex justify-end mb-2 pr-4">
+                        <Link
+                          href={`/minutes/${folder.id}/new`}
+                          className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
+                        >
+                          <PlusIcon className="w-4 h-4" /> 회의록 추가
+                        </Link>
                       </div>
 
                       {/* 회의록 리스트 (세로형) */}
@@ -373,6 +436,7 @@ export function MinutesView() {
                               <div className="flex items-center gap-3 min-w-0 flex-1">
                                 {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
                                 {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
+                                {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
                                 {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
                                 
                                 <span className="font-medium text-zinc-900 truncate">

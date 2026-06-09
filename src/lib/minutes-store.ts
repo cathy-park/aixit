@@ -22,9 +22,10 @@ export type MinutesFolder = {
   hidden?: boolean;
   attachments?: AttachmentMeta[];
   links?: MinuteLink[];
+  summary?: string; // 폴더 요약(마크다운 등)
 };
 
-export type MinuteIconType = "meet" | "email" | "default";
+export type MinuteIconType = "meet" | "email" | "chat" | "default";
 
 export type MeetingMinute = {
   id: string;
@@ -91,7 +92,7 @@ export function createMinutesFolder(name: string): MinutesFolder {
   return folder;
 }
 
-export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden" | "attachments" | "links">>): boolean {
+export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden" | "attachments" | "links" | "summary">>): boolean {
   const store = loadMinutesStore();
   const folder = store.folders.find((f) => f.id === id);
   if (!folder) return false;
@@ -101,6 +102,7 @@ export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFol
   if (updates.hidden !== undefined) folder.hidden = updates.hidden;
   if (updates.attachments !== undefined) folder.attachments = updates.attachments;
   if (updates.links !== undefined) folder.links = updates.links;
+  if (updates.summary !== undefined) folder.summary = updates.summary;
   saveMinutesStore(store);
   return true;
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PlusIcon } from "lucide-react";
+import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PlusIcon, MessageSquareIcon } from "lucide-react";
 import { 
   loadMinutesStore, 
   createMeetingMinute, 
@@ -19,25 +19,7 @@ import dynamic from "next/dynamic";
 import { formatMinuteToMarkdown, copyMarkdownToClipboard, downloadMarkdownFile } from "@/lib/export-md";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 
-import "react-quill-new/dist/quill.snow.css";
-
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
-
-const FONT_SIZES = ["10px", "12px", "14px", "16px", "18px", "20px", "24px", "28px"];
-const LINE_HEIGHTS = ["1.0", "1.2", "1.5", "1.8", "2.0", "2.5", "3.0"];
-
-const quillModules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    [{ size: FONT_SIZES }],
-    [{ lineHeight: LINE_HEIGHTS }],
-    ["bold", "italic", "underline", "strike"],
-    [{ color: [] }, { background: [] }],
-    ["link", "image"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["clean"],
-  ],
-};
+const MinuteEditorQuill = dynamic(() => import("@/components/minutes/MinuteEditorQuill"), { ssr: false });
 
 export default function MeetingMinuteEditorPage() {
   const params = useParams();
@@ -62,27 +44,6 @@ export default function MeetingMinuteEditorPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("react-quill-new").then((m) => {
-        const Quill = m.Quill;
-        if (Quill) {
-          const Parchment = Quill.import("parchment") as any;
-          
-          const LineHeightStyle = new Parchment.Attributor.Style("lineHeight", "line-height", {
-            scope: Parchment.Scope.BLOCK,
-            whitelist: LINE_HEIGHTS
-          });
-          Quill.register(LineHeightStyle, true);
-
-          const SizeStyle = new Parchment.Attributor.Style("size", "font-size", {
-            scope: Parchment.Scope.INLINE,
-            whitelist: FONT_SIZES
-          });
-          Quill.register(SizeStyle, true);
-        }
-      });
-    }
-
     const store = loadMinutesStore();
     const f = store.folders.find((x) => x.id === folderId);
     if (!f) {
@@ -226,6 +187,7 @@ export default function MeetingMinuteEditorPage() {
                   <option value="default">📄 기본</option>
                   <option value="meet">📹 화상</option>
                   <option value="email">📧 이메일</option>
+                  <option value="chat">💬 챗봇(말풍선)</option>
                 </select>
                 <input
                   type="text"
@@ -239,6 +201,7 @@ export default function MeetingMinuteEditorPage() {
               <div className="flex items-start gap-3 mt-1">
                 {iconType === "meet" && <VideoIcon className="w-8 h-8 shrink-0 text-emerald-500 mt-1" />}
                 {iconType === "email" && <MailIcon className="w-8 h-8 shrink-0 text-amber-500 mt-1" />}
+                {iconType === "chat" && <MessageSquareIcon className="w-8 h-8 shrink-0 text-blue-500 mt-1" />}
                 {(!iconType || iconType === "default") && <FileTextIcon className="w-8 h-8 shrink-0 text-zinc-400 mt-1" />}
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight">{title || "제목 없음"}</h1>
               </div>
@@ -368,46 +331,23 @@ export default function MeetingMinuteEditorPage() {
         </div>
 
         {/* Content Box */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           {isEditing ? (
             <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col h-[600px] [&_.quill]:flex-1 [&_.quill]:flex [&_.quill]:flex-col [&_.ql-toolbar]:shrink-0 [&_.ql-container]:flex-1 [&_.ql-container]:overflow-y-auto [&_.ql-editor]:min-h-full">
-              <style dangerouslySetInnerHTML={{__html: `
-                .ql-snow .ql-picker.ql-lineHeight .ql-picker-label::before,
-                .ql-snow .ql-picker.ql-lineHeight .ql-picker-item::before {
-                  content: attr(data-value);
-                }
-                .ql-snow .ql-picker.ql-lineHeight .ql-picker-label:not([data-value])::before,
-                .ql-snow .ql-picker.ql-lineHeight .ql-picker-item:not([data-value])::before {
-                  content: '줄간격';
-                }
-                .ql-snow .ql-picker.ql-lineHeight {
-                  width: 70px;
-                }
-
-                .ql-snow .ql-picker.ql-size .ql-picker-label::before,
-                .ql-snow .ql-picker.ql-size .ql-picker-item::before {
-                  content: attr(data-value);
-                }
-                .ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
-                .ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before {
-                  content: '글자 크기';
-                }
-              `}} />
-              <ReactQuill
-                theme="snow"
+              <MinuteEditorQuill
                 value={content}
                 onChange={setContent}
-                modules={quillModules}
                 className="flex-1 flex flex-col h-full"
                 placeholder="회의 내용을 자유롭게 작성하세요..."
               />
             </div>
           ) : (
-            <div 
-              // Changed from 'prose max-w-none ql-editor' to 'ql-editor' only to respect Quill's inline styles completely
-              className="bg-white rounded-xl border border-zinc-200 p-6 sm:p-8 min-h-[400px] ql-editor"
-              dangerouslySetInnerHTML={{ __html: content || "<p class='text-zinc-400'>내용이 없습니다.</p>" }} 
-            />
+            <div className="ql-snow bg-white rounded-xl border border-zinc-200 overflow-hidden">
+              <div 
+                className="p-6 sm:p-8 min-h-[400px] ql-editor"
+                dangerouslySetInnerHTML={{ __html: content || "<p class='text-zinc-400'>내용이 없습니다.</p>" }} 
+              />
+            </div>
           )}
         </div>
       </div>

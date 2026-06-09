@@ -1,2 +1,1 @@
-const { Quill } = require("quill");
-console.log(Quill);
+console.log("Checking how to register quill modules in nextjs");
