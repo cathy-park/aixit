@@ -69,11 +69,13 @@ export default function FolderMinutesPage() {
   return (
     <AppMainColumn>
       <AdaptivePageHeader
-        title={folder.name}
-        leftNode={
-          <Link href="/minutes" className="p-2 -ml-2 text-zinc-500 hover:text-zinc-900 transition">
-            <ChevronLeftIcon className="w-5 h-5" />
-          </Link>
+        title={
+          <div className="flex items-center gap-2">
+            <Link href="/minutes" className="p-1 -ml-1 text-zinc-400 hover:text-zinc-900 transition">
+              <ChevronLeftIcon className="w-6 h-6" />
+            </Link>
+            {folder.name}
+          </div>
         }
       />
       <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full">
