@@ -4,11 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/components/ui/cn";
 import { APP_NAV_ITEMS } from "@/components/layout/app-nav-items";
-import { useNavVisibility } from "@/lib/use-nav-visibility";
+import { useNavVisibility, useNavOrder } from "@/lib/use-nav-visibility";
 
 export function PrimarySidebar() {
   const pathname = usePathname() ?? "";
   const { isVisible } = useNavVisibility();
+  const { order } = useNavOrder();
+  const orderedItems = [...APP_NAV_ITEMS].sort((a, b) => {
+    const idxA = order.indexOf(a.id);
+    const idxB = order.indexOf(b.id);
+    return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+  });
 
   return (
     <aside className="flex h-full min-h-0 w-[220px] shrink-0 flex-col overflow-y-auto border-r border-zinc-200 bg-white px-3 py-6">
@@ -27,7 +33,7 @@ export function PrimarySidebar() {
       <p className="mt-1 px-3 text-xs font-medium text-zinc-500">워크플로우 내비게이터</p>
 
       <nav className="mt-8 flex flex-col gap-0.5" aria-label="주요 메뉴">
-        {APP_NAV_ITEMS.filter((item) => isVisible(item.id)).map((item) => {
+        {orderedItems.filter((item) => isVisible(item.id)).map((item) => {
           const active = item.match(pathname);
           const Icon = item.icon;
           return (

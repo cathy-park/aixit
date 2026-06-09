@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 import { APP_NAV_ITEMS } from "@/components/layout/app-nav-items";
-import { useNavVisibility } from "@/lib/use-nav-visibility";
+import { useNavVisibility, useNavOrder } from "@/lib/use-nav-visibility";
 
 /** layout.tsx icons와 동일 (앱 아이콘 / 파비콘) */
 const APP_ICON_SRC = "/favicon-v2.png?v=8";
@@ -19,9 +19,15 @@ export function MobileTopNav({ topbarHeightPx = MOBILE_TOPBAR_HEIGHT_PX }: { top
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
   const { isVisible } = useNavVisibility();
+  const { order } = useNavOrder();
+  const orderedItems = [...APP_NAV_ITEMS].sort((a, b) => {
+    const idxA = order.indexOf(a.id);
+    const idxB = order.indexOf(b.id);
+    return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+  });
 
   const visibleNavItems = useMemo(
-    () => APP_NAV_ITEMS.filter((item) => isVisible(item.id)),
+    () => orderedItems.filter((item) => isVisible(item.id)),
     [isVisible],
   );
 

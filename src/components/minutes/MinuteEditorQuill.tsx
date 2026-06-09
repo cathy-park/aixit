@@ -4,7 +4,7 @@ import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 
-const FONT_SIZES = ["10px", "12px", "14px", "16px", "18px", "20px", "24px", "28px"];
+const FONT_SIZES = ["10px", "12px", "13px", "14px", "16px", "18px", "20px", "24px", "28px"];
 const LINE_HEIGHTS = ["1.0", "1.2", "1.5", "1.8", "2.0", "2.5", "3.0"];
 
 let isQuillConfigured = false;

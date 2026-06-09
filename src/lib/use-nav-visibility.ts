@@ -63,3 +63,57 @@ export function useNavVisibility() {
 
   return { isVisible, toggle, visibility };
 }
+
+const ORDER_STORAGE_KEY = "aixit.navOrder.v1";
+
+function loadOrderFromStorage(): string[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(ORDER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as string[];
+  } catch {
+    return null;
+  }
+}
+
+function saveOrderToStorage(order: string[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(order));
+}
+
+export function useNavOrder() {
+  const [order, setOrder] = useState<string[]>(() => {
+    const saved = loadOrderFromStorage();
+    if (saved && saved.length > 0) return saved;
+    return APP_NAV_ITEMS.map(i => i.id);
+  });
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === ORDER_STORAGE_KEY) {
+        const saved = loadOrderFromStorage();
+        if (saved && saved.length > 0) setOrder(saved);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const updateOrder = useCallback((newOrder: string[]) => {
+    setOrder(newOrder);
+    saveOrderToStorage(newOrder);
+    window.dispatchEvent(new Event("aixit-nav-order-updated"));
+  }, []);
+
+  useEffect(() => {
+    const onUpdate = () => {
+      const saved = loadOrderFromStorage();
+      if (saved && saved.length > 0) setOrder(saved);
+    };
+    window.addEventListener("aixit-nav-order-updated", onUpdate);
+    return () => window.removeEventListener("aixit-nav-order-updated", onUpdate);
+  }, []);
+
+  return { order, updateOrder };
+}

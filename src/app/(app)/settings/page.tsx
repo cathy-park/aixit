@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase, supabaseEnabled } from "@/lib/supabase/supabaseClient";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { APP_NAV_ITEMS } from "@/components/layout/app-nav-items";
-import { useNavVisibility } from "@/lib/use-nav-visibility";
+import { useNavVisibility, useNavOrder } from "@/lib/use-nav-visibility";
 import { AIXIT_LOCAL_STORAGE_KEYS, dispatchAixitStorageUpdatedEvents } from "@/lib/aixit-storage";
 import { flushAixitKvQueue, fetchAixitKvMap } from "@/lib/supabase/aixitKv";
 import { KAKAO_REST_API_KEY, getKakaoAuthUrl, isKakaoConnected, clearKakaoToken } from "@/lib/kakao/kakaoClient";
@@ -16,6 +16,38 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const { isVisible, toggle } = useNavVisibility();
+  const { order, updateOrder } = useNavOrder();
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+
+  const orderedItems = [...APP_NAV_ITEMS].sort((a, b) => {
+    const idxA = order.indexOf(a.id);
+    const idxB = order.indexOf(b.id);
+    return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+  });
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedItemId(id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedItemId || draggedItemId === targetId) return;
+
+    const currentOrder = orderedItems.map(i => i.id);
+    const draggedIdx = currentOrder.indexOf(draggedItemId);
+    const targetIdx = currentOrder.indexOf(targetId);
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(draggedIdx, 1);
+    newOrder.splice(targetIdx, 0, draggedItemId);
+
+    updateOrder(newOrder);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItemId(null);
+  };
   const [kakaoConnected, setKakaoConnected] = useState(false);
   const kakaoEnabled = Boolean(KAKAO_REST_API_KEY);
 
@@ -210,7 +242,7 @@ export default function SettingsPage() {
               좌측(PC) / 상단(모바일) 메뉴에 표시할 항목을 선택하세요.
             </div>
             <div className="mt-4 space-y-1">
-              {APP_NAV_ITEMS.map((item) => {
+              {orderedItems.map((item) => {
                 const Icon = item.icon;
                 const visible = isVisible(item.id);
                 const locked = item.alwaysVisible === true;
@@ -218,9 +250,16 @@ export default function SettingsPage() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-xl px-3 py-2.5 transition hover:bg-zinc-50"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item.id)}
+                    onDragOver={(e) => handleDragOver(e, item.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition hover:bg-zinc-50 cursor-grab active:cursor-grabbing ${draggedItemId === item.id ? "opacity-50" : ""}`}
                   >
                     <div className="flex items-center gap-3">
+                      <div className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-zinc-300 hover:text-zinc-500 shrink-0">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 3C4 3.55228 3.55228 4 3 4C2.44772 4 2 3.55228 2 3C2 2.44772 2.44772 2 3 2C3.55228 2 4 2.44772 4 3ZM4 9C4 9.55228 3.55228 10 3 10C2.44772 10 2 9.55228 2 9C2 8.44772 2.44772 8 3 8C3.55228 8 4 8.44772 4 9ZM10 3C10 3.55228 9.55228 4 9 4C8.44772 4 8 3.55228 8 3C8 2.44772 8.44772 2 9 2C9.55228 2 10 2.44772 10 3ZM10 9C10 9.55228 9.55228 10 9 10C8.44772 10 8 9.55228 8 9C8 8.44772 8.44772 8 9 8C9.55228 8 10 8.44772 10 9Z" fill="currentColor"/></svg>
+                      </div>
                       <Icon
                         className="h-5 w-5 shrink-0 text-zinc-400"
                         strokeWidth={2}
