@@ -435,43 +435,69 @@ export function MinutesView() {
                         </div>
                       ) : (
                         <div className="flex flex-col gap-2">
+                          {expandedMinuteId === "new" && (
+                            <div className="mb-4 rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden">
+                              <InlineMinuteView 
+                                folderId={folder.id} 
+                                minuteId="new" 
+                                onClose={() => {
+                                  setExpandedMinuteId(null);
+                                  refreshData();
+                                }} 
+                              />
+                            </div>
+                          )}
                           {fMinutes.map((minute) => (
-                            <Link
-                              key={minute.id}
-                              href={`/minutes/${folder.id}/${minute.id}`}
-                              className="group flex items-center justify-between bg-white border border-zinc-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition"
-                            >
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
-                                {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
-                                {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
-                                {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
-                                {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
-                                
-                                <span className="font-medium text-zinc-900 truncate">
-                                  {minute.title.trim() || "제목 없음"}
-                                </span>
+                            <div key={minute.id} className="flex flex-col gap-2">
+                              <button
+                                onClick={() => setExpandedMinuteId(expandedMinuteId === minute.id ? null : minute.id)}
+                                className={`group flex items-center justify-between bg-white border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition ${expandedMinuteId === minute.id ? "border-blue-300 shadow-sm" : "border-zinc-200"}`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
+                                  {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
+                                  {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
+                                  {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
+                                  {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
+                                  
+                                  <span className="font-medium text-zinc-900 truncate">
+                                    {minute.title.trim() || "제목 없음"}
+                                  </span>
 
-                                <div className="hidden sm:flex items-center gap-2 ml-4 shrink-0">
-                                  {minute.attachments && minute.attachments.length > 0 && (
-                                    <span className="flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">
-                                      <PaperclipIcon className="w-3 h-3" /> {minute.attachments.length}
-                                    </span>
-                                  )}
-                                  {minute.links && minute.links.length > 0 && (
-                                    <span className="flex items-center gap-1 text-[11px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                                      <LinkIcon className="w-3 h-3" /> {minute.links.length}
-                                    </span>
-                                  )}
+                                  <div className="hidden sm:flex items-center gap-2 ml-4 shrink-0">
+                                    {minute.attachments && minute.attachments.length > 0 && (
+                                      <span className="flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">
+                                        <PaperclipIcon className="w-3 h-3" /> {minute.attachments.length}
+                                      </span>
+                                    )}
+                                    {minute.links && minute.links.length > 0 && (
+                                      <span className="flex items-center gap-1 text-[11px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                                        <LinkIcon className="w-3 h-3" /> {minute.links.length}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
+                                
+                                <div className="flex items-center gap-4 shrink-0 ml-4">
+                                  <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium group-hover:text-blue-500 transition">
+                                    <CalendarIcon className="w-3.5 h-3.5" />
+                                    {minute.date}
+                                  </div>
+                                </div>
+                              </button>
                               
-                              <div className="flex items-center gap-4 shrink-0 ml-4">
-                                <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
-                                  <CalendarIcon className="w-3.5 h-3.5" />
-                                  {minute.date}
+                              {expandedMinuteId === minute.id && (
+                                <div className="rounded-xl border-2 border-zinc-200 shadow-sm overflow-hidden mb-2">
+                                  <InlineMinuteView 
+                                    folderId={folder.id} 
+                                    minuteId={minute.id} 
+                                    onClose={() => {
+                                      setExpandedMinuteId(null);
+                                      refreshData();
+                                    }} 
+                                  />
                                 </div>
-                              </div>
-                            </Link>
+                              )}
+                            </div>
                           ))}
                         </div>
                       )}
