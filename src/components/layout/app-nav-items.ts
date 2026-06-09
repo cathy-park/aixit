@@ -9,6 +9,7 @@ import {
   Settings,
   StickyNote,
   Wrench,
+  FileText,
 } from "lucide-react";
 
 export type AppNavItem = {
@@ -55,5 +56,6 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     match: (p) => p.startsWith("/chatbots"),
   },
   { id: "memos", href: "/memos", label: "메모", icon: StickyNote, match: (p) => p.startsWith("/memos") },
+  { id: "minutes", href: "/minutes", label: "회의록", icon: FileText, match: (p) => p.startsWith("/minutes") },
   { id: "settings", href: "/settings", label: "설정", icon: Settings, match: (p) => p.startsWith("/settings"), alwaysVisible: true },
 ];

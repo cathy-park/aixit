@@ -74,7 +74,49 @@ before update on public.aixit_kv
 for each row execute function public.set_updated_at();
 ```
 
-### 3) 환경변수
+### 3) Storage 버킷 추가 (회의록 첨부파일 등)
+
+Supabase Dashboard → **Storage**에서:
+1. **New Bucket** 클릭
+2. Name: `aixit_files`
+3. Public bucket 여부: 프로젝트 보안에 맞게 설정 (로그인한 사람만 보게 하려면 비공개, 누구나 URL로 보게 하려면 Public 체크)
+
+그런 다음 **SQL Editor**에서 파일 접근 권한(RLS)을 부여하세요.
+
+```sql
+-- Storage bucket RLS policies for 'aixit_files'
+-- 로그인된 사용자만 파일을 업로드/조회/삭제할 수 있도록 설정합니다.
+
+-- 1. Insert (업로드)
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'aixit_files');
+
+-- 2. Select (조회/다운로드)
+CREATE POLICY "Allow authenticated reads"
+ON storage.objects
+FOR SELECT
+TO authenticated
+USING (bucket_id = 'aixit_files');
+
+-- 3. Update (수정)
+CREATE POLICY "Allow authenticated updates"
+ON storage.objects
+FOR UPDATE
+TO authenticated
+USING (bucket_id = 'aixit_files');
+
+-- 4. Delete (삭제)
+CREATE POLICY "Allow authenticated deletes"
+ON storage.objects
+FOR DELETE
+TO authenticated
+USING (bucket_id = 'aixit_files');
+```
+
+### 4) 환경변수
 
 `.env.local`에 아래를 설정합니다(이미 있으면 그대로 사용).
 
