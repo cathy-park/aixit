@@ -84,7 +84,15 @@ export default function FolderMinutesPage() {
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900">{folder.name}</h1>
             <p className="mt-1 text-sm text-zinc-500">이 폴더의 모든 회의록입니다.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <a
+              href="https://chatgpt.com/g/g-6a27abbc3d308191bfacd0886bd8c962-aixit-hoeyirog"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 transition"
+            >
+              <span>✏️ AIXIT 회의록 GPTs</span>
+            </a>
             <button
               onClick={handleCopyMarkdown}
               className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition"
