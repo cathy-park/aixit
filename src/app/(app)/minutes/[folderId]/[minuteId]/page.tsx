@@ -3,14 +3,16 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon } from "lucide-react";
+import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PlusIcon } from "lucide-react";
 import { 
   loadMinutesStore, 
   createMeetingMinute, 
   updateMeetingMinute,
   type MinutesFolder,
   type MeetingMinute,
-  type AttachmentMeta
+  type AttachmentMeta,
+  type MinuteIconType,
+  type MinuteLink
 } from "@/lib/minutes-store";
 import { uploadMinuteAttachment, getMinuteAttachmentUrl, deleteMinuteAttachment } from "@/lib/minutes-storage";
 import dynamic from "next/dynamic";
@@ -50,7 +52,9 @@ export default function MeetingMinuteEditorPage() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [content, setContent] = useState("");
+  const [iconType, setIconType] = useState<MinuteIconType>("default");
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
+  const [links, setLinks] = useState<MinuteLink[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +90,9 @@ export default function MeetingMinuteEditorPage() {
         setTitle(m.title);
         setDate(m.date);
         setContent(m.content);
+        setIconType(m.iconType || "default");
         setAttachments(m.attachments || []);
+        setLinks(m.links || []);
       } else {
         router.replace(`/minutes/${folderId}`);
       }
@@ -99,13 +105,29 @@ export default function MeetingMinuteEditorPage() {
       return;
     }
     if (isNew) {
-      const m = createMeetingMinute(folderId, title, date);
-      updateMeetingMinute(m.id, { content, attachments });
+      const m = createMeetingMinute(folderId, title, date, iconType);
+      updateMeetingMinute(m.id, { content, attachments, links });
       // Redirect to the new minute ID but in viewer mode
       router.replace(`/minutes/${folderId}/${m.id}`);
     } else {
-      updateMeetingMinute(minuteId, { title, date, content, attachments });
+      updateMeetingMinute(minuteId, { title, date, content, attachments, iconType, links });
       setIsEditing(false); // Switch back to viewer mode
+    }
+  };
+
+  const handleAddLink = () => {
+    const url = prompt("링크 주소를 입력하세요 (http://...)");
+    if (!url) return;
+    const linkTitle = prompt("링크 제목을 입력하세요") || url;
+    setLinks([...links, { id: Math.random().toString(36).slice(2), url, title: linkTitle }]);
+  };
+
+  const handleDeleteLink = (id: string) => {
+    if (!confirm("링크를 삭제하시겠습니까?")) return;
+    const newLinks = links.filter((l) => l.id !== id);
+    setLinks(newLinks);
+    if (!isNew) {
+      updateMeetingMinute(minuteId, { links: newLinks });
     }
   };
 
@@ -185,7 +207,7 @@ export default function MeetingMinuteEditorPage() {
       <AdaptivePageHeader
         title={
           <div className="flex items-center gap-2 text-zinc-500 text-sm font-medium">
-            <Link href={`/minutes/${folder.id}`} className="p-1 -ml-1 text-zinc-400 hover:text-zinc-900 transition">
+            <Link href={`/minutes`} className="p-1 -ml-1 text-zinc-400 hover:text-zinc-900 transition">
               <ChevronLeftIcon className="w-5 h-5" />
             </Link>
             {folder.name}
@@ -196,15 +218,32 @@ export default function MeetingMinuteEditorPage() {
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
           <div className="flex flex-col gap-3 flex-1">
             {isEditing ? (
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="회의 제목을 입력하세요"
-                className="text-3xl font-extrabold border-none outline-none focus:ring-0 px-0 bg-transparent placeholder-zinc-300 w-full"
-              />
+              <div className="flex items-center gap-3 w-full">
+                <select
+                  value={iconType}
+                  onChange={(e) => setIconType(e.target.value as MinuteIconType)}
+                  className="bg-zinc-100 border-none rounded-lg px-3 py-2 text-sm text-zinc-700 outline-none focus:ring-2 focus:ring-blue-500 shrink-0 h-[40px] appearance-none cursor-pointer"
+                  style={{ textAlignLast: "center" }}
+                >
+                  <option value="default">📄 기본</option>
+                  <option value="meet">📹 화상회의</option>
+                  <option value="email">📧 이메일</option>
+                </select>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="회의 제목을 입력하세요"
+                  className="text-3xl font-extrabold border-none outline-none focus:ring-0 px-0 bg-transparent placeholder-zinc-300 w-full"
+                />
+              </div>
             ) : (
-              <h1 className="text-3xl font-extrabold text-zinc-900 break-words">{title || "제목 없음"}</h1>
+              <div className="flex items-start gap-3">
+                {iconType === "meet" && <VideoIcon className="w-8 h-8 shrink-0 text-emerald-500 mt-1" />}
+                {iconType === "email" && <MailIcon className="w-8 h-8 shrink-0 text-amber-500 mt-1" />}
+                {(!iconType || iconType === "default") && <FileTextIcon className="w-8 h-8 shrink-0 text-zinc-400 mt-1" />}
+                <h1 className="text-3xl font-extrabold text-zinc-900 break-words">{title || "제목 없음"}</h1>
+              </div>
             )}
             
             {isEditing ? (
@@ -279,6 +318,95 @@ export default function MeetingMinuteEditorPage() {
         </div>
 
         <div className="flex flex-col gap-4 flex-1 mt-2">
+          {/* 링크 및 계약서 첨부 섹션 */}
+          <div className="rounded-xl border border-zinc-200 bg-white p-5">
+            <div className="flex items-center justify-between mb-4 border-b border-zinc-100 pb-3">
+              <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                <PaperclipIcon className="w-4 h-4" /> 관련 링크 및 계약서 첨부
+              </h3>
+              {isEditing && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleAddLink}
+                    className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition px-2.5 py-1.5 rounded-md"
+                  >
+                    <PlusIcon className="w-3 h-3" /> 링크 추가
+                  </button>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 transition px-2.5 py-1.5 rounded-md disabled:opacity-50"
+                  >
+                    <PlusIcon className="w-3 h-3" /> {uploading ? "업로드 중..." : "파일 추가"}
+                  </button>
+                  <input
+                    type="file"
+                    multiple
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              {/* 링크 리스트 */}
+              {links.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {links.map((link) => (
+                    <div key={link.id} className="flex items-center justify-between group rounded-lg bg-indigo-50/40 px-3 py-2 text-sm border border-indigo-100/50">
+                      <a href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-700 hover:text-indigo-900 hover:underline min-w-0 flex-1">
+                        <LinkIcon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{link.title}</span>
+                      </a>
+                      {isEditing && (
+                        <button
+                          onClick={() => handleDeleteLink(link.id)}
+                          className="text-indigo-300 hover:text-red-600 transition ml-2 shrink-0"
+                          title="삭제"
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 첨부파일 리스트 */}
+              {attachments.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {attachments.map((att) => (
+                    <div key={att.id} className="flex items-center justify-between group rounded-lg bg-blue-50/40 px-3 py-2 text-sm border border-blue-100/50">
+                      <button
+                        onClick={() => handleDownloadAttachment(att.storagePath)}
+                        className="flex items-center gap-2 text-blue-700 hover:text-blue-900 hover:underline truncate max-w-[80%]"
+                      >
+                        <FileTextIcon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{att.name}</span>
+                        <span className="text-xs text-blue-400 ml-1 shrink-0">({Math.round(att.size / 1024)} KB)</span>
+                      </button>
+                      {isEditing && (
+                        <button
+                          onClick={() => handleDeleteAttachment(att.id, att.storagePath)}
+                          className="text-blue-300 hover:text-red-600 transition shrink-0 ml-2"
+                          title="삭제"
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {links.length === 0 && attachments.length === 0 && (
+                <p className="text-sm text-zinc-400 py-2">첨부된 파일이나 링크가 없습니다.</p>
+              )}
+            </div>
+          </div>
+
           {isEditing ? (
             <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col h-[600px] [&_.quill]:flex-1 [&_.quill]:flex [&_.quill]:flex-col [&_.ql-toolbar]:shrink-0 [&_.ql-container]:flex-1 [&_.ql-container]:overflow-y-auto [&_.ql-editor]:min-h-full">
               <style dangerouslySetInnerHTML={{__html: `
@@ -309,58 +437,6 @@ export default function MeetingMinuteEditorPage() {
               dangerouslySetInnerHTML={{ __html: content || "<p class='text-zinc-400'>내용이 없습니다.</p>" }} 
             />
           )}
-
-          <div className="rounded-xl border border-zinc-200 bg-white p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
-                <PaperclipIcon className="w-4 h-4" /> 첨부파일
-              </h3>
-              {isEditing && (
-                <>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                  >
-                    {uploading ? "업로드 중..." : "+ 파일 추가"}
-                  </button>
-                  <input
-                    type="file"
-                    multiple
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                </>
-              )}
-            </div>
-            
-            {attachments.length === 0 ? (
-              <p className="text-xs text-zinc-500">첨부된 파일이 없습니다.</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {attachments.map((att) => (
-                  <li key={att.id} className="flex items-center justify-between group rounded-lg bg-zinc-50 px-3 py-2 text-sm">
-                    <button
-                      onClick={() => handleDownloadAttachment(att.storagePath)}
-                      className="text-zinc-700 hover:text-blue-600 hover:underline truncate max-w-[80%]"
-                    >
-                      {att.name} <span className="text-xs text-zinc-400 ml-1">({Math.round(att.size / 1024)} KB)</span>
-                    </button>
-                    {isEditing && (
-                      <button
-                        onClick={() => handleDeleteAttachment(att.id, att.storagePath)}
-                        className="text-zinc-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
-                        title="삭제"
-                      >
-                        <XIcon className="w-4 h-4" />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
       </div>
     </AppMainColumn>

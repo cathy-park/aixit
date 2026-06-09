@@ -4,15 +4,26 @@ export type MinutesFolder = {
   iconUrl?: string; // base64 resized image
   createdAt: string; // ISO 8601
   order: number;
+  hidden?: boolean;
+};
+
+export type MinuteIconType = "meet" | "email" | "default";
+
+export type MinuteLink = {
+  id: string;
+  url: string;
+  title: string;
 };
 
 export type MeetingMinute = {
   id: string;
   folderId: string;
   title: string;
+  iconType?: MinuteIconType;
   date: string; // YYYY-MM-DD format
   content: string; // Markdown text
   attachments: AttachmentMeta[];
+  links?: MinuteLink[];
   createdAt: string;
   updatedAt: string;
 };
@@ -78,12 +89,14 @@ export function createMinutesFolder(name: string): MinutesFolder {
   return folder;
 }
 
-export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "iconUrl">>): boolean {
+export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden">>): boolean {
   const store = loadMinutesStore();
   const folder = store.folders.find((f) => f.id === id);
   if (!folder) return false;
   if (updates.name !== undefined) folder.name = updates.name.trim();
   if (updates.iconUrl !== undefined) folder.iconUrl = updates.iconUrl;
+  if (updates.order !== undefined) folder.order = updates.order;
+  if (updates.hidden !== undefined) folder.hidden = updates.hidden;
   saveMinutesStore(store);
   return true;
 }
@@ -102,18 +115,19 @@ export function deleteMinutesFolder(id: string): boolean {
 
 // ---- 회의록 관련 API ----
 
-export function createMeetingMinute(folderId: string, title: string, date: string): MeetingMinute {
+export function createMeetingMinute(folderId: string, title: string, date: string, iconType: MinuteIconType = "default"): MeetingMinute {
   const store = loadMinutesStore();
-  const now = new Date().toISOString();
   const minute: MeetingMinute = {
     id: newId(),
     folderId,
-    title: title.trim() || "제목 없는 회의록",
+    title,
+    iconType,
     date,
     content: "",
     attachments: [],
-    createdAt: now,
-    updatedAt: now,
+    links: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
   store.minutes.push(minute);
   saveMinutesStore(store);
@@ -122,7 +136,7 @@ export function createMeetingMinute(folderId: string, title: string, date: strin
 
 export function updateMeetingMinute(
   id: string,
-  updates: Partial<Pick<MeetingMinute, "title" | "date" | "content" | "attachments">>
+  updates: Partial<Pick<MeetingMinute, "title" | "date" | "content" | "attachments" | "iconType" | "links">>
 ): MeetingMinute | null {
   const store = loadMinutesStore();
   const minute = store.minutes.find((m) => m.id === id);
@@ -132,7 +146,8 @@ export function updateMeetingMinute(
   if (updates.date !== undefined) minute.date = updates.date;
   if (updates.content !== undefined) minute.content = updates.content;
   if (updates.attachments !== undefined) minute.attachments = updates.attachments;
-
+  if (updates.iconType !== undefined) minute.iconType = updates.iconType;
+  if (updates.links !== undefined) minute.links = updates.links;
   minute.updatedAt = new Date().toISOString();
   saveMinutesStore(store);
   return minute;
