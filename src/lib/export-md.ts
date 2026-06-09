@@ -1,16 +1,25 @@
 import type { MeetingMinute } from "./minutes-store";
+import TurndownService from "turndown";
+
+const turndownService = new TurndownService({
+  headingStyle: "atx",
+  codeBlockStyle: "fenced",
+  emDelimiter: "*",
+});
 
 /**
  * 단일 회의록을 ChatGPT에 붙여넣기 좋은 Markdown 형식으로 변환합니다.
  */
 export function formatMinuteToMarkdown(minute: MeetingMinute, folderName: string): string {
+  const mdContent = turndownService.turndown(minute.content || "");
+  
   return `
 # [${folderName}] ${minute.title}
 - **일자**: ${minute.date}
 
 ---
 
-${minute.content}
+${mdContent}
   `.trim();
 }
 
@@ -25,11 +34,12 @@ export function formatFolderToMarkdown(folderName: string, minutes: MeetingMinut
   const sorted = [...minutes].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const docs = sorted.map((m) => {
+    const mdContent = turndownService.turndown(m.content || "");
     return `
 ## ${m.title}
 - **일자**: ${m.date}
 
-${m.content}
+${mdContent}
     `.trim();
   });
 

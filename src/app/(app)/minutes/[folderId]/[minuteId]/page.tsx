@@ -13,9 +13,26 @@ import {
   type AttachmentMeta
 } from "@/lib/minutes-store";
 import { uploadMinuteAttachment, getMinuteAttachmentUrl, deleteMinuteAttachment } from "@/lib/minutes-storage";
+import dynamic from "next/dynamic";
 import { formatMinuteToMarkdown, copyMarkdownToClipboard, downloadMarkdownFile } from "@/lib/export-md";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
+
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    [{ size: [] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ color: [] }, { background: [] }],
+    ["link", "image"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["clean"],
+  ],
+};
 
 export default function MeetingMinuteEditorPage() {
   const params = useParams();
@@ -201,13 +218,17 @@ export default function MeetingMinuteEditorPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 flex-1">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="회의 내용을 마크다운 형식으로 작성하세요..."
-            className="w-full flex-1 min-h-[300px] resize-none rounded-xl border border-zinc-200 p-4 text-zinc-800 placeholder-zinc-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+        <div className="flex flex-col gap-4 flex-1 h-full min-h-[500px]">
+          <div className="flex-1 bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col [&_.quill]:flex-1 [&_.quill]:flex [&_.quill]:flex-col [&_.ql-container]:flex-1 [&_.ql-editor]:min-h-[300px]">
+            <ReactQuill
+              theme="snow"
+              value={content}
+              onChange={setContent}
+              modules={quillModules}
+              className="flex-1 flex flex-col h-full"
+              placeholder="회의 내용을 자유롭게 작성하세요..."
+            />
+          </div>
 
           <div className="rounded-xl border border-zinc-200 bg-white p-4">
             <div className="flex items-center justify-between mb-3">
