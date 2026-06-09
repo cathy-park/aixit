@@ -19,6 +19,8 @@ import dynamic from "next/dynamic";
 import { formatMinuteToMarkdown, copyMarkdownToClipboard, downloadMarkdownFile } from "@/lib/export-md";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 
+import "react-quill-new/dist/quill.snow.css";
+
 const MinuteEditorQuill = dynamic(() => import("@/components/minutes/MinuteEditorQuill"), { ssr: false });
 
 export default function MeetingMinuteEditorPage() {

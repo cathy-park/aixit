@@ -1,1 +1,2 @@
-console.log("Checking how to register quill modules in nextjs");
+const ReactQuill = require('react-quill-new');
+console.log(ReactQuill.Quill ? "Quill exists" : "Quill missing");

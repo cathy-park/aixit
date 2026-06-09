@@ -38,19 +38,26 @@ export default function MinuteEditorQuill({ value, onChange, placeholder, classN
     // ReactQuill.Quill 로 접근하여 포맷 등록
     const Quill = ReactQuill.Quill;
     if (Quill) {
-      const Parchment = Quill.import("parchment") as any;
+      try {
+        const Parchment = Quill.import("parchment") as any;
+        const StyleAttributor = Parchment.StyleAttributor || (Parchment.Attributor && Parchment.Attributor.Style);
 
-      const LineHeightStyle = new Parchment.Attributor.Style("lineHeight", "line-height", {
-        scope: Parchment.Scope.BLOCK,
-        whitelist: LINE_HEIGHTS,
-      });
-      Quill.register(LineHeightStyle, true);
+        if (StyleAttributor) {
+          const LineHeightStyle = new StyleAttributor("lineHeight", "line-height", {
+            scope: Parchment.Scope.BLOCK,
+            whitelist: LINE_HEIGHTS,
+          });
+          Quill.register(LineHeightStyle, true);
 
-      const SizeStyle = new Parchment.Attributor.Style("size", "font-size", {
-        scope: Parchment.Scope.INLINE,
-        whitelist: FONT_SIZES,
-      });
-      Quill.register(SizeStyle, true);
+          const SizeStyle = new StyleAttributor("size", "font-size", {
+            scope: Parchment.Scope.INLINE,
+            whitelist: FONT_SIZES,
+          });
+          Quill.register(SizeStyle, true);
+        }
+      } catch (err) {
+        console.error("Quill attribute registration failed", err);
+      }
 
       isQuillConfigured = true;
       setReady(true);
