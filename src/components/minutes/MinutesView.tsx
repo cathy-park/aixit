@@ -306,11 +306,23 @@ export function MinutesView() {
               handleDeleteFolder(folder.id, folder.name);
             }}
           />
-          <PillSearchField
-            value={search}
-            onChange={setSearch}
-            placeholder="회의 제목·내용·폴더명 검색"
-          />
+          <div className="flex items-center gap-3 w-full">
+            <div className="flex-1">
+              <PillSearchField
+                value={search}
+                onChange={setSearch}
+                placeholder="회의 제목·내용·폴더명 검색"
+              />
+            </div>
+            <a
+              href="https://chatgpt.com/g/g-6a27abbc3d308191bfacd0886bd8c962-aixit-hoeyirog"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-full font-semibold text-sm transition shrink-0 shadow-sm border border-emerald-100"
+            >
+              <MessageSquareIcon className="w-4 h-4" /> 회의록 정리 GPT
+            </a>
+          </div>
         </div>
 
         {visibleFolders.length === 0 ? (
