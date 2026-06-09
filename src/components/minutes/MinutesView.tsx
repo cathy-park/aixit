@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { 
   loadMinutesStore, 
   createMinutesFolder, 
@@ -9,31 +10,35 @@ import {
   updateMinutesFolder, 
   deleteMeetingMinute,
   type MinutesFolder,
-  type MeetingMinute
+  type MeetingMinute,
+  type MinuteIconType
 } from "@/lib/minutes-store";
+import { uploadMinuteAttachment, getMinuteAttachmentUrl, deleteMinuteAttachment } from "@/lib/minutes-storage";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
-import { DashboardPageHeader } from "@/components/dashboard/DashboardPageHeader";
+import { FolderSectionAccordionHeader } from "@/components/dashboard/FolderSectionAccordionHeader";
+import { FolderSectionToolbar } from "@/components/dashboard/FolderSectionToolbar";
 import { PillSearchField } from "@/components/ui/PillSearchField";
-import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
-import { MeetingMinuteCard } from "@/components/minutes/MeetingMinuteCard";
-import type { FolderBarItem } from "@/components/dashboard/DashboardFolderBar";
 import { FolderFormModal } from "@/components/dashboard/FolderFormModal";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
-import { pickDefaultMemoFolderId } from "@/lib/memo-folders-store";
+import { cn } from "@/components/ui/cn";
+import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MoreVertical } from "lucide-react";
 
 export function MinutesView() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [folders, setFolders] = useState<MinutesFolder[]>([]);
   const [minutes, setMinutes] = useState<MeetingMinute[]>([]);
-  const [activeFolderId, setActiveFolderId] = useState("all");
   const [search, setSearch] = useState("");
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+  
   const [folderModal, setFolderModal] = useState<{
     mode: "create" | "edit";
     initial: DashboardFolderRecord | null;
-    editFocus?: "name" | "icon" | "color";
   } | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingFolderId, setUploadingFolderId] = useState<string | null>(null);
 
   const refreshData = useCallback(() => {
     const store = loadMinutesStore();
@@ -49,63 +54,30 @@ export function MinutesView() {
     return () => window.removeEventListener("aixit-minutes-updated", onUpdate);
   }, [refreshData]);
 
+  const visibleFolders = useMemo(() => folders.filter((f) => !f.hidden).sort((a,b) => a.order - b.order), [folders]);
+
   useEffect(() => {
-    if (activeFolderId === "all") return;
-    const f = folders.find((x) => x.id === activeFolderId);
-    if (f?.hidden) setActiveFolderId("all");
-  }, [activeFolderId, folders]);
-
-  const visibleFolders = useMemo(() => folders.filter((f) => !f.hidden), [folders]);
-  const hiddenFolders = useMemo(() => folders.filter((f) => f.hidden), [folders]);
-  const hiddenFolderIds = useMemo(() => new Set(hiddenFolders.map(f => f.id)), [hiddenFolders]);
-
-  const allVisibleMinutesCount = useMemo(
-    () => minutes.filter((m) => !hiddenFolderIds.has(m.folderId)).length,
-    [minutes, hiddenFolderIds]
-  );
-
-  const folderBarItems: FolderBarItem[] = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const f of folders) counts[f.id] = 0;
-    for (const m of minutes) {
-      if (hiddenFolderIds.has(m.folderId)) continue;
-      counts[m.folderId] = (counts[m.folderId] ?? 0) + 1;
-    }
-    return visibleFolders.map((f) => ({
-      id: f.id,
-      name: f.name,
-      order: f.order,
-      hidden: f.hidden,
-      iconType: f.iconUrl ? "image_url" : "emoji",
-      imageDataUrl: f.iconUrl,
-      emoji: "📁",
-      color: "#64748b",
-      workflowCount: counts[f.id] ?? 0,
-    }));
-  }, [folders, minutes, visibleFolders, hiddenFolderIds]);
-
-  const hiddenFolderRecords: DashboardFolderRecord[] = useMemo(() => {
-    return hiddenFolders.map(f => ({
-      id: f.id,
-      name: f.name,
-      order: f.order,
-      hidden: f.hidden,
-      iconType: f.iconUrl ? "image_url" : "emoji",
-      imageDataUrl: f.iconUrl,
-      emoji: "📁",
-      color: "#64748b",
-    }));
-  }, [hiddenFolders]);
+    if (!ready) return;
+    setExpandedFolders(prev => {
+      const next = { ...prev };
+      let changed = false;
+      for (const f of visibleFolders) {
+        if (next[f.id] === undefined) {
+          next[f.id] = true;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [ready, visibleFolders]);
 
   const q = search.trim().toLowerCase();
   
   const displayMinutes = useMemo(() => {
-    let list = minutes;
-    if (activeFolderId !== "all") {
-      list = list.filter(m => m.folderId === activeFolderId);
-    } else {
-      list = list.filter(m => !hiddenFolderIds.has(m.folderId));
-    }
+    let list = minutes.filter(m => {
+      const f = folders.find(x => x.id === m.folderId);
+      return f && !f.hidden;
+    });
     
     if (q) {
       list = list.filter(m => {
@@ -115,51 +87,26 @@ export function MinutesView() {
       });
     }
     
-    // Sort by most recently updated
-    return list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [minutes, activeFolderId, hiddenFolderIds, q, folders]);
+    // Sort by latest date first, then latest updatedAt
+    return list.sort((a, b) => {
+      if (a.date !== b.date) {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+  }, [minutes, q, folders]);
 
   const headerCount = displayMinutes.length;
 
-  const handleCreateMinute = () => {
-    let targetFolderId = activeFolderId;
-    if (targetFolderId === "all") {
-      if (visibleFolders.length > 0) {
-        targetFolderId = visibleFolders[0].id;
-      } else {
-        alert("회의록을 생성할 폴더가 없습니다. 폴더를 먼저 만들어주세요.");
-        return;
-      }
-    }
-    router.push(`/minutes/${targetFolderId}/new`);
-  };
+  const toggleAccordion = useCallback((id: string) => {
+    setExpandedFolders(prev => ({ ...prev, [id]: !prev[id] }));
+  }, []);
 
-  const handleToggleFolderHidden = useCallback(
-    (f: DashboardFolderRecord) => {
-      updateMinutesFolder(f.id, { hidden: !f.hidden });
-      refreshData();
-    },
-    [refreshData],
-  );
-
-  const handleDeleteFolder = useCallback(
-    (folder: DashboardFolderRecord) => {
-      if (!confirm(`'${folder.name}' 폴더와 그 안의 모든 회의록을 삭제하시겠습니까?`)) return;
-      deleteMinutesFolder(folder.id);
-      refreshData();
-      if (activeFolderId === folder.id) setActiveFolderId("all");
-    },
-    [activeFolderId, refreshData],
-  );
-
-  const handleDeleteMinute = useCallback(
-    (id: string) => {
-      if (!confirm("이 회의록을 삭제하시겠습니까?")) return;
-      deleteMeetingMinute(id);
-      refreshData();
-    },
-    [refreshData],
-  );
+  const handleDeleteFolder = useCallback((folderId: string, name: string) => {
+    if (!confirm(`'${name}' 폴더와 그 안의 모든 회의록을 삭제하시겠습니까?`)) return;
+    deleteMinutesFolder(folderId);
+    refreshData();
+  }, [refreshData]);
 
   const handleFolderFormSave = (data: any) => {
     if (folderModal?.mode === "create") {
@@ -177,10 +124,91 @@ export function MinutesView() {
     refreshData();
   };
 
+  // --- Folder Attachments & Links Handlers ---
+  const handleAddFolderLink = (folderId: string) => {
+    const url = prompt("링크 주소를 입력하세요 (http://...)");
+    if (!url) return;
+    const title = prompt("링크 제목을 입력하세요") || url;
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const links = folder.links || [];
+    updateMinutesFolder(folderId, { links: [...links, { id: Math.random().toString(36).slice(2), url, title }] });
+    refreshData();
+  };
+
+  const handleDeleteFolderLink = (folderId: string, linkId: string) => {
+    if (!confirm("링크를 삭제하시겠습니까?")) return;
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const links = (folder.links || []).filter(l => l.id !== linkId);
+    updateMinutesFolder(folderId, { links });
+    refreshData();
+  };
+
+  const handleFolderFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!uploadingFolderId) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+      setUploadingFolderId(null);
+      return;
+    }
+    
+    const folderId = uploadingFolderId;
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) {
+      setUploadingFolderId(null);
+      return;
+    }
+
+    try {
+      const newAtts = [...(folder.attachments || [])];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const path = await uploadMinuteAttachment(file);
+        newAtts.push({
+          id: Math.random().toString(36).slice(2),
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          storagePath: path,
+        });
+      }
+      updateMinutesFolder(folderId, { attachments: newAtts });
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      alert("파일 첨부 중 오류가 발생했습니다.");
+    } finally {
+      setUploadingFolderId(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteFolderAttachment = async (folderId: string, attId: string, path?: string) => {
+    if (!confirm("첨부파일을 삭제하시겠습니까?")) return;
+    if (path) {
+      await deleteMinuteAttachment(path);
+    }
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const attachments = (folder.attachments || []).filter(a => a.id !== attId);
+    updateMinutesFolder(folderId, { attachments });
+    refreshData();
+  };
+
+  const handleDownloadAttachment = async (path?: string) => {
+    if (!path) return;
+    const url = await getMinuteAttachmentUrl(path);
+    if (url) {
+      window.open(url, "_blank");
+    } else {
+      alert("파일을 불러오지 못했습니다.");
+    }
+  };
+
+
   if (!ready) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-zinc-50 text-sm text-zinc-600">불러오는 중…</div>
-    );
+    return <div className="flex min-h-dvh items-center justify-center bg-zinc-50 text-sm text-zinc-600">불러오는 중…</div>;
   }
 
   return (
@@ -191,35 +219,20 @@ export function MinutesView() {
         description="주제별 폴더로 회의록을 관리하고 쉽게 찾아볼 수 있습니다."
         hideOnMobile
         rightSlot={
-          <button type="button" onClick={handleCreateMinute} className={WORKSPACE_HEADER_ADD_MATCH_BTN}>
-            추가
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              type="button" 
+              onClick={() => setFolderModal({ mode: "create", initial: null })} 
+              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              <PlusIcon className="w-4 h-4" /> 폴더 추가
+            </button>
+          </div>
         }
       />
 
       <AppMainColumn className="min-w-0 pb-24 text-sm leading-relaxed text-zinc-900">
         <div className="mb-6 space-y-4">
-          <DashboardPageHeader
-            allWorkflowCount={allVisibleMinutesCount}
-            folders={folderBarItems}
-            activeFolderId={activeFolderId}
-            onFolderChange={setActiveFolderId}
-            onAddFolderClick={() => setFolderModal({ mode: "create", initial: null })}
-            hiddenFolderRecords={hiddenFolderRecords}
-            onUnhideHiddenFolder={(id) => {
-              updateMinutesFolder(id, { hidden: false });
-              refreshData();
-            }}
-            onDeleteHiddenFolderRequest={handleDeleteFolder}
-            onFolderOpenEdit={(f, focus) => setFolderModal({ mode: "edit", initial: f, editFocus: focus })}
-            onFolderToggleHidden={handleToggleFolderHidden}
-            onFolderDeleteRequest={handleDeleteFolder}
-            onReorderFolders={(dragId, beforeId) => {
-              // Order mapping is a bit complex, we can leave reorder out or implement it
-              // For simplicity, we just trigger refresh. Order logic needs store update.
-            }}
-          />
-
           <PillSearchField
             value={search}
             onChange={setSearch}
@@ -227,29 +240,185 @@ export function MinutesView() {
           />
         </div>
 
-        {displayMinutes.length > 0 ? (
-          <div className="grid w-full grid-flow-row gap-4 grid-cols-1 @min-[800px]:grid-cols-2 @min-[1200px]:grid-cols-3 @min-[1600px]:grid-cols-4">
-            {displayMinutes.map((minute) => {
-              const folder = folders.find(f => f.id === minute.folderId);
-              if (!folder) return null;
+        {visibleFolders.length === 0 ? (
+          <div className="flex h-48 items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/50 mt-8">
+            <span className="text-zinc-400">폴더가 없습니다. 우측 상단의 '폴더 추가' 버튼을 눌러보세요.</span>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
+            {visibleFolders.map((folder) => {
+              const fMinutes = displayMinutes.filter(m => m.folderId === folder.id);
+              const isExpanded = expandedFolders[folder.id];
+              
+              const dr: DashboardFolderRecord = {
+                id: folder.id,
+                name: folder.name,
+                hidden: folder.hidden,
+                iconType: folder.iconUrl ? "image_url" : "emoji",
+                imageDataUrl: folder.iconUrl,
+                emoji: "📁",
+                color: "#64748b",
+              };
+
+              const links = folder.links || [];
+              const attachments = folder.attachments || [];
+              const hasFolderData = links.length > 0 || attachments.length > 0;
+
               return (
-                <MeetingMinuteCard
-                  key={minute.id}
-                  minute={minute}
-                  folder={folder}
-                  onDelete={() => handleDeleteMinute(minute.id)}
-                />
+                <div key={folder.id} className="flex flex-col gap-2">
+                  <div className="group relative pr-4">
+                    <FolderSectionAccordionHeader
+                      folder={dr}
+                      count={fMinutes.length}
+                      expanded={isExpanded}
+                      onToggle={() => toggleAccordion(folder.id)}
+                      actions={
+                        <FolderSectionToolbar
+                          folder={dr}
+                          entityLabel="folder"
+                          onOpenEdit={(focus) => setFolderModal({ mode: "edit", initial: folder as any })}
+                          onToggleHidden={() => {
+                            updateMinutesFolder(folder.id, { hidden: true });
+                            refreshData();
+                          }}
+                          onDelete={() => handleDeleteFolder(folder.id, folder.name)}
+                        />
+                      }
+                    />
+                  </div>
+
+                  {isExpanded && (
+                    <div className="flex flex-col gap-3 pl-2 sm:pl-4 mb-4">
+                      {/* 폴더 공통 자료 영역 */}
+                      <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 mb-2">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                            <PaperclipIcon className="w-4 h-4 text-zinc-500" /> 관련 링크 및 계약서
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleAddFolderLink(folder.id)}
+                              className="text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50/50 px-2 py-1 rounded-md"
+                            >
+                              + 링크
+                            </button>
+                            <button
+                              onClick={() => {
+                                setUploadingFolderId(folder.id);
+                                fileInputRef.current?.click();
+                              }}
+                              disabled={uploadingFolderId === folder.id}
+                              className="text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50/50 px-2 py-1 rounded-md disabled:opacity-50"
+                            >
+                              + 파일
+                            </button>
+                          </div>
+                        </div>
+
+                        {!hasFolderData ? (
+                          <p className="text-xs text-zinc-400">등록된 공통 링크나 자료가 없습니다.</p>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            {links.map((link) => (
+                              <div key={link.id} className="flex items-center justify-between group rounded-lg bg-white px-3 py-2 text-sm border border-zinc-200 shadow-sm">
+                                <a href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-700 hover:underline min-w-0 flex-1">
+                                  <LinkIcon className="w-4 h-4 shrink-0 text-indigo-400" />
+                                  <span className="truncate">{link.title}</span>
+                                </a>
+                                <button
+                                  onClick={() => handleDeleteFolderLink(folder.id, link.id)}
+                                  className="text-zinc-300 hover:text-red-600 transition ml-2 shrink-0 opacity-0 group-hover:opacity-100"
+                                  title="삭제"
+                                >
+                                  <XIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            {attachments.map((att) => (
+                              <div key={att.id} className="flex items-center justify-between group rounded-lg bg-white px-3 py-2 text-sm border border-zinc-200 shadow-sm">
+                                <button
+                                  onClick={() => handleDownloadAttachment(att.storagePath)}
+                                  className="flex items-center gap-2 text-blue-700 hover:underline min-w-0 flex-1 text-left"
+                                >
+                                  <FileTextIcon className="w-4 h-4 shrink-0 text-blue-400" />
+                                  <span className="truncate">{att.name}</span>
+                                  <span className="text-xs text-zinc-400 ml-1 shrink-0">({Math.round(att.size / 1024)} KB)</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteFolderAttachment(folder.id, att.id, att.storagePath)}
+                                  className="text-zinc-300 hover:text-red-600 transition ml-2 shrink-0 opacity-0 group-hover:opacity-100"
+                                  title="삭제"
+                                >
+                                  <XIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 회의록 리스트 (세로형) */}
+                      {fMinutes.length === 0 ? (
+                        <div className="py-6 text-center text-zinc-400 bg-white rounded-xl border border-zinc-200 border-dashed">
+                          이 폴더에 회의록이 없습니다.
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {fMinutes.map((minute) => (
+                            <Link
+                              key={minute.id}
+                              href={`/minutes/${folder.id}/${minute.id}`}
+                              className="group flex items-center justify-between bg-white border border-zinc-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition"
+                            >
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
+                                {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
+                                {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
+                                
+                                <span className="font-medium text-zinc-900 truncate">
+                                  {minute.title.trim() || "제목 없음"}
+                                </span>
+
+                                <div className="hidden sm:flex items-center gap-2 ml-4 shrink-0">
+                                  {minute.attachments && minute.attachments.length > 0 && (
+                                    <span className="flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">
+                                      <PaperclipIcon className="w-3 h-3" /> {minute.attachments.length}
+                                    </span>
+                                  )}
+                                  {minute.links && minute.links.length > 0 && (
+                                    <span className="flex items-center gap-1 text-[11px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                                      <LinkIcon className="w-3 h-3" /> {minute.links.length}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-4 shrink-0 ml-4">
+                                <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
+                                  <CalendarIcon className="w-3.5 h-3.5" />
+                                  {minute.date}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
-        ) : (
-          <div className="flex h-48 items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/50 mt-8">
-            <span className="text-zinc-400">
-              {q ? "검색 결과가 없습니다." : "이 폴더에 회의록이 없어요. 우측 상단의 '추가' 버튼을 눌러보세요."}
-            </span>
-          </div>
         )}
       </AppMainColumn>
+
+      <input
+        type="file"
+        multiple
+        ref={fileInputRef}
+        className="hidden"
+        onChange={handleFolderFileChange}
+      />
 
       {folderModal && (
         <FolderFormModal
@@ -258,7 +427,6 @@ export function MinutesView() {
           onSave={handleFolderFormSave}
           initial={folderModal.initial}
           mode={folderModal.mode}
-          highlightSection={folderModal.editFocus}
         />
       )}
     </>

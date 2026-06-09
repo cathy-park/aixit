@@ -1,3 +1,18 @@
+export type AttachmentMeta = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  // Supabase Storage 경로 또는 IndexedDB 식별자
+  storagePath?: string; 
+};
+
+export type MinuteLink = {
+  id: string;
+  url: string;
+  title: string;
+};
+
 export type MinutesFolder = {
   id: string;
   name: string;
@@ -5,15 +20,11 @@ export type MinutesFolder = {
   createdAt: string; // ISO 8601
   order: number;
   hidden?: boolean;
+  attachments?: AttachmentMeta[];
+  links?: MinuteLink[];
 };
 
 export type MinuteIconType = "meet" | "email" | "default";
-
-export type MinuteLink = {
-  id: string;
-  url: string;
-  title: string;
-};
 
 export type MeetingMinute = {
   id: string;
@@ -26,15 +37,6 @@ export type MeetingMinute = {
   links?: MinuteLink[];
   createdAt: string;
   updatedAt: string;
-};
-
-export type AttachmentMeta = {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  // Supabase Storage 경로 또는 IndexedDB 식별자
-  storagePath?: string; 
 };
 
 export type MinutesStoreData = {
@@ -89,7 +91,7 @@ export function createMinutesFolder(name: string): MinutesFolder {
   return folder;
 }
 
-export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden">>): boolean {
+export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden" | "attachments" | "links">>): boolean {
   const store = loadMinutesStore();
   const folder = store.folders.find((f) => f.id === id);
   if (!folder) return false;
@@ -97,6 +99,8 @@ export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFol
   if (updates.iconUrl !== undefined) folder.iconUrl = updates.iconUrl;
   if (updates.order !== undefined) folder.order = updates.order;
   if (updates.hidden !== undefined) folder.hidden = updates.hidden;
+  if (updates.attachments !== undefined) folder.attachments = updates.attachments;
+  if (updates.links !== undefined) folder.links = updates.links;
   saveMinutesStore(store);
   return true;
 }
