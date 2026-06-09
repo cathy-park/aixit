@@ -318,7 +318,7 @@ export function MinutesView() {
               href="https://chatgpt.com/g/g-6a27abbc3d308191bfacd0886bd8c962-aixit-hoeyirog"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 rounded-full font-semibold text-sm transition shrink-0 shadow-sm border border-zinc-200"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 rounded-full font-semibold text-sm transition shrink-0 border border-zinc-200"
             >
               ✏️ AIXIT 회의록
             </a>
