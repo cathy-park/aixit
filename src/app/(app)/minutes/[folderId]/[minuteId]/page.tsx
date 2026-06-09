@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon } from "lucide-react";
+import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon } from "lucide-react";
 import { 
   loadMinutesStore, 
   createMeetingMinute, 
@@ -41,6 +41,8 @@ export default function MeetingMinuteEditorPage() {
   const folderId = typeof params?.folderId === "string" ? params.folderId : "";
   const minuteId = typeof params?.minuteId === "string" ? params.minuteId : "";
   const isNew = minuteId === "new";
+
+  const [isEditing, setIsEditing] = useState(isNew);
 
   const [folder, setFolder] = useState<MinutesFolder | null>(null);
   const [minute, setMinute] = useState<MeetingMinute | null>(null);
@@ -99,10 +101,11 @@ export default function MeetingMinuteEditorPage() {
     if (isNew) {
       const m = createMeetingMinute(folderId, title, date);
       updateMeetingMinute(m.id, { content, attachments });
+      // Redirect to the new minute ID but in viewer mode
       router.replace(`/minutes/${folderId}/${m.id}`);
     } else {
       updateMeetingMinute(minuteId, { title, date, content, attachments });
-      alert("저장되었습니다.");
+      setIsEditing(false); // Switch back to viewer mode
     }
   };
 
@@ -181,33 +184,48 @@ export default function MeetingMinuteEditorPage() {
     <AppMainColumn>
       <AdaptivePageHeader
         title={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-zinc-500 text-sm font-medium">
             <Link href={`/minutes/${folder.id}`} className="p-1 -ml-1 text-zinc-400 hover:text-zinc-900 transition">
-              <ChevronLeftIcon className="w-6 h-6" />
+              <ChevronLeftIcon className="w-5 h-5" />
             </Link>
-            {isNew ? "새 회의록" : title}
+            {folder.name}
           </div>
         }
       />
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full flex flex-col h-full">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex flex-col gap-2 flex-1">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="회의 제목"
-              className="text-2xl font-bold border-none outline-none focus:ring-0 px-0 bg-transparent placeholder-zinc-300"
-            />
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="text-sm text-zinc-500 border-none outline-none focus:ring-0 px-0 bg-transparent"
-            />
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+          <div className="flex flex-col gap-3 flex-1">
+            {isEditing ? (
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="회의 제목을 입력하세요"
+                className="text-3xl font-extrabold border-none outline-none focus:ring-0 px-0 bg-transparent placeholder-zinc-300 w-full"
+              />
+            ) : (
+              <h1 className="text-3xl font-extrabold text-zinc-900 break-words">{title || "제목 없음"}</h1>
+            )}
+            
+            {isEditing ? (
+              <div className="flex items-center gap-2 text-sm text-zinc-500">
+                <CalendarIcon className="w-4 h-4" />
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="text-sm text-zinc-600 border border-zinc-200 rounded-md px-2 py-1 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-auto max-w-[150px]"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-zinc-500">
+                <CalendarIcon className="w-4 h-4" />
+                <span>{date}</span>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            {!isNew && (
+          <div className="flex items-center gap-2 shrink-0">
+            {!isNew && !isEditing && (
               <>
                 <button
                   onClick={handleCopyMarkdown}
@@ -223,62 +241,98 @@ export default function MeetingMinuteEditorPage() {
                 >
                   <DownloadIcon className="w-5 h-5" />
                 </button>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition"
+                >
+                  <PencilIcon className="w-4 h-4" />수정
+                </button>
               </>
             )}
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
-            >
-              <SaveIcon className="w-4 h-4" />저장
-            </button>
+            {isEditing && (
+              <>
+                {!isNew && (
+                  <button
+                    onClick={() => {
+                      if (minute) {
+                        setTitle(minute.title);
+                        setDate(minute.date);
+                        setContent(minute.content);
+                        setAttachments(minute.attachments || []);
+                      }
+                      setIsEditing(false);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg transition"
+                  >
+                    취소
+                  </button>
+                )}
+                <button
+                  onClick={handleSave}
+                  className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
+                >
+                  <SaveIcon className="w-4 h-4" />저장
+                </button>
+              </>
+            )}
           </div>
         </div>
 
         <div className="flex flex-col gap-4 flex-1 mt-2">
-          {/* 에디터 높이를 고정하고 내부 스크롤이 생기도록 설정 */}
-          <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col h-[600px] [&_.quill]:flex-1 [&_.quill]:flex [&_.quill]:flex-col [&_.ql-toolbar]:shrink-0 [&_.ql-container]:flex-1 [&_.ql-container]:overflow-y-auto [&_.ql-editor]:min-h-full">
-            <style dangerouslySetInnerHTML={{__html: `
-              .ql-snow .ql-picker.ql-lineHeight .ql-picker-label::before,
-              .ql-snow .ql-picker.ql-lineHeight .ql-picker-item::before {
-                content: attr(data-value);
-              }
-              .ql-snow .ql-picker.ql-lineHeight .ql-picker-label:not([data-value])::before,
-              .ql-snow .ql-picker.ql-lineHeight .ql-picker-item:not([data-value])::before {
-                content: '줄간격';
-              }
-              .ql-snow .ql-picker.ql-lineHeight {
-                width: 70px;
-              }
-            `}} />
-            <ReactQuill
-              theme="snow"
-              value={content}
-              onChange={setContent}
-              modules={quillModules}
-              className="flex-1 flex flex-col h-full"
-              placeholder="회의 내용을 자유롭게 작성하세요..."
+          {isEditing ? (
+            <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col h-[600px] [&_.quill]:flex-1 [&_.quill]:flex [&_.quill]:flex-col [&_.ql-toolbar]:shrink-0 [&_.ql-container]:flex-1 [&_.ql-container]:overflow-y-auto [&_.ql-editor]:min-h-full">
+              <style dangerouslySetInnerHTML={{__html: `
+                .ql-snow .ql-picker.ql-lineHeight .ql-picker-label::before,
+                .ql-snow .ql-picker.ql-lineHeight .ql-picker-item::before {
+                  content: attr(data-value);
+                }
+                .ql-snow .ql-picker.ql-lineHeight .ql-picker-label:not([data-value])::before,
+                .ql-snow .ql-picker.ql-lineHeight .ql-picker-item:not([data-value])::before {
+                  content: '줄간격';
+                }
+                .ql-snow .ql-picker.ql-lineHeight {
+                  width: 70px;
+                }
+              `}} />
+              <ReactQuill
+                theme="snow"
+                value={content}
+                onChange={setContent}
+                modules={quillModules}
+                className="flex-1 flex flex-col h-full"
+                placeholder="회의 내용을 자유롭게 작성하세요..."
+              />
+            </div>
+          ) : (
+            <div 
+              className="bg-white rounded-xl border border-zinc-200 p-6 sm:p-8 min-h-[400px] prose max-w-none ql-editor"
+              dangerouslySetInnerHTML={{ __html: content || "<p class='text-zinc-400'>내용이 없습니다.</p>" }} 
             />
-          </div>
+          )}
 
           <div className="rounded-xl border border-zinc-200 bg-white p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
                 <PaperclipIcon className="w-4 h-4" /> 첨부파일
               </h3>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
-              >
-                {uploading ? "업로드 중..." : "+ 파일 추가"}
-              </button>
-              <input
-                type="file"
-                multiple
-                ref={fileInputRef}
-                className="hidden"
-                onChange={handleFileChange}
-              />
+              {isEditing && (
+                <>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                  >
+                    {uploading ? "업로드 중..." : "+ 파일 추가"}
+                  </button>
+                  <input
+                    type="file"
+                    multiple
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </>
+              )}
             </div>
             
             {attachments.length === 0 ? (
@@ -293,13 +347,15 @@ export default function MeetingMinuteEditorPage() {
                     >
                       {att.name} <span className="text-xs text-zinc-400 ml-1">({Math.round(att.size / 1024)} KB)</span>
                     </button>
-                    <button
-                      onClick={() => handleDeleteAttachment(att.id, att.storagePath)}
-                      className="text-zinc-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
-                      title="삭제"
-                    >
-                      <XIcon className="w-4 h-4" />
-                    </button>
+                    {isEditing && (
+                      <button
+                        onClick={() => handleDeleteAttachment(att.id, att.storagePath)}
+                        className="text-zinc-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                        title="삭제"
+                      >
+                        <XIcon className="w-4 h-4" />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
