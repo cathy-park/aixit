@@ -23,9 +23,10 @@ import { PillSearchField } from "@/components/ui/PillSearchField";
 import { FolderFormModal } from "@/components/dashboard/FolderFormModal";
 import { FolderSummaryEditor } from "./FolderSummaryEditor";
 import { InlineMinuteView } from "./InlineMinuteView";
+import { formatFolderToMarkdown, copyMarkdownToClipboard } from "@/lib/export-md";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
-import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon } from "lucide-react";
+import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon } from "lucide-react";
 
 export function MinutesView() {
   const router = useRouter();
@@ -418,8 +419,18 @@ export function MinutesView() {
                         </div>
                       </details>
 
-                      {/* 폴더 내 회의록 추가 버튼 */}
-                      <div className="flex justify-end mb-2 pr-4">
+                      {/* 폴더 내 회의록 추가 및 전체 복사 버튼 */}
+                      <div className="flex justify-end gap-2 mb-2 pr-4">
+                        <button
+                          onClick={async () => {
+                            const md = formatFolderToMarkdown(folder.name, fMinutes);
+                            const ok = await copyMarkdownToClipboard(md);
+                            if (ok) alert("폴더 전체 회의록이 마크다운으로 복사되었습니다!");
+                          }}
+                          className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-lg transition"
+                        >
+                          <CopyIcon className="w-4 h-4" /> 전체 복사
+                        </button>
                         <button
                           onClick={() => setExpandedMinuteId("new")}
                           className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
