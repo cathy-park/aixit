@@ -20,6 +20,19 @@ import dynamic from "next/dynamic";
 import { formatMinuteToMarkdown, copyMarkdownToClipboard, downloadMarkdownFile } from "@/lib/export-md";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 
+function FaviconImage({ url }: { url: string }) {
+  const [error, setError] = useState(false);
+  const getFaviconUrl = (u: string) => {
+    try { return `https://www.google.com/s2/favicons?domain=${new URL(u).hostname}&sz=64`; }
+    catch { return null; }
+  };
+  const favUrl = getFaviconUrl(url);
+
+  if (!favUrl || error) return <LinkIcon className="w-4 h-4 shrink-0" />;
+  return <img src={favUrl} alt="" className="w-4 h-4 shrink-0 rounded-sm bg-white" onError={() => setError(true)} />;
+}
+
+
 import "react-quill-new/dist/quill.snow.css";
 
 const MinuteEditorQuill = dynamic(() => import("@/components/minutes/MinuteEditorQuill"), { ssr: false });
@@ -307,7 +320,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                 {links.map((link) => (
                   <div key={link.id} className="flex items-center justify-between group rounded-lg bg-indigo-50/40 px-3 py-2 text-sm border border-indigo-100/50">
                     <a href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-700 hover:text-indigo-900 hover:underline min-w-0 flex-1">
-                      <LinkIcon className="w-4 h-4 shrink-0" />
+                      <FaviconImage url={link.url} />
                       <span className="truncate">{link.title}</span>
                     </a>
                     {isEditing && (

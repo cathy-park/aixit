@@ -28,6 +28,19 @@ import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
 import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon } from "lucide-react";
 
+function FaviconImage({ url }: { url: string }) {
+  const [error, setError] = useState(false);
+  const getFaviconUrl = (u: string) => {
+    try { return `https://www.google.com/s2/favicons?domain=${new URL(u).hostname}&sz=64`; }
+    catch { return null; }
+  };
+  const favUrl = getFaviconUrl(url);
+
+  if (!favUrl || error) return <LinkIcon className="w-4 h-4 shrink-0" />;
+  return <img src={favUrl} alt="" className="w-4 h-4 shrink-0 rounded-sm bg-white" onError={() => setError(true)} />;
+}
+
+
 export function MinutesView() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
