@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+
 import Link from "next/link";
 import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PlusIcon, MessageSquareIcon } from "lucide-react";
 import { 
   loadMinutesStore, 
   createMeetingMinute, 
   updateMeetingMinute,
+  deleteMeetingMinute,
   type MinutesFolder,
   type MeetingMinute,
   type AttachmentMeta,
@@ -23,11 +24,7 @@ import "react-quill-new/dist/quill.snow.css";
 
 const MinuteEditorQuill = dynamic(() => import("@/components/minutes/MinuteEditorQuill"), { ssr: false });
 
-export default function MeetingMinuteEditorPage() {
-  const params = useParams();
-  const router = useRouter();
-  const folderId = typeof params?.folderId === "string" ? params.folderId : "";
-  const minuteId = typeof params?.minuteId === "string" ? params.minuteId : "";
+export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: string, minuteId: string, onClose: () => void }) {
   const isNew = minuteId === "new";
 
   const [isEditing, setIsEditing] = useState(isNew);
@@ -49,7 +46,7 @@ export default function MeetingMinuteEditorPage() {
     const store = loadMinutesStore();
     const f = store.folders.find((x) => x.id === folderId);
     if (!f) {
-      router.replace("/minutes");
+      onClose(); // router.replace("/minutes");
       return;
     }
     setFolder(f);
@@ -65,10 +62,10 @@ export default function MeetingMinuteEditorPage() {
         setAttachments(m.attachments || []);
         setLinks(m.links || []);
       } else {
-        router.replace(`/minutes/${folderId}`);
+        onClose(); // router.replace(`/minutes/${folderId}`);
       }
     }
-  }, [folderId, minuteId, isNew, router]);
+  }, [folderId, minuteId, isNew]);
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -78,7 +75,7 @@ export default function MeetingMinuteEditorPage() {
     if (isNew) {
       const m = createMeetingMinute(folderId, title, date, iconType);
       updateMeetingMinute(m.id, { content, attachments, links });
-      router.replace(`/minutes/${folderId}/${m.id}`);
+      onClose(); // router.replace(`/minutes/${folderId}/${m.id}`);
     } else {
       updateMeetingMinute(minuteId, { title, date, content, attachments, iconType, links });
       setIsEditing(false);
@@ -164,16 +161,11 @@ export default function MeetingMinuteEditorPage() {
   if (!folder) return null;
 
   return (
-    <AppMainColumn className="bg-zinc-50 min-h-dvh pt-6">
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full flex flex-col h-full bg-white sm:rounded-2xl sm:shadow-sm sm:border sm:border-zinc-200">
+    <div className="w-full bg-zinc-50 border-t border-zinc-200 mt-0">
+      <div className="p-4 sm:p-6 w-full flex flex-col bg-white">
         
         {/* Back Link */}
-        <div className="mb-6">
-          <Link href={`/minutes`} className="inline-flex items-center gap-1 text-sm font-medium text-zinc-500 hover:text-zinc-900 transition">
-            <ChevronLeftIcon className="w-4 h-4" />
-            {folder.name}
-          </Link>
-        </div>
+        
 
         {/* Title Row */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
@@ -218,7 +210,16 @@ export default function MeetingMinuteEditorPage() {
                 <button onClick={handleDownloadMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 다운로드">
                   <DownloadIcon className="w-5 h-5" />
                 </button>
-                <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm">
+                
+                <button onClick={async () => {
+                  if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
+                    await deleteMeetingMinute(minute.id);
+                    onClose();
+                  }
+                }} className="flex items-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm ml-2">
+                  <XIcon className="w-4 h-4" />삭제
+                </button>
+<button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm">
                   <PencilIcon className="w-4 h-4" />수정
                 </button>
               </>
@@ -353,6 +354,6 @@ export default function MeetingMinuteEditorPage() {
           )}
         </div>
       </div>
-    </AppMainColumn>
+    </div>
   );
 }

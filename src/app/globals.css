@@ -43,3 +43,8 @@ body {
 .ql-editor h6 {
   line-height: inherit;
 }
+
+/* 빈 줄 간격 유지를 위한 속성 */
+.ql-editor p {
+  min-height: 1.8em;
+}

@@ -22,6 +22,7 @@ import { DashboardPageHeader } from "@/components/dashboard/DashboardPageHeader"
 import { PillSearchField } from "@/components/ui/PillSearchField";
 import { FolderFormModal } from "@/components/dashboard/FolderFormModal";
 import { FolderSummaryEditor } from "./FolderSummaryEditor";
+import { InlineMinuteView } from "./InlineMinuteView";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
 import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon } from "lucide-react";
@@ -29,6 +30,7 @@ import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIco
 export function MinutesView() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [expandedMinuteId, setExpandedMinuteId] = useState<string | null>(null);
   const [folders, setFolders] = useState<MinutesFolder[]>([]);
   const [minutes, setMinutes] = useState<MeetingMinute[]>([]);
   const [search, setSearch] = useState("");
@@ -250,9 +252,11 @@ export function MinutesView() {
             onFolderChange={(id: string) => {
               if (id === activeFolderId) {
                 setActiveFolderId(null);
+                setExpandedMinuteId(null);
                 setExpandedFolders(visibleFolders.reduce((acc, f) => ({ ...acc, [f.id]: true }), {}));
               } else {
                 setActiveFolderId(id);
+                setExpandedMinuteId(null);
                 setExpandedFolders({ [id]: true });
               }
             }}
@@ -416,12 +420,12 @@ export function MinutesView() {
 
                       {/* 폴더 내 회의록 추가 버튼 */}
                       <div className="flex justify-end mb-2 pr-4">
-                        <Link
-                          href={`/minutes/${folder.id}/new`}
+                        <button
+                          onClick={() => setExpandedMinuteId("new")}
                           className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
                         >
                           <PlusIcon className="w-4 h-4" /> 회의록 추가
-                        </Link>
+                        </button>
                       </div>
 
                       {/* 회의록 리스트 (세로형) */}
