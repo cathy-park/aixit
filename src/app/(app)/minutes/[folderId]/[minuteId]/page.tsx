@@ -26,6 +26,7 @@ const quillModules = {
   toolbar: [
     [{ header: [1, 2, 3, false] }],
     [{ size: [] }],
+    [{ lineHeight: ["1.0", "1.2", "1.5", "1.8", "2.0", "2.5", "3.0"] }],
     ["bold", "italic", "underline", "strike"],
     [{ color: [] }, { background: [] }],
     ["link", "image"],
@@ -53,6 +54,21 @@ export default function MeetingMinuteEditorPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Quill 커스텀 줄높이 포맷 등록
+    if (typeof window !== "undefined") {
+      import("react-quill-new").then((m) => {
+        const Quill = m.Quill;
+        if (Quill) {
+          const Parchment = Quill.import("parchment") as any;
+          const LineHeightStyle = new Parchment.Attributor.Style("lineHeight", "line-height", {
+            scope: Parchment.Scope.BLOCK,
+            whitelist: ["1.0", "1.2", "1.5", "1.8", "2.0", "2.5", "3.0"]
+          });
+          Quill.register(LineHeightStyle, true);
+        }
+      });
+    }
+
     const store = loadMinutesStore();
     const f = store.folders.find((x) => x.id === folderId);
     if (!f) {
@@ -218,8 +234,22 @@ export default function MeetingMinuteEditorPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 flex-1 h-full min-h-[500px]">
-          <div className="flex-1 bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col [&_.quill]:flex-1 [&_.quill]:flex [&_.quill]:flex-col [&_.ql-container]:flex-1 [&_.ql-editor]:min-h-[300px]">
+        <div className="flex flex-col gap-4 flex-1 mt-2">
+          {/* 에디터 높이를 고정하고 내부 스크롤이 생기도록 설정 */}
+          <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden flex flex-col h-[600px] [&_.quill]:flex-1 [&_.quill]:flex [&_.quill]:flex-col [&_.ql-toolbar]:shrink-0 [&_.ql-container]:flex-1 [&_.ql-container]:overflow-y-auto [&_.ql-editor]:min-h-full">
+            <style dangerouslySetInnerHTML={{__html: `
+              .ql-snow .ql-picker.ql-lineHeight .ql-picker-label::before,
+              .ql-snow .ql-picker.ql-lineHeight .ql-picker-item::before {
+                content: attr(data-value);
+              }
+              .ql-snow .ql-picker.ql-lineHeight .ql-picker-label:not([data-value])::before,
+              .ql-snow .ql-picker.ql-lineHeight .ql-picker-item:not([data-value])::before {
+                content: '줄간격';
+              }
+              .ql-snow .ql-picker.ql-lineHeight {
+                width: 70px;
+              }
+            `}} />
             <ReactQuill
               theme="snow"
               value={content}

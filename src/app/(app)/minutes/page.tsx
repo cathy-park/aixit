@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
-import { FolderIcon, PlusIcon, TrashIcon, PencilIcon } from "lucide-react";
+import { FolderIcon, PlusIcon, TrashIcon, PencilIcon, ImageIcon } from "lucide-react";
 import { loadMinutesStore, createMinutesFolder, deleteMinutesFolder, updateMinutesFolder, type MinutesFolder } from "@/lib/minutes-store";
 import { AdaptivePageHeader } from "@/components/layout/AdaptivePageHeader";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
@@ -30,7 +31,7 @@ export default function MinutesFoldersPage() {
     e.stopPropagation();
     const name = prompt("새로운 이름을 입력하세요:", oldName);
     if (!name || name === oldName) return;
-    updateMinutesFolder(id, name);
+    updateMinutesFolder(id, { name });
   };
 
   const handleDelete = (id: string, name: string, e: React.MouseEvent) => {
@@ -38,6 +39,49 @@ export default function MinutesFoldersPage() {
     e.stopPropagation();
     if (!confirm(`'${name}' 폴더와 그 안의 모든 회의록을 삭제하시겠습니까?`)) return;
     deleteMinutesFolder(id);
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+
+  const handleIconClick = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveFolderId(id);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeFolderId) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        
+        const size = 120;
+        canvas.width = size;
+        canvas.height = size;
+        
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        const x = (size - w) / 2;
+        const y = (size - h) / 2;
+        
+        ctx.drawImage(img, x, y, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+        updateMinutesFolder(activeFolderId, { iconUrl: dataUrl });
+        setActiveFolderId(null);
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   return (
@@ -74,10 +118,22 @@ export default function MinutesFoldersPage() {
                 className="group relative flex flex-col rounded-2xl border border-zinc-200 bg-white p-5 hover:border-zinc-300 hover:shadow-sm transition"
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                    <FolderIcon className="h-5 w-5" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 overflow-hidden shadow-sm">
+                    {folder.iconUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={folder.iconUrl} alt="icon" className="w-full h-full object-cover" />
+                    ) : (
+                      <FolderIcon className="h-6 w-6" />
+                    )}
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex items-center opacity-0 group-hover:opacity-100 transition">
+                    <button
+                      onClick={(e) => handleIconClick(folder.id, e)}
+                      className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition"
+                      title="아이콘 변경"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={(e) => handleEdit(folder.id, folder.name, e)}
                       className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition"
@@ -102,6 +158,13 @@ export default function MinutesFoldersPage() {
             ))}
           </div>
         )}
+        <input 
+          type="file" 
+          accept="image/*" 
+          ref={fileInputRef} 
+          className="hidden" 
+          onChange={handleFileChange} 
+        />
       </div>
     </AppMainColumn>
   );

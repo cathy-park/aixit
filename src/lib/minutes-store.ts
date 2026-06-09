@@ -1,6 +1,7 @@
 export type MinutesFolder = {
   id: string;
   name: string;
+  iconUrl?: string; // base64 resized image
   createdAt: string; // ISO 8601
   order: number;
 };
@@ -77,11 +78,12 @@ export function createMinutesFolder(name: string): MinutesFolder {
   return folder;
 }
 
-export function updateMinutesFolder(id: string, name: string): boolean {
+export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "iconUrl">>): boolean {
   const store = loadMinutesStore();
   const folder = store.folders.find((f) => f.id === id);
   if (!folder) return false;
-  folder.name = name.trim();
+  if (updates.name !== undefined) folder.name = updates.name.trim();
+  if (updates.iconUrl !== undefined) folder.iconUrl = updates.iconUrl;
   saveMinutesStore(store);
   return true;
 }
