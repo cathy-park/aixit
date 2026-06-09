@@ -31,7 +31,21 @@ import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIco
 function FaviconImage({ url }: { url: string }) {
   const [error, setError] = useState(false);
   const getFaviconUrl = (u: string) => {
-    try { return `https://www.google.com/s2/favicons?domain=${new URL(u).hostname}&sz=64`; }
+    try { 
+      const parsed = new URL(u);
+      const hostname = parsed.hostname;
+      const pathname = parsed.pathname;
+
+      if (hostname === 'docs.google.com') {
+        if (pathname.startsWith('/spreadsheets')) return 'https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico';
+        if (pathname.startsWith('/document')) return 'https://ssl.gstatic.com/docs/documents/share/images/favicon3.ico';
+        if (pathname.startsWith('/presentation')) return 'https://ssl.gstatic.com/docs/presentations/images/favicon5.ico';
+        if (pathname.startsWith('/forms')) return 'https://ssl.gstatic.com/docs/forms/favicon_qp2.png';
+      }
+      if (hostname === 'drive.google.com') return 'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png';
+
+      return `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`; 
+    }
     catch { return null; }
   };
   const favUrl = getFaviconUrl(url);
