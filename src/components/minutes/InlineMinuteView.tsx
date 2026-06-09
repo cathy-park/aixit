@@ -36,6 +36,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [content, setContent] = useState("");
   const [iconType, setIconType] = useState<MinuteIconType>("default");
+  const [isIconDropdownOpen, setIsIconDropdownOpen] = useState(false);
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
   const [links, setLinks] = useState<MinuteLink[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -172,17 +173,33 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           <div className="flex-1 flex items-start gap-3">
             {isEditing ? (
               <div className="flex items-center gap-3 w-full">
-                <select
-                  value={iconType}
-                  onChange={(e) => setIconType(e.target.value as MinuteIconType)}
-                  className="bg-zinc-100 border-none rounded-lg px-3 py-2 text-sm text-zinc-700 outline-none focus:ring-2 focus:ring-blue-500 shrink-0 h-[44px] appearance-none cursor-pointer"
-                  style={{ textAlignLast: "center" }}
-                >
-                  <option value="default">📄 기본</option>
-                  <option value="meet">📹 화상</option>
-                  <option value="email">📧 이메일</option>
-                  <option value="chat">💬 챗봇(말풍선)</option>
-                </select>
+                <div className="relative">
+                  <button
+                    onClick={() => setIsIconDropdownOpen(!isIconDropdownOpen)}
+                    className="bg-white border border-zinc-200 rounded-lg px-3 py-2 flex items-center justify-center hover:bg-zinc-50 transition min-w-[44px] h-[44px]"
+                  >
+                    {iconType === "meet" && <VideoIcon className="w-5 h-5 text-emerald-500" />}
+                    {iconType === "email" && <MailIcon className="w-5 h-5 text-amber-500" />}
+                    {iconType === "chat" && <MessageSquareIcon className="w-5 h-5 text-blue-500" />}
+                    {(!iconType || iconType === "default") && <FileTextIcon className="w-5 h-5 text-zinc-400" />}
+                  </button>
+                  {isIconDropdownOpen && (
+                    <div className="absolute top-full mt-1 left-0 bg-white border border-zinc-200 shadow-lg rounded-xl z-50 overflow-hidden w-40 flex flex-col">
+                      <button onClick={() => { setIconType("default"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                        <FileTextIcon className="w-4 h-4 text-zinc-400" /> 기본
+                      </button>
+                      <button onClick={() => { setIconType("meet"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                        <VideoIcon className="w-4 h-4 text-emerald-500" /> 화상
+                      </button>
+                      <button onClick={() => { setIconType("email"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                        <MailIcon className="w-4 h-4 text-amber-500" /> 이메일
+                      </button>
+                      <button onClick={() => { setIconType("chat"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                        <MessageSquareIcon className="w-4 h-4 text-blue-500" /> 챗봇(말풍선)
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={title}
@@ -204,6 +221,10 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           <div className="flex items-center gap-2 shrink-0">
             {!isNew && !isEditing && (
               <>
+                <div className="flex items-center gap-1.5 text-sm text-zinc-500 mr-2 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200">
+                  <CalendarIcon className="w-4 h-4" />
+                  <span>{date}</span>
+                </div>
                 <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 복사">
                   <CopyIcon className="w-5 h-5" />
                 </button>
@@ -226,6 +247,15 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
             )}
             {isEditing && (
               <>
+<div className="flex items-center gap-1.5 mr-2">
+                  <CalendarIcon className="w-4 h-4 text-zinc-500" />
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-[130px]"
+                  />
+                </div>
                 {!isNew && (
                   <button
                     onClick={() => {
@@ -250,27 +280,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           </div>
         </div>
 
-        {/* Date Row */}
-        <div className="mb-8">
-          {isEditing ? (
-            <div className="flex items-center gap-2 text-sm text-zinc-500">
-              <CalendarIcon className="w-4 h-4" />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="text-sm text-zinc-600 border border-zinc-200 rounded-md px-2 py-1 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-auto max-w-[150px]"
-              />
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-sm text-zinc-500 ml-[44px]">
-              <CalendarIcon className="w-4 h-4" />
-              <span>{date}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Links & Contracts Box */}
+                {/* Links & Contracts Box */}
         <div className="rounded-xl border border-zinc-200 bg-white p-5 mb-8">
           <div className="flex items-center justify-between mb-4 border-b border-zinc-100 pb-3">
             <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">

@@ -436,7 +436,7 @@ export function MinutesView() {
                       ) : (
                         <div className="flex flex-col gap-2">
                           {expandedMinuteId === "new" && (
-                            <div className="mb-4 rounded-xl border-2 border-blue-200 shadow-sm overflow-hidden">
+                            <div className="mb-4 rounded-xl border border-zinc-200 overflow-hidden">
                               <InlineMinuteView 
                                 folderId={folder.id} 
                                 minuteId="new" 
@@ -486,7 +486,7 @@ export function MinutesView() {
                               </button>
                               
                               {expandedMinuteId === minute.id && (
-                                <div className="rounded-xl border-2 border-zinc-200 shadow-sm overflow-hidden mb-2">
+                                <div className="rounded-xl border border-zinc-200 overflow-hidden mb-2">
                                   <InlineMinuteView 
                                     folderId={folder.id} 
                                     minuteId={minute.id} 
