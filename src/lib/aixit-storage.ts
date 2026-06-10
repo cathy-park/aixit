@@ -96,6 +96,7 @@ export function isAixitCoreDataEmpty(): boolean {
     "aixit.userWorkflowTemplates.v1",
     "aixit.todayTodos.v1",
     "aixit.dashboardLayout.v1",
+    "aixit.minutes.v1",
   ] as const;
 
   for (const k of CORE_KEYS) {
