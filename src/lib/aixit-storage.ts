@@ -34,6 +34,7 @@ export const AIXIT_LOCAL_STORAGE_KEYS = [
   "aixit.pinnedIdeaNoteIds.v1",
   "aixit.todoCategories.v1",
   "aixit.navVisibility.v1",
+  "aixit.minutes.v1",
 ] as const;
 
 const AUTO_MIGRATION_MARKER_PREFIX = "aixit.storageMigration.autoApplied.v1.";
@@ -139,6 +140,9 @@ export function dispatchAixitStorageUpdatedEvents() {
 
   // todo categories (캘린더 카테고리)
   window.dispatchEvent(new CustomEvent("aixit-todo-categories-updated"));
+
+  // minutes (회의록)
+  window.dispatchEvent(new CustomEvent("aixit-minutes-updated"));
 }
 
 export const AIXIT_STORAGE_SNAPSHOT_MESSAGE_TYPE = "aixit-storage-snapshot";
