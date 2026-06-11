@@ -479,25 +479,25 @@ export function MinutesView() {
                       </div>
 
                       {/* 회의록 리스트 (세로형) */}
-                      {fMinutes.length === 0 ? (
-                        <div className="py-6 text-center text-zinc-400 bg-white rounded-xl border border-zinc-200 border-dashed">
-                          이 폴더에 회의록이 없습니다.
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-2">
-                          {expandedMinuteId === "new" && (
-                            <div className="mb-4 rounded-xl border border-zinc-200 overflow-hidden">
-                              <InlineMinuteView 
-                                folderId={folder.id} 
-                                minuteId="new" 
-                                onClose={() => {
-                                  setExpandedMinuteId(null);
-                                  refreshData();
-                                }} 
-                              />
-                            </div>
-                          )}
-                          {fMinutes.map((minute) => (
+                      <div className="flex flex-col gap-2">
+                        {expandedMinuteId === "new" && (
+                          <div className="mb-4 rounded-xl border border-zinc-200 overflow-hidden">
+                            <InlineMinuteView 
+                              folderId={folder.id} 
+                              minuteId="new" 
+                              onClose={() => {
+                                setExpandedMinuteId(null);
+                                refreshData();
+                              }} 
+                            />
+                          </div>
+                        )}
+                        {fMinutes.length === 0 && expandedMinuteId !== "new" ? (
+                          <div className="py-6 text-center text-zinc-400 bg-white rounded-xl border border-zinc-200 border-dashed">
+                            이 폴더에 회의록이 없습니다.
+                          </div>
+                        ) : (
+                          fMinutes.map((minute) => (
                             <div key={minute.id} className="flex flex-col gap-2">
                               <button
                                 onClick={() => setExpandedMinuteId(expandedMinuteId === minute.id ? null : minute.id)}

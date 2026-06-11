@@ -91,7 +91,7 @@ export default function SettingsPage() {
       setSyncStatus("❌ 로그인이 필요합니다. 먼저 Google로 로그인해 주세요.");
       return;
     }
-    setSyncStatus("⏳ 서버에서 다운로드 중...");
+    setSyncStatus("⏳ 서버 데이터 확인 중...");
     try {
       const remoteMap = await fetchAixitKvMap();
       const keys = Object.keys(remoteMap);
@@ -99,16 +99,71 @@ export default function SettingsPage() {
         setSyncStatus("⚠️ 서버에 저장된 데이터가 없습니다. 먼저 다른 기기에서 '서버로 올리기'를 실행해 주세요.");
         return;
       }
+
+      // 덮어쓰기 전 현재 로컬 데이터를 자동 백업
+      const backupData: Record<string, string> = {};
+      for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
+        const v = window.localStorage.getItem(k);
+        if (v != null) backupData[k] = v;
+      }
+      const hasLocalData = Object.keys(backupData).length > 0;
+
+      if (hasLocalData) {
+        const confirmed = window.confirm(
+          `⚠️ 주의: 현재 기기의 데이터를 서버 데이터로 덮어씁니다.\n\n` +
+          `현재 기기 데이터는 자동으로 백업됩니다.\n` +
+          `(설정 페이지에서 '백업으로 복원' 버튼으로 되돌릴 수 있어요)\n\n` +
+          `계속하시겠습니까?`
+        );
+        if (!confirmed) {
+          setSyncStatus("취소되었습니다.");
+          return;
+        }
+        // 자동 백업 저장
+        window.localStorage.setItem(
+          "aixit.preSync.backup.v1",
+          JSON.stringify({ savedAt: new Date().toISOString(), data: backupData })
+        );
+      }
+
       for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
         if (remoteMap[k] !== undefined) {
           window.localStorage.setItem(k, remoteMap[k]);
         }
       }
       dispatchAixitStorageUpdatedEvents();
-      setSyncStatus(`✅ 서버에서 ${keys.length}개 항목을 다운로드했습니다. 페이지를 새로고침해 주세요.`);
+      setSyncStatus(`✅ 서버에서 ${keys.length}개 항목을 받았습니다.${hasLocalData ? " 이전 데이터는 백업되었습니다." : ""}`);
+      setHasBackup(true);
     } catch (err) {
       console.error("Force sync from server failed:", err);
       setSyncStatus(`❌ 다운로드 실패: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  function handleRestoreBackup() {
+    const raw = window.localStorage.getItem("aixit.preSync.backup.v1");
+    if (!raw) {
+      setSyncStatus("⚠️ 복원할 백업이 없습니다.");
+      return;
+    }
+    try {
+      const { savedAt, data } = JSON.parse(raw) as { savedAt: string; data: Record<string, string> };
+      const confirmed = window.confirm(
+        `백업 시각: ${new Date(savedAt).toLocaleString("ko-KR")}\n\n` +
+        `이 백업으로 현재 데이터를 덮어쓰시겠습니까?`
+      );
+      if (!confirmed) return;
+      for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
+        if (data[k] !== undefined) {
+          window.localStorage.setItem(k, data[k]);
+        } else {
+          window.localStorage.removeItem(k);
+        }
+      }
+      dispatchAixitStorageUpdatedEvents();
+      setSyncStatus(`✅ 백업(${new Date(savedAt).toLocaleString("ko-KR")})으로 복원했습니다.`);
+    } catch {
+      setSyncStatus("❌ 백업 파일이 손상되었습니다.");
     }
   }
 
