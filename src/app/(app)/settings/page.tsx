@@ -58,6 +58,60 @@ export default function SettingsPage() {
     return () => window.removeEventListener("aixit-kakao-token-updated", onUpdate);
   }, []);
 
+  async function handleForceSyncToServer() {
+    if (!user) {
+      setSyncStatus("❌ 로그인이 필요합니다. 먼저 Google로 로그인해 주세요.");
+      return;
+    }
+    setSyncStatus("⏳ 서버로 업로드 중...");
+    try {
+      const queue = new Map<string, string | null>();
+      let count = 0;
+      for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
+        const v = window.localStorage.getItem(k);
+        if (v != null && v.trim().length > 0) {
+          queue.set(k, v);
+          count++;
+        }
+      }
+      if (count === 0) {
+        setSyncStatus("⚠️ 현재 기기에 동기화할 데이터가 없습니다.");
+        return;
+      }
+      await flushAixitKvQueue(queue);
+      setSyncStatus(`✅ ${count}개 항목을 서버에 업로드했습니다. 모바일에서 새로고침해 주세요.`);
+    } catch (err) {
+      console.error("Force sync failed:", err);
+      setSyncStatus(`❌ 업로드 실패: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  async function handleForceSyncFromServer() {
+    if (!user) {
+      setSyncStatus("❌ 로그인이 필요합니다. 먼저 Google로 로그인해 주세요.");
+      return;
+    }
+    setSyncStatus("⏳ 서버에서 다운로드 중...");
+    try {
+      const remoteMap = await fetchAixitKvMap();
+      const keys = Object.keys(remoteMap);
+      if (keys.length === 0) {
+        setSyncStatus("⚠️ 서버에 저장된 데이터가 없습니다. 먼저 다른 기기에서 '서버로 올리기'를 실행해 주세요.");
+        return;
+      }
+      for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
+        if (remoteMap[k] !== undefined) {
+          window.localStorage.setItem(k, remoteMap[k]);
+        }
+      }
+      dispatchAixitStorageUpdatedEvents();
+      setSyncStatus(`✅ 서버에서 ${keys.length}개 항목을 다운로드했습니다. 페이지를 새로고침해 주세요.`);
+    } catch (err) {
+      console.error("Force sync from server failed:", err);
+      setSyncStatus(`❌ 다운로드 실패: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   function handleExport() {
     const data: Record<string, string> = {};
     for (const k of AIXIT_LOCAL_STORAGE_KEYS) {
@@ -234,6 +288,41 @@ export default function SettingsPage() {
               <div className="mt-3 text-xs font-medium text-zinc-700">{syncStatus}</div>
             )}
           </div>
+
+          {/* 기기 간 동기화 섹션 */}
+          {supabaseEnabled && (
+            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">☁️</span>
+                <div className="text-base font-semibold text-zinc-950">기기 간 데이터 동기화</div>
+              </div>
+              <div className="mt-1 text-xs text-zinc-500">
+                PC와 모바일 사이에 데이터가 서로 다를 때 수동으로 동기화할 수 있어요.
+                {!user && <span className="ml-1 font-semibold text-red-500">로그인이 필요합니다.</span>}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleForceSyncToServer}
+                  disabled={!user}
+                  className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  ↑ 이 기기 → 서버로 올리기
+                </button>
+                <button
+                  type="button"
+                  onClick={handleForceSyncFromServer}
+                  disabled={!user}
+                  className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-zinc-800 ring-1 ring-zinc-200 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                  ↓ 서버 → 이 기기로 받기
+                </button>
+              </div>
+              <div className="mt-2 text-[11px] text-zinc-400">
+                💡 PC에서 <strong>↑ 서버로 올리기</strong> → 모바일에서 <strong>↓ 서버에서 받기</strong> 순서로 진행하세요.
+              </div>
+            </div>
+          )}
 
           {/* 메뉴 표시 설정 섹션 */}
           <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200">
