@@ -15,9 +15,17 @@ export default function SettingsPage() {
   const { user, loading } = useAuth();
   const [status, setStatus] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [hasBackup, setHasBackup] = useState(false);
   const { isVisible, toggle } = useNavVisibility();
   const { order, updateOrder } = useNavOrder();
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setHasBackup(!!window.localStorage.getItem("aixit.preSync.backup.v1"));
+    }
+  }, []);
+
 
   const orderedItems = [...APP_NAV_ITEMS].sort((a, b) => {
     const idxA = order.indexOf(a.id);
@@ -376,6 +384,20 @@ export default function SettingsPage() {
               <div className="mt-2 text-[11px] text-zinc-400">
                 💡 PC에서 <strong>↑ 서버로 올리기</strong> → 모바일에서 <strong>↓ 서버에서 받기</strong> 순서로 진행하세요.
               </div>
+              {hasBackup && (
+                <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between">
+                  <div className="text-[11px] text-zinc-500">
+                    마지막으로 덮어쓰기 전 데이터가 안전하게 백업되어 있습니다.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRestoreBackup}
+                    className="rounded bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition"
+                  >
+                    이전 백업으로 되돌리기
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
