@@ -548,9 +548,9 @@ export function MinutesView() {
                                 </div>
                               )}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
