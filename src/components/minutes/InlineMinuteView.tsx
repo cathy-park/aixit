@@ -508,7 +508,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
               />
             </div>
           ) : (
-            <div className="ql-snow bg-white rounded-xl border border-zinc-200 overflow-hidden">
+            <div className="viewer-content ql-snow bg-white rounded-xl border border-zinc-200 overflow-hidden">
               <div 
                 className="p-6 sm:p-8 min-h-[400px] ql-editor"
                 dangerouslySetInnerHTML={{ __html: content || "<p class='text-zinc-400'>내용이 없습니다.</p>" }} 

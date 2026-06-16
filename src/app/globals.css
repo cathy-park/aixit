@@ -68,6 +68,28 @@ body {
   margin-top: 0.5em !important;
   margin-bottom: 0.5em !important;
 }
+
+/* 뷰어 내부 리스트 스타일 복원 (Tailwind 초기화 덮어쓰기) */
+.viewer-content ul > li:not([data-list="check"]):not([data-list="checked"]):not([data-list="unchecked"]),
+.viewer-content li[data-list="bullet"] {
+  display: list-item !important;
+  list-style-type: disc !important;
+}
+
+.viewer-content ol > li:not([data-list="check"]):not([data-list="checked"]):not([data-list="unchecked"]),
+.viewer-content li[data-list="ordered"] {
+  display: list-item !important;
+  list-style-type: decimal !important;
+}
+
+/* 체크리스트 항목은 불릿/숫자를 보이지 않게 처리 */
+.viewer-content li[data-list="check"],
+.viewer-content li[data-list="checked"],
+.viewer-content li[data-list="unchecked"] {
+  display: flex !important;
+  align-items: flex-start !important;
+  list-style-type: none !important;
+}
 /* 3. 체크 리스트 (폰트 미지원으로 인한 깨짐 방지를 위해 CSS로 직접 그림) */
 .ql-snow .ql-editor ul[data-checked="false"] > li::before,
 .ql-snow .ql-editor li[data-list="check"]::before,
