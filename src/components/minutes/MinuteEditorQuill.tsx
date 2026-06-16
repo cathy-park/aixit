@@ -55,7 +55,7 @@ const quillModules = {
       ["bold", "italic", "underline", "strike"],
       [{ color: [] }, { background: [] }],
       ["link", "image", "divider", "blockquote"],
-      [{ list: "ordered" }, { list: "bullet" }],
+      [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
     ],
     handlers: {
       divider: function (this: any) {

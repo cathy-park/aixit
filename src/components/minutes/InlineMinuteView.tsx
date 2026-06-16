@@ -127,6 +127,94 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
     if (!isNew) updateMeetingMinute(minuteId, { links: newLinks });
   };
 
+  const handleViewerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isEditing) return;
+
+    const target = e.target as HTMLElement;
+    const li = target.closest('li');
+    if (!li) return;
+
+    const ul = li.closest('ul');
+    const isQuill2Check = ul && ul.hasAttribute('data-checked');
+    const isQuill1Check = li.hasAttribute('data-list') && (li.getAttribute('data-list') === 'check' || li.getAttribute('data-list') === 'checked');
+
+    if (!isQuill2Check && !isQuill1Check) return;
+
+    // Check if click was on the left side (the checkbox area)
+    const rect = li.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    if (clickX > 30) return; // Not clicking the checkbox icon
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const container = e.currentTarget;
+    const allCheckLIs = Array.from(container.querySelectorAll('ul[data-checked] > li, li[data-list="check"], li[data-list="checked"]'));
+    const index = allCheckLIs.indexOf(li);
+    if (index === -1) return;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, 'text/html');
+    const docCheckLIs = Array.from(doc.querySelectorAll('ul[data-checked] > li, li[data-list="check"], li[data-list="checked"]'));
+    
+    const targetDocLi = docCheckLIs[index];
+    if (!targetDocLi) return;
+
+    if (isQuill2Check) {
+      const docUl = targetDocLi.closest('ul');
+      if (docUl) {
+        const currentlyChecked = docUl.getAttribute('data-checked') === 'true';
+        const newChecked = !currentlyChecked;
+        
+        if (docUl.children.length === 1) {
+          docUl.setAttribute('data-checked', newChecked.toString());
+        } else {
+          // Multiple items: split the UL
+          const newUl = doc.createElement('ul');
+          newUl.setAttribute('data-checked', newChecked.toString());
+          const clonedLi = targetDocLi.cloneNode(true);
+          newUl.appendChild(clonedLi);
+          
+          const prevUl = doc.createElement('ul');
+          prevUl.setAttribute('data-checked', currentlyChecked.toString());
+          const nextUl = doc.createElement('ul');
+          nextUl.setAttribute('data-checked', currentlyChecked.toString());
+          
+          let found = false;
+          Array.from(docUl.children).forEach(child => {
+            if (child === targetDocLi) {
+              found = true;
+            } else if (!found) {
+              prevUl.appendChild(child.cloneNode(true));
+            } else {
+              nextUl.appendChild(child.cloneNode(true));
+            }
+          });
+          
+          const parent = docUl.parentNode;
+          if (parent) {
+            if (prevUl.children.length > 0) parent.insertBefore(prevUl, docUl);
+            parent.insertBefore(newUl, docUl);
+            if (nextUl.children.length > 0) parent.insertBefore(nextUl, docUl);
+            parent.removeChild(docUl);
+          }
+        }
+      }
+    } else if (isQuill1Check) {
+      const currentlyChecked = targetDocLi.getAttribute('data-list') === 'checked';
+      targetDocLi.setAttribute('data-list', currentlyChecked ? 'check' : 'checked');
+    }
+
+    const newContent = doc.body.innerHTML;
+    setContent(newContent);
+
+    if (!isNew && minute) {
+      const updatedMinute = { ...minute, content: newContent };
+      updateMeetingMinute(minuteId, updatedMinute);
+      setMinute(updatedMinute);
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -415,6 +503,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
               <div 
                 className="p-6 sm:p-8 min-h-[400px] ql-editor"
                 dangerouslySetInnerHTML={{ __html: content || "<p class='text-zinc-400'>내용이 없습니다.</p>" }} 
+                onClick={handleViewerClick}
               />
             </div>
           )}
