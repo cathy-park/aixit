@@ -649,7 +649,7 @@ export function MinutesView() {
                                         refreshData();
                                       }}
                                       className={cn(
-                                        "absolute right-1 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover/cat:opacity-100 transition",
+                                        "absolute right-1 w-4 h-4 rounded-full flex items-center justify-center transition",
                                         "text-black/40 hover:bg-black/10 hover:text-black"
                                       )}
                                     >
