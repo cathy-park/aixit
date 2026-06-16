@@ -78,6 +78,7 @@ export function MinutesView() {
   // 드래그&드롭 상태
   const [draggingMinuteId, setDraggingMinuteId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [draggingCategoryId, setDraggingCategoryId] = useState<string | null>(null);
 
   // 폴더 링크 모달 상태
   const [linkModal, setLinkModal] = useState<{
@@ -590,7 +591,40 @@ export function MinutesView() {
                                   전체
                                 </button>
                                 {(folder.categories || []).map(cat => (
-                                  <div key={cat.id} className="group/cat relative shrink-0 flex items-center">
+                                  <div 
+                                    key={cat.id} 
+                                    className={cn("group/cat relative shrink-0 flex items-center transition-opacity", draggingCategoryId === cat.id ? "opacity-40" : "")}
+                                    draggable
+                                    onDragStart={(e) => {
+                                      e.dataTransfer.effectAllowed = "move";
+                                      e.dataTransfer.setData("text/category-id", cat.id);
+                                      e.dataTransfer.setData("text/folder-id", folder.id);
+                                      setDraggingCategoryId(cat.id);
+                                    }}
+                                    onDragEnd={() => setDraggingCategoryId(null)}
+                                    onDragOver={(e) => {
+                                      if (draggingCategoryId && draggingCategoryId !== cat.id) {
+                                        e.preventDefault();
+                                      }
+                                    }}
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      const catId = e.dataTransfer.getData("text/category-id");
+                                      const folderId = e.dataTransfer.getData("text/folder-id");
+                                      if (folderId === folder.id && catId && catId !== cat.id) {
+                                        const newCats = [...(folder.categories || [])];
+                                        const fromIndex = newCats.findIndex(c => c.id === catId);
+                                        const toIndex = newCats.findIndex(c => c.id === cat.id);
+                                        if (fromIndex > -1 && toIndex > -1) {
+                                          const [moved] = newCats.splice(fromIndex, 1);
+                                          newCats.splice(toIndex, 0, moved);
+                                          updateMinutesFolder(folder.id, { categories: newCats });
+                                          refreshData();
+                                        }
+                                      }
+                                      setDraggingCategoryId(null);
+                                    }}
+                                  >
                                     <button
                                       onClick={() => setSelectedCategoryByFolder(prev => ({ ...prev, [folder.id]: cat.id }))}
                                       className={cn(
@@ -616,9 +650,7 @@ export function MinutesView() {
                                       }}
                                       className={cn(
                                         "absolute right-1 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover/cat:opacity-100 transition",
-                                        selectedCatId === cat.id
-                                          ? "text-blue-200 hover:bg-blue-700 hover:text-white"
-                                          : "text-zinc-400 hover:bg-zinc-300 hover:text-zinc-800"
+                                        "text-black/40 hover:bg-black/10 hover:text-black"
                                       )}
                                     >
                                       <XIcon className="w-3 h-3" />
