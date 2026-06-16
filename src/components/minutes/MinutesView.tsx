@@ -29,6 +29,21 @@ import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
 import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon } from "lucide-react";
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
+
+function getInvertedColor(colorStr: string) {
+  if (!colorStr) return "bg-zinc-600 text-zinc-100 border-zinc-600";
+  if (colorStr.includes("zinc")) return "bg-zinc-600 text-zinc-100 border-zinc-600";
+  if (colorStr.includes("red")) return "bg-red-600 text-red-50 border-red-600";
+  if (colorStr.includes("orange")) return "bg-orange-600 text-orange-50 border-orange-600";
+  if (colorStr.includes("amber")) return "bg-amber-600 text-amber-50 border-amber-600";
+  if (colorStr.includes("emerald")) return "bg-emerald-600 text-emerald-50 border-emerald-600";
+  if (colorStr.includes("blue")) return "bg-blue-600 text-blue-50 border-blue-600";
+  if (colorStr.includes("indigo")) return "bg-indigo-600 text-indigo-50 border-indigo-600";
+  if (colorStr.includes("purple")) return "bg-purple-600 text-purple-50 border-purple-600";
+  if (colorStr.includes("pink")) return "bg-pink-600 text-pink-50 border-pink-600";
+  return "bg-zinc-800 text-white border-zinc-800";
+}
+
 import { MinuteLinkFormModal, type MinuteLinkFormPayload } from "./MinuteLinkFormModal";
 import { MinuteCategoryFormModal } from "./MinuteCategoryFormModal";
 function FaviconImage({ url }: { url: string }) {
@@ -641,9 +656,8 @@ export function MinutesView() {
                                       className={cn(
                                         "px-3 py-1.5 rounded-full text-xs font-semibold transition pr-6 border",
                                         selectedCatId === cat.id
-                                          ? "ring-2 ring-zinc-800 ring-offset-1"
-                                          : "",
-                                        cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200"
+                                          ? getInvertedColor(cat.color || "")
+                                          : cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200"
                                       )}
                                     >
                                       {cat.name}
@@ -661,7 +675,9 @@ export function MinutesView() {
                                       }}
                                       className={cn(
                                         "absolute right-1 w-4 h-4 rounded-full flex items-center justify-center transition",
-                                        "text-black/40 hover:bg-black/10 hover:text-black"
+                                        selectedCatId === cat.id 
+                                          ? "text-white/60 hover:bg-white/20 hover:text-white" 
+                                          : "text-black/40 hover:bg-black/10 hover:text-black"
                                       )}
                                     >
                                       <XIcon className="w-3 h-3" />
