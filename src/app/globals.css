@@ -81,25 +81,7 @@ body {
   margin-right: 0.3em !important;
   text-align: right !important;
 }
-/* 불릿 리스트 */
-.ql-editor ul > li::before,
-.ql-editor li[data-list="bullet"]::before {
-  content: '\2022' !important;
-}
-/* 체크 리스트 (Quill 1.x & 2.x) */
-.ql-editor ul[data-checked="false"] > li::before,
-.ql-editor li[data-list="check"]::before {
-  content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>') !important;
-  vertical-align: middle;
-  cursor: pointer;
-}
-.ql-editor ul[data-checked="true"] > li::before,
-.ql-editor li[data-list="checked"]::before {
-  content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%233b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>') !important;
-  vertical-align: middle;
-  cursor: pointer;
-}
-/* 숫자 리스트 */
+/* 1. 숫자 리스트 (가장 낮은 우선순위) */
 .ql-editor ol {
   counter-reset: ql-list-0;
 }
@@ -109,6 +91,29 @@ body {
 .ql-editor ol > li::before,
 .ql-editor li[data-list="ordered"]::before {
   content: counter(ql-list-0, decimal) '. ' !important;
+}
+
+/* 2. 불릿 리스트 */
+.ql-editor ul > li::before,
+.ql-editor li[data-list="bullet"]::before {
+  content: '\2022' !important;
+}
+
+/* 3. 체크 리스트 (우선순위 높음) */
+.ql-editor ul[data-checked="false"] > li::before,
+.ql-editor li[data-list="check"]::before {
+  content: '\2610' !important;
+  font-size: 1.2em;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.ql-editor ul[data-checked="true"] > li::before,
+.ql-editor li[data-list="checked"]::before {
+  content: '\2611' !important;
+  font-size: 1.2em;
+  vertical-align: middle;
+  cursor: pointer;
+  color: #3b82f6;
 }
 
 /* 에디터 내 가로줄(hr) 기본 스타일 */

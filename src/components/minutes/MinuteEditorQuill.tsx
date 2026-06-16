@@ -4,8 +4,8 @@ import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 
-const FONT_SIZES = ["10px", "12px", "13px", "14px", "16px", "18px", "20px", "24px", "28px"];
-const LINE_HEIGHTS = ["1.0", "1.2", "1.5", "1.8", "2.0", "2.5", "3.0"];
+const FONT_SIZES = ["10px", "12px", false, "14px", "16px", "18px", "20px", "24px", "28px"];
+const LINE_HEIGHTS = ["1.0", "1.2", "1.5", "1.8", false, "2.5", "3.0"];
 
 let isQuillConfigured = false;
 
@@ -24,13 +24,13 @@ if (typeof window !== "undefined" && ReactQuill.Quill && !isQuillConfigured) {
     if (StyleAttributor) {
       const LineHeightStyle = new StyleAttributor("lineHeight", "line-height", {
         scope: Parchment.Scope.BLOCK,
-        whitelist: LINE_HEIGHTS,
+        whitelist: ["1.0", "1.2", "1.5", "1.8", "2.0", "2.5", "3.0"],
       });
       Quill.register(LineHeightStyle, true);
 
       const SizeStyle = new StyleAttributor("size", "font-size", {
         scope: Parchment.Scope.INLINE,
-        whitelist: FONT_SIZES,
+        whitelist: ["10px", "12px", "13px", "14px", "16px", "18px", "20px", "24px", "28px"],
       });
       Quill.register(SizeStyle, true);
     }
@@ -107,7 +107,7 @@ export default function MinuteEditorQuill({ value, onChange, placeholder, classN
         }
         .ql-snow .ql-picker.ql-lineHeight .ql-picker-label:not([data-value])::before,
         .ql-snow .ql-picker.ql-lineHeight .ql-picker-item:not([data-value])::before {
-          content: '줄간격';
+          content: '2.0';
         }
         .ql-snow .ql-picker.ql-lineHeight {
           width: 70px;
@@ -119,7 +119,7 @@ export default function MinuteEditorQuill({ value, onChange, placeholder, classN
         }
         .ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before {
-          content: '글자 크기';
+          content: '13px';
         }
       `}} />
       <ReactQuill
