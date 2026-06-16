@@ -28,6 +28,7 @@ import { formatFolderToMarkdown, copyMarkdownToClipboard } from "@/lib/export-md
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
 import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon } from "lucide-react";
+import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
 import { MinuteLinkFormModal, type MinuteLinkFormPayload } from "./MinuteLinkFormModal";
 import { MinuteCategoryFormModal } from "./MinuteCategoryFormModal";
 function FaviconImage({ url }: { url: string }) {
@@ -202,16 +203,19 @@ export function MinutesView() {
   }, [draggingMinuteId, refreshData]);
 
   const handleFolderFormSave = (data: any) => {
+    const payload = {
+      name: data.name,
+      iconType: data.iconType,
+      lucideIcon: data.lucideIcon,
+      emoji: data.emoji,
+      color: data.color,
+      iconUrl: data.iconType === "image_url" || data.iconType === "image_upload" ? data.imageDataUrl : undefined,
+    };
     if (folderModal?.mode === "create") {
       const folder = createMinutesFolder(data.name || "새 폴더");
-      if (data.imageDataUrl) {
-        updateMinutesFolder(folder.id, { iconUrl: data.imageDataUrl });
-      }
+      updateMinutesFolder(folder.id, payload);
     } else if (folderModal?.mode === "edit" && folderModal.initial) {
-      updateMinutesFolder(folderModal.initial.id, {
-        name: data.name,
-        iconUrl: data.iconType === "image_url" || data.iconType === "image_upload" ? data.imageDataUrl : undefined,
-      });
+      updateMinutesFolder(folderModal.initial.id, payload);
     }
     setFolderModal(null);
     refreshData();
@@ -331,9 +335,9 @@ export function MinutesView() {
             <button 
               type="button" 
               onClick={() => setFolderModal({ mode: "create", initial: null })} 
-              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              className={WORKSPACE_HEADER_ADD_MATCH_BTN}
             >
-              <PlusIcon className="w-4 h-4" /> 폴더 추가
+              추가
             </button>
           </div>
         }
@@ -346,10 +350,11 @@ export function MinutesView() {
             folders={visibleFolders.map(f => ({
               id: f.id,
               name: f.name,
-              iconType: f.iconUrl ? "image_url" : "emoji",
-              emoji: "📁",
+              iconType: f.iconType || (f.iconUrl ? "image_url" : "emoji"),
+              lucideIcon: f.lucideIcon,
+              emoji: f.emoji || "📁",
               imageDataUrl: f.iconUrl,
-              color: "#64748b",
+              color: f.color || "#64748b",
               workflowCount: minutes.filter(m => m.folderId === f.id).length
             }))}
             activeFolderId={activeFolderId || ""}
@@ -368,10 +373,11 @@ export function MinutesView() {
             hiddenFolderRecords={folders.filter(f => f.hidden).map(f => ({
               id: f.id,
               name: f.name,
-              iconType: f.iconUrl ? "image_url" : "emoji",
-              emoji: "📁",
+              iconType: f.iconType || (f.iconUrl ? "image_url" : "emoji"),
+              lucideIcon: f.lucideIcon,
+              emoji: f.emoji || "📁",
               imageDataUrl: f.iconUrl,
-              color: "#64748b",
+              color: f.color || "#64748b",
               workflowCount: 0
             }))}
             onUnhideHiddenFolder={(id) => {
@@ -416,10 +422,11 @@ export function MinutesView() {
                 id: folder.id,
                 name: folder.name,
                 hidden: folder.hidden,
-                iconType: folder.iconUrl ? "image_url" : "emoji",
+                iconType: folder.iconType || (folder.iconUrl ? "image_url" : "emoji"),
+                lucideIcon: folder.lucideIcon,
+                emoji: folder.emoji || "📁",
+                color: folder.color || "#64748b",
                 imageDataUrl: folder.iconUrl,
-                emoji: "📁",
-                color: "#64748b",
               };
 
               const links = folder.links || [];

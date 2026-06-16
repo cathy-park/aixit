@@ -18,7 +18,11 @@ export type MinuteLink = {
 export type MinutesFolder = {
   id: string;
   name: string;
-  iconUrl?: string; // base64 resized image
+  iconType?: "lucide" | "emoji" | "image_url" | "image_upload";
+  lucideIcon?: string;
+  emoji?: string;
+  color?: string;
+  iconUrl?: string; // image_url이나 image_upload 일 경우 데이터
   createdAt: string; // ISO 8601
   order: number;
   hidden?: boolean;
