@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* 토스페이스 이모지 폰트 — unicode-range 기반으로 이모지에만 자동 적용 */
+@import url("https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css");
 
 :root {
   --background: #ffffff;
@@ -8,7 +10,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "Tossface", var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -22,7 +24,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Tossface", Arial, Helvetica, sans-serif;
 }
 
 /* Quill Editor Styles */
