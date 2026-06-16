@@ -61,3 +61,10 @@ body {
   border: none !important;
 }
 
+/* 에디터 내 가로줄(hr) 기본 스타일 */
+.ql-editor hr {
+  border: none;
+  border-top: 1px solid #e4e4e7;
+  margin: 1.5rem 0;
+}
+

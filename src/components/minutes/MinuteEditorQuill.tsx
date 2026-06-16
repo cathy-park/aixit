@@ -10,16 +10,27 @@ const LINE_HEIGHTS = ["1.0", "1.2", "1.5", "1.8", "2.0", "2.5", "3.0"];
 let isQuillConfigured = false;
 
 const quillModules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    [{ size: FONT_SIZES }],
-    [{ lineHeight: LINE_HEIGHTS }],
-    ["bold", "italic", "underline", "strike"],
-    [{ color: [] }, { background: [] }],
-    ["link", "image"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["clean"],
-  ],
+  toolbar: {
+    container: [
+      [{ header: [1, 2, 3, false] }],
+      [{ size: FONT_SIZES }],
+      [{ lineHeight: LINE_HEIGHTS }],
+      ["bold", "italic", "underline", "strike"],
+      [{ color: [] }, { background: [] }],
+      ["link", "image", "divider"],
+      [{ list: "ordered" }, { list: "bullet" }],
+      ["clean"],
+    ],
+    handlers: {
+      divider: function (this: any) {
+        const quill = this.quill;
+        const range = quill.getSelection(true);
+        quill.insertText(range.index, '\n', 'user');
+        quill.insertEmbed(range.index + 1, 'divider', true, 'user');
+        quill.setSelection(range.index + 2, 'silent');
+      }
+    }
+  }
 };
 
 interface Props {
@@ -39,6 +50,12 @@ export default function MinuteEditorQuill({ value, onChange, placeholder, classN
     const Quill = ReactQuill.Quill;
     if (Quill) {
       try {
+        const BlockEmbed = Quill.import('blots/block/embed') as any;
+        class DividerBlot extends BlockEmbed {}
+        DividerBlot.blotName = 'divider';
+        DividerBlot.tagName = 'hr';
+        Quill.register(DividerBlot, true);
+
         const Parchment = Quill.import("parchment") as any;
         const StyleAttributor = Parchment.StyleAttributor || (Parchment.Attributor && Parchment.Attributor.Style);
 
@@ -88,6 +105,15 @@ export default function MinuteEditorQuill({ value, onChange, placeholder, classN
         .ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before {
           content: '글자 크기';
+        }
+        .ql-snow .ql-toolbar button.ql-divider::after {
+          content: '—';
+          font-weight: bold;
+          font-size: 16px;
+          line-height: 18px;
+        }
+        .ql-snow .ql-toolbar button.ql-divider {
+          width: 28px;
         }
       `}} />
       <ReactQuill
