@@ -15,9 +15,9 @@ export function WarehouseKeywordsRow({
   if (keywords.length === 0) return null;
 
   return (
-    <div className="mt-3 mb-5 flex flex-wrap items-center gap-2">
-      <span className="w-full text-xs font-semibold text-zinc-500 sm:mr-1 sm:w-auto">사용 중인 키워드</span>
-      <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-1">
+    <div className="mt-3 mb-5 flex flex-col sm:flex-row sm:items-center gap-2">
+      <span className="shrink-0 text-xs font-semibold text-zinc-500 sm:mr-1">사용 중인 키워드</span>
+      <div className="flex w-full overflow-x-auto scrollbar-hide gap-2 sm:w-auto sm:flex-1 pb-1">
         {keywords.map(({ normalized, display }) => {
           const tone = keywordTagToneClass(normalized);
           const label = display.startsWith("#") ? display : `#${display}`;
@@ -28,7 +28,7 @@ export function WarehouseKeywordsRow({
                 type="button"
                 onClick={() => onKeywordClick(display)}
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 transition hover:opacity-90",
+                  "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 transition hover:opacity-90",
                   tone,
                 )}
               >
@@ -37,7 +37,7 @@ export function WarehouseKeywordsRow({
             );
           }
           return (
-            <span key={normalized} className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tone)}>
+            <span key={normalized} className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1", tone)}>
               {label}
             </span>
           );

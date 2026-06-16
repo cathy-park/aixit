@@ -346,19 +346,11 @@ export function HomeTodayDashboard() {
       />
 
       <AppMainColumn className="min-w-0 pb-12">
-      <section className="mt-5" aria-labelledby="today-projects-heading">
-        <h2 id="today-projects-heading" className="sr-only">
-          오늘 일정 프로젝트
-        </h2>
-        {todayProjects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-8 text-center text-sm text-zinc-500">
-            오늘 일정에 해당하는 프로젝트가 없어요.{" "}
-            <Link href="/projects" className="font-semibold text-zinc-800 underline underline-offset-2 hover:text-zinc-950">
-              프로젝트
-            </Link>
-            에서 전체 목록을 확인하거나 일정을 맞춰 보세요.
-          </div>
-        ) : (
+      {todayProjects.length > 0 && (
+        <section className="mt-5" aria-labelledby="today-projects-heading">
+          <h2 id="today-projects-heading" className="sr-only">
+            오늘 일정 프로젝트
+          </h2>
           <div className={APP_CARD_GRID_CLASS}>
             {todayProjects.map(({ entry, folder, preview }) => (
               <div key={layoutEntryPinKey(entry.kind, entry.id)} className={APP_CARD_GRID_ITEM_CLASS}>
@@ -371,8 +363,8 @@ export function HomeTodayDashboard() {
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       <section className="mt-6 pt-5" aria-labelledby="week-todos-heading">
         <h2 id="week-todos-heading" className="text-lg font-semibold tracking-tight text-zinc-950">
