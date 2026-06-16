@@ -48,9 +48,8 @@ const quillModules = {
       [{ lineHeight: LINE_HEIGHTS }],
       ["bold", "italic", "underline", "strike"],
       [{ color: [] }, { background: [] }],
-      ["link", "image", "divider"],
+      ["link", "image", "divider", "blockquote"],
       [{ list: "ordered" }, { list: "bullet" }],
-      ["clean"],
     ],
     handlers: {
       divider: function (this: any) {
@@ -63,6 +62,14 @@ const quillModules = {
     }
   }
 };
+
+const quillFormats = [
+  "header", "size", "lineHeight",
+  "bold", "italic", "underline", "strike",
+  "color", "background",
+  "link", "image", "divider", "blockquote",
+  "list", "bullet", "indent"
+];
 
 interface Props {
   value: string;
@@ -123,6 +130,7 @@ export default function MinuteEditorQuill({ value, onChange, placeholder, classN
         value={value}
         onChange={onChange}
         modules={quillModules}
+        formats={quillFormats}
         className={className}
         placeholder={placeholder}
       />
