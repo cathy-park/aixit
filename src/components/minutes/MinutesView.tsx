@@ -66,7 +66,7 @@ export function MinutesView() {
   const [minutes, setMinutes] = useState<MeetingMinute[]>([]);
   const [search, setSearch] = useState("");
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
-  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>("all");
   
   const [folderModal, setFolderModal] = useState<{
     mode: "create" | "edit";
@@ -359,8 +359,12 @@ export function MinutesView() {
             }))}
             activeFolderId={activeFolderId || ""}
             onFolderChange={(id: string) => {
-              if (id === activeFolderId) {
-                setActiveFolderId(null);
+              if (id === "all") {
+                setActiveFolderId("all");
+                setExpandedMinuteId(null);
+                setExpandedFolders(visibleFolders.reduce((acc, f) => ({ ...acc, [f.id]: true }), {}));
+              } else if (id === activeFolderId) {
+                setActiveFolderId("all");
                 setExpandedMinuteId(null);
                 setExpandedFolders(visibleFolders.reduce((acc, f) => ({ ...acc, [f.id]: true }), {}));
               } else {
@@ -414,7 +418,7 @@ export function MinutesView() {
         ) : (
           <div className="flex flex-col gap-6 w-full">
             {visibleFolders.map((folder) => {
-              if (activeFolderId && folder.id !== activeFolderId) return null;
+              if (activeFolderId && activeFolderId !== "all" && folder.id !== activeFolderId) return null;
               const fMinutes = displayMinutes.filter(m => m.folderId === folder.id);
               const isExpanded = expandedFolders[folder.id];
               
