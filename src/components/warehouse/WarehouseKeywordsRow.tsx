@@ -17,7 +17,7 @@ export function WarehouseKeywordsRow({
   return (
     <div className="mt-3 mb-5 flex flex-col sm:flex-row sm:items-center gap-2">
       <span className="shrink-0 text-xs font-semibold text-zinc-500 sm:mr-1">사용 중인 키워드</span>
-      <div className="flex w-full overflow-x-auto scrollbar-hide gap-2 sm:w-auto sm:flex-1 pb-1">
+      <div className="flex w-full overflow-x-auto scrollbar-hide gap-2 sm:w-auto sm:flex-1 py-1 px-1 -my-1 -mx-1">
         {keywords.map(({ normalized, display }) => {
           const tone = keywordTagToneClass(normalized);
           const label = display.startsWith("#") ? display : `#${display}`;
