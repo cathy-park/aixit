@@ -29,7 +29,7 @@ import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
 import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon } from "lucide-react";
 import { MinuteLinkFormModal, type MinuteLinkFormPayload } from "./MinuteLinkFormModal";
-
+import { MinuteCategoryFormModal } from "./MinuteCategoryFormModal";
 function FaviconImage({ url }: { url: string }) {
   const [error, setError] = useState(false);
   const getFaviconUrl = (u: string) => {
@@ -83,6 +83,12 @@ export function MinutesView() {
   const [linkModal, setLinkModal] = useState<{
     folderId: string;
     initial: MinuteLinkFormPayload & { id: string } | null;
+  } | null>(null);
+
+  // 폴더 카테고리 추가/수정 모달 상태
+  const [categoryModal, setCategoryModal] = useState<{
+    folderId: string;
+    initial?: { id: string; name: string; color?: string };
   } | null>(null);
 
   // 선택된 폴더 카테고리 상태
@@ -588,10 +594,11 @@ export function MinutesView() {
                                     <button
                                       onClick={() => setSelectedCategoryByFolder(prev => ({ ...prev, [folder.id]: cat.id }))}
                                       className={cn(
-                                        "px-3 py-1.5 rounded-full text-xs font-semibold transition pr-6",
+                                        "px-3 py-1.5 rounded-full text-xs font-semibold transition pr-6 border",
                                         selectedCatId === cat.id
-                                          ? "bg-blue-600 text-white"
-                                          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                                          ? "ring-2 ring-zinc-800 ring-offset-1"
+                                          : "",
+                                        cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200"
                                       )}
                                     >
                                       {cat.name}
@@ -619,13 +626,7 @@ export function MinutesView() {
                                   </div>
                                 ))}
                                 <button
-                                  onClick={() => {
-                                    const name = prompt("새 카테고리 이름을 입력하세요.");
-                                    if (!name?.trim()) return;
-                                    const newCat = { id: Math.random().toString(36).slice(2), name: name.trim() };
-                                    updateMinutesFolder(folder.id, { categories: [...(folder.categories || []), newCat] });
-                                    refreshData();
-                                  }}
+                                  onClick={() => setCategoryModal({ folderId: folder.id })}
                                   className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition border border-dashed border-zinc-300"
                                 >
                                   <PlusIcon className="w-3 h-3" />
@@ -690,8 +691,17 @@ export function MinutesView() {
                                   {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
                                   {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
                                   
-                                  <span className="font-medium text-zinc-900 truncate">
-                                    {minute.title.trim() || "제목 없음"}
+                                  <span className="font-medium text-zinc-900 truncate flex items-center gap-2">
+                                    {minute.categoryId && (() => {
+                                      const cat = folder.categories?.find(c => c.id === minute.categoryId);
+                                      if (!cat) return null;
+                                      return (
+                                        <span className={cn("shrink-0 px-2 py-0.5 rounded-md text-[11px] font-bold border", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
+                                          {cat.name}
+                                        </span>
+                                      );
+                                    })()}
+                                    <span className="truncate">{minute.title.trim() || "제목 없음"}</span>
                                   </span>
 
                                   <div className="hidden sm:flex items-center gap-2 ml-4 shrink-0">
@@ -769,6 +779,28 @@ export function MinutesView() {
           onClose={() => setLinkModal(null)}
           onSave={handleLinkModalSave}
           initial={linkModal.initial ?? undefined}
+        />
+      )}
+      {/* 카테고리 추가 레이어 팝업 */}
+      {categoryModal && (
+        <MinuteCategoryFormModal
+          open={true}
+          initial={categoryModal.initial}
+          onClose={() => setCategoryModal(null)}
+          onSave={(name, color) => {
+            const folder = folders.find(f => f.id === categoryModal.folderId);
+            if (!folder) return;
+            const newCat = { id: categoryModal.initial?.id || Math.random().toString(36).slice(2), name, color };
+            let newCats = folder.categories || [];
+            if (categoryModal.initial) {
+              newCats = newCats.map(c => c.id === newCat.id ? newCat : c);
+            } else {
+              newCats = [...newCats, newCat];
+            }
+            updateMinutesFolder(folder.id, { categories: newCats });
+            setCategoryModal(null);
+            refreshData();
+          }}
         />
       )}
     </>

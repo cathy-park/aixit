@@ -25,7 +25,7 @@ export type MinutesFolder = {
   attachments?: AttachmentMeta[];
   links?: MinuteLink[];
   summary?: string; // 폴더 요약(마크다운 등)
-  categories?: { id: string; name: string }[]; // 카테고리 목록
+  categories?: { id: string; name: string; color?: string }[]; // 카테고리 목록
 };
 
 export type MinuteIconType = "meet" | "email" | "chat" | "default";

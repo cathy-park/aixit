@@ -18,6 +18,7 @@ import {
 import { uploadMinuteAttachment, getMinuteAttachmentUrl, deleteMinuteAttachment } from "@/lib/minutes-storage";
 import dynamic from "next/dynamic";
 import { formatMinuteToMarkdown, copyMarkdownToClipboard, downloadMarkdownFile } from "@/lib/export-md";
+import { cn } from "@/components/ui/cn";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
 
 function FaviconImage({ url }: { url: string }) {
@@ -243,7 +244,18 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                 {iconType === "email" && <MailIcon className="w-8 h-8 shrink-0 text-amber-500 mt-1" />}
                 {iconType === "chat" && <MessageSquareIcon className="w-8 h-8 shrink-0 text-blue-500 mt-1" />}
                 {(!iconType || iconType === "default") && <FileTextIcon className="w-8 h-8 shrink-0 text-zinc-400 mt-1" />}
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight">{title || "제목 없음"}</h1>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight flex items-center gap-3 flex-wrap">
+                  {categoryId && (() => {
+                    const cat = folder.categories?.find(c => c.id === categoryId);
+                    if (!cat) return null;
+                    return (
+                      <span className={cn("px-2 py-1 rounded-md text-sm font-bold border shrink-0 -mt-1", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
+                        {cat.name}
+                      </span>
+                    );
+                  })()}
+                  {title || "제목 없음"}
+                </h1>
               </div>
             )}
           </div>
@@ -254,11 +266,6 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                   <CalendarIcon className="w-4 h-4" />
                   <span>{date}</span>
                 </div>
-                {categoryId && (
-                  <div className="flex items-center gap-1.5 text-sm font-semibold bg-blue-50 text-blue-700 px-2.5 py-1.5 rounded-lg border border-blue-100 mr-2">
-                    {folder.categories?.find(c => c.id === categoryId)?.name || "알 수 없는 카테고리"}
-                  </div>
-                )}
                 <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 복사">
                   <CopyIcon className="w-5 h-5" />
                 </button>
