@@ -470,7 +470,7 @@ export function MinutesView() {
                   {isExpanded && (
                     <div className="flex flex-col gap-3 pl-2 sm:pl-4 mb-4">
                       {/* 폴더 공통 자료 영역 */}
-                      <details className="group rounded-xl border border-zinc-200 bg-zinc-50/50 mb-2" open>
+                      <details className="group rounded-xl border border-zinc-200 bg-zinc-50/50 mb-2">
                         <summary className="flex items-center justify-between p-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
                           <h4 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
                             <PaperclipIcon className="w-4 h-4 text-zinc-500" /> 관련 링크 및 계약서
