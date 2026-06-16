@@ -136,8 +136,9 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
     if (!li) return;
 
     const ul = li.closest('ul');
+    const dataList = li.getAttribute('data-list');
     const isQuill2Check = ul && ul.hasAttribute('data-checked');
-    const isQuill1Check = li.hasAttribute('data-list') && (li.getAttribute('data-list') === 'check' || li.getAttribute('data-list') === 'checked');
+    const isQuill1Check = dataList === 'check' || dataList === 'checked' || dataList === 'unchecked';
 
     if (!isQuill2Check && !isQuill1Check) return;
 
@@ -150,13 +151,13 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
     e.stopPropagation();
 
     const container = e.currentTarget;
-    const allCheckLIs = Array.from(container.querySelectorAll('ul[data-checked] > li, li[data-list="check"], li[data-list="checked"]'));
+    const allCheckLIs = Array.from(container.querySelectorAll('ul[data-checked] > li, li[data-list="check"], li[data-list="checked"], li[data-list="unchecked"]'));
     const index = allCheckLIs.indexOf(li);
     if (index === -1) return;
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
-    const docCheckLIs = Array.from(doc.querySelectorAll('ul[data-checked] > li, li[data-list="check"], li[data-list="checked"]'));
+    const docCheckLIs = Array.from(doc.querySelectorAll('ul[data-checked] > li, li[data-list="check"], li[data-list="checked"], li[data-list="unchecked"]'));
     
     const targetDocLi = docCheckLIs[index];
     if (!targetDocLi) return;
@@ -202,8 +203,15 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
         }
       }
     } else if (isQuill1Check) {
-      const currentlyChecked = targetDocLi.getAttribute('data-list') === 'checked';
-      targetDocLi.setAttribute('data-list', currentlyChecked ? 'check' : 'checked');
+      const currentListStatus = targetDocLi.getAttribute('data-list');
+      if (currentListStatus === 'unchecked') {
+        targetDocLi.setAttribute('data-list', 'checked');
+      } else if (currentListStatus === 'checked') {
+        // 토글 해제 시 Quill 버전에 맞게 unchecked로 돌아감
+        targetDocLi.setAttribute('data-list', 'unchecked');
+      } else if (currentListStatus === 'check') {
+        targetDocLi.setAttribute('data-list', 'checked');
+      }
     }
 
     const newContent = doc.body.innerHTML;

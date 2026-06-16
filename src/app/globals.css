@@ -70,7 +70,8 @@ body {
 }
 /* 3. 체크 리스트 (폰트 미지원으로 인한 깨짐 방지를 위해 CSS로 직접 그림) */
 .ql-snow .ql-editor ul[data-checked="false"] > li::before,
-.ql-snow .ql-editor li[data-list="check"]::before {
+.ql-snow .ql-editor li[data-list="check"]::before,
+.ql-snow .ql-editor li[data-list="unchecked"] > .ql-ui::before {
   content: '' !important;
   display: inline-block !important;
   width: 15px !important;
@@ -85,7 +86,8 @@ body {
   background-image: none !important;
 }
 .ql-snow .ql-editor ul[data-checked="true"] > li::before,
-.ql-snow .ql-editor li[data-list="checked"]::before {
+.ql-snow .ql-editor li[data-list="checked"]::before,
+.ql-snow .ql-editor li[data-list="checked"] > .ql-ui::before {
   content: '' !important;
   display: inline-block !important;
   width: 15px !important;
