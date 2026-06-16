@@ -101,7 +101,7 @@ export function createMinutesFolder(name: string): MinutesFolder {
   return folder;
 }
 
-export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden" | "attachments" | "links" | "summary" | "categories">>): boolean {
+export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden" | "attachments" | "links" | "summary" | "categories" | "iconType" | "lucideIcon" | "emoji" | "color">>): boolean {
   const store = loadMinutesStore();
   const folder = store.folders.find((f) => f.id === id);
   if (!folder) return false;
@@ -113,6 +113,10 @@ export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFol
   if (updates.links !== undefined) folder.links = updates.links;
   if (updates.summary !== undefined) folder.summary = updates.summary;
   if (updates.categories !== undefined) folder.categories = updates.categories;
+  if (updates.iconType !== undefined) folder.iconType = updates.iconType;
+  if (updates.lucideIcon !== undefined) folder.lucideIcon = updates.lucideIcon;
+  if (updates.emoji !== undefined) folder.emoji = updates.emoji;
+  if (updates.color !== undefined) folder.color = updates.color;
   saveMinutesStore(store);
   return true;
 }
