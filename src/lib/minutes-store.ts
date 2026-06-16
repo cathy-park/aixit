@@ -25,6 +25,7 @@ export type MinutesFolder = {
   attachments?: AttachmentMeta[];
   links?: MinuteLink[];
   summary?: string; // 폴더 요약(마크다운 등)
+  categories?: { id: string; name: string }[]; // 카테고리 목록
 };
 
 export type MinuteIconType = "meet" | "email" | "chat" | "default";
@@ -38,6 +39,7 @@ export type MeetingMinute = {
   content: string; // Markdown text
   attachments: AttachmentMeta[];
   links?: MinuteLink[];
+  categoryId?: string; // 소속 카테고리 ID
   createdAt: string;
   updatedAt: string;
 };
@@ -88,13 +90,14 @@ export function createMinutesFolder(name: string): MinutesFolder {
     name: name.trim() || "새 폴더",
     createdAt: new Date().toISOString(),
     order: store.folders.length,
+    categories: [],
   };
   store.folders.push(folder);
   saveMinutesStore(store);
   return folder;
 }
 
-export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden" | "attachments" | "links" | "summary">>): boolean {
+export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden" | "attachments" | "links" | "summary" | "categories">>): boolean {
   const store = loadMinutesStore();
   const folder = store.folders.find((f) => f.id === id);
   if (!folder) return false;
@@ -105,6 +108,7 @@ export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFol
   if (updates.attachments !== undefined) folder.attachments = updates.attachments;
   if (updates.links !== undefined) folder.links = updates.links;
   if (updates.summary !== undefined) folder.summary = updates.summary;
+  if (updates.categories !== undefined) folder.categories = updates.categories;
   saveMinutesStore(store);
   return true;
 }
@@ -123,7 +127,7 @@ export function deleteMinutesFolder(id: string): boolean {
 
 // ---- 회의록 관련 API ----
 
-export function createMeetingMinute(folderId: string, title: string, date: string, iconType: MinuteIconType = "default"): MeetingMinute {
+export function createMeetingMinute(folderId: string, title: string, date: string, iconType: MinuteIconType = "default", categoryId?: string): MeetingMinute {
   const store = loadMinutesStore();
   const minute: MeetingMinute = {
     id: newId(),
@@ -134,6 +138,7 @@ export function createMeetingMinute(folderId: string, title: string, date: strin
     content: "",
     attachments: [],
     links: [],
+    categoryId,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -144,7 +149,7 @@ export function createMeetingMinute(folderId: string, title: string, date: strin
 
 export function updateMeetingMinute(
   id: string,
-  updates: Partial<Pick<MeetingMinute, "title" | "date" | "content" | "attachments" | "iconType" | "links">>
+  updates: Partial<Pick<MeetingMinute, "title" | "date" | "content" | "attachments" | "iconType" | "links" | "categoryId">>
 ): MeetingMinute | null {
   const store = loadMinutesStore();
   const minute = store.minutes.find((m) => m.id === id);
@@ -156,6 +161,7 @@ export function updateMeetingMinute(
   if (updates.attachments !== undefined) minute.attachments = updates.attachments;
   if (updates.iconType !== undefined) minute.iconType = updates.iconType;
   if (updates.links !== undefined) minute.links = updates.links;
+  if (updates.categoryId !== undefined) minute.categoryId = updates.categoryId;
   minute.updatedAt = new Date().toISOString();
   saveMinutesStore(store);
   return minute;

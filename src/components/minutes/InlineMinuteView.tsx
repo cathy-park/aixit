@@ -64,6 +64,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
   const [content, setContent] = useState("");
   const [iconType, setIconType] = useState<MinuteIconType>("default");
   const [isIconDropdownOpen, setIsIconDropdownOpen] = useState(false);
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
   const [links, setLinks] = useState<MinuteLink[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -87,6 +88,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
         setDate(m.date);
         setContent(m.content);
         setIconType(m.iconType || "default");
+        setCategoryId(m.categoryId);
         setAttachments(m.attachments || []);
         setLinks(m.links || []);
       } else {
@@ -101,11 +103,11 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
       return;
     }
     if (isNew) {
-      const m = createMeetingMinute(folderId, title, date, iconType);
+      const m = createMeetingMinute(folderId, title, date, iconType, categoryId);
       updateMeetingMinute(m.id, { content, attachments, links });
       onClose(); // router.replace(`/minutes/${folderId}/${m.id}`);
     } else {
-      updateMeetingMinute(minuteId, { title, date, content, attachments, iconType, links });
+      updateMeetingMinute(minuteId, { title, date, content, attachments, iconType, links, categoryId });
       setIsEditing(false);
     }
   };
@@ -252,6 +254,11 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                   <CalendarIcon className="w-4 h-4" />
                   <span>{date}</span>
                 </div>
+                {categoryId && (
+                  <div className="flex items-center gap-1.5 text-sm font-semibold bg-blue-50 text-blue-700 px-2.5 py-1.5 rounded-lg border border-blue-100 mr-2">
+                    {folder.categories?.find(c => c.id === categoryId)?.name || "알 수 없는 카테고리"}
+                  </div>
+                )}
                 <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 복사">
                   <CopyIcon className="w-5 h-5" />
                 </button>
@@ -283,6 +290,18 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                     className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-[130px]"
                   />
                 </div>
+                <div className="flex items-center mr-2">
+                  <select
+                    value={categoryId || ""}
+                    onChange={(e) => setCategoryId(e.target.value || undefined)}
+                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none min-w-[120px]"
+                  >
+                    <option value="">카테고리 선택...</option>
+                    {(folder.categories || []).map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   onClick={() => {
                     if (isNew) {
@@ -292,6 +311,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                         setTitle(minute.title);
                         setDate(minute.date);
                         setContent(minute.content);
+                        setCategoryId(minute.categoryId);
                         setAttachments(minute.attachments || []);
                       }
                       setIsEditing(false);
