@@ -9,6 +9,7 @@ import {
   deleteMinutesFolder, 
   updateMinutesFolder, 
   deleteMeetingMinute,
+  moveMeetingMinuteToFolder,
   type MinutesFolder,
   type MeetingMinute,
   type MinuteIconType
@@ -72,6 +73,10 @@ export function MinutesView() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFolderId, setUploadingFolderId] = useState<string | null>(null);
+
+  // 드래그&드롭 상태
+  const [draggingMinuteId, setDraggingMinuteId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
 
   const refreshData = useCallback(() => {
     const store = loadMinutesStore();
@@ -140,6 +145,44 @@ export function MinutesView() {
     deleteMinutesFolder(folderId);
     refreshData();
   }, [refreshData]);
+
+  // 드래그&드롭 핸들러
+  const handleMinuteDragStart = useCallback((e: React.DragEvent, minuteId: string) => {
+    setDraggingMinuteId(minuteId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", minuteId);
+  }, []);
+
+  const handleMinuteDragEnd = useCallback(() => {
+    setDraggingMinuteId(null);
+    setDragOverFolderId(null);
+  }, []);
+
+  const handleFolderDragOver = useCallback((e: React.DragEvent, folderId: string) => {
+    if (!draggingMinuteId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverFolderId(folderId);
+  }, [draggingMinuteId]);
+
+  const handleFolderDragLeave = useCallback((e: React.DragEvent) => {
+    // relatedTarget이 드롭 영역 내부로 이동한 경우는 무시
+    if ((e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) return;
+    setDragOverFolderId(null);
+  }, []);
+
+  const handleFolderDrop = useCallback((e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    const minuteId = e.dataTransfer.getData("text/plain") || draggingMinuteId;
+    if (!minuteId) return;
+    setDragOverFolderId(null);
+    setDraggingMinuteId(null);
+    const moved = moveMeetingMinuteToFolder(minuteId, targetFolderId);
+    if (moved) {
+      setExpandedMinuteId(null);
+      refreshData();
+    }
+  }, [draggingMinuteId, refreshData]);
 
   const handleFolderFormSave = (data: any) => {
     if (folderModal?.mode === "create") {
@@ -351,7 +394,18 @@ export function MinutesView() {
               const hasFolderData = links.length > 0 || attachments.length > 0;
 
               return (
-                <div key={folder.id} className="flex flex-col gap-2">
+                <div
+                  key={folder.id}
+                  className={[
+                    "flex flex-col gap-2 rounded-2xl transition-all duration-150",
+                    dragOverFolderId === folder.id && draggingMinuteId
+                      ? "ring-2 ring-blue-400 ring-offset-2 bg-blue-50/30"
+                      : "",
+                  ].join(" ")}
+                  onDragOver={(e) => handleFolderDragOver(e, folder.id)}
+                  onDragLeave={handleFolderDragLeave}
+                  onDrop={(e) => handleFolderDrop(e, folder.id)}
+                >
                   <div className="group relative pr-4">
                     <FolderSectionAccordionHeader
                       folder={dr}
@@ -498,10 +552,16 @@ export function MinutesView() {
                           </div>
                         ) : (
                           fMinutes.map((minute) => (
-                            <div key={minute.id} className="flex flex-col gap-2">
+                            <div
+                              key={minute.id}
+                              className={["flex flex-col gap-2 transition-opacity duration-150", draggingMinuteId === minute.id ? "opacity-40" : ""].join(" ")}
+                              draggable
+                              onDragStart={(e) => handleMinuteDragStart(e, minute.id)}
+                              onDragEnd={handleMinuteDragEnd}
+                            >
                               <button
                                 onClick={() => setExpandedMinuteId(expandedMinuteId === minute.id ? null : minute.id)}
-                                className={`group flex items-center justify-between bg-white border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition ${expandedMinuteId === minute.id ? "border-blue-300 shadow-sm" : "border-zinc-200"}`}
+                                className={`group flex items-center justify-between bg-white border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition cursor-grab active:cursor-grabbing ${expandedMinuteId === minute.id ? "border-blue-300 shadow-sm" : "border-zinc-200"}`}
                               >
                                 <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
                                   {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}

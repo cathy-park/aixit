@@ -159,6 +159,17 @@ export function updateMeetingMinute(
   return minute;
 }
 
+export function moveMeetingMinuteToFolder(minuteId: string, targetFolderId: string): boolean {
+  const store = loadMinutesStore();
+  const minute = store.minutes.find((m) => m.id === minuteId);
+  if (!minute) return false;
+  if (minute.folderId === targetFolderId) return false;
+  minute.folderId = targetFolderId;
+  minute.updatedAt = new Date().toISOString();
+  saveMinutesStore(store);
+  return true;
+}
+
 export function deleteMeetingMinute(id: string): boolean {
   const store = loadMinutesStore();
   const initialLength = store.minutes.length;
