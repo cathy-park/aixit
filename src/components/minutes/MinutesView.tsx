@@ -564,14 +564,14 @@ export function MinutesView() {
                                       setDraggingLinkId(null);
                                     }}
                                   >
-                                    <a href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-700 hover:underline min-w-0 flex-1">
+                                    <a href={link.url} target="_blank" rel="noreferrer" draggable={false} className="flex items-center gap-2 text-indigo-700 hover:underline min-w-0 flex-1">
                                       {customIcon && !customIcon.startsWith("http") && !customIcon.startsWith("data:") ? (
-                                        <span className="text-base shrink-0">{customIcon}</span>
+                                        <span className="text-base shrink-0 select-none">{customIcon}</span>
                                       ) : customIcon ? (
                                         // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={customIcon} alt="" className="w-4 h-4 shrink-0 rounded-sm bg-white object-contain" />
+                                        <img src={customIcon} alt="" draggable={false} className="w-4 h-4 shrink-0 rounded-sm bg-white object-contain select-none" />
                                       ) : (
-                                        <FaviconImage url={link.url} />
+                                        <div className="pointer-events-none shrink-0"><FaviconImage url={link.url} /></div>
                                       )}
                                       <span className="truncate">{link.title}</span>
                                     </a>
