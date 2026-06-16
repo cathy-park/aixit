@@ -11,6 +11,8 @@ export type MinuteLink = {
   id: string;
   url: string;
   title: string;
+  /** 커스텀 아이콘: 이미지 URL·dataURL 또는 이모지 문자. 없으면 자동 파비콘 사용 */
+  customIcon?: string;
 };
 
 export type MinutesFolder = {
