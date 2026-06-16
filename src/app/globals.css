@@ -68,52 +68,39 @@ body {
   margin-top: 0.5em !important;
   margin-bottom: 0.5em !important;
 }
-.ql-editor li {
-  list-style-type: none !important; /* 브라우저 기본 불릿은 숨김 (Quill의 ::before를 사용) */
-  margin-bottom: 0.25em !important;
-  position: relative;
-}
-.ql-editor li::before {
+/* 3. 체크 리스트 (폰트 미지원으로 인한 깨짐 방지를 위해 CSS로 직접 그림) */
+.ql-snow .ql-editor ul[data-checked="false"] > li::before,
+.ql-snow .ql-editor li[data-list="check"]::before {
+  content: '' !important;
   display: inline-block !important;
-  white-space: nowrap !important;
-  width: 1.2em !important;
+  width: 15px !important;
+  height: 15px !important;
+  border: 1.5px solid #a1a1aa !important;
+  border-radius: 4px !important;
+  margin-right: 0.5em !important;
   margin-left: -1.5em !important;
-  margin-right: 0.3em !important;
-  text-align: right !important;
-}
-/* 1. 숫자 리스트 (가장 낮은 우선순위) */
-.ql-editor ol {
-  counter-reset: ql-list-0;
-}
-.ql-editor ol > li {
-  counter-increment: ql-list-0;
-}
-.ql-editor ol > li::before,
-.ql-editor li[data-list="ordered"]::before {
-  content: counter(ql-list-0, decimal) '. ' !important;
-}
-
-/* 2. 불릿 리스트 */
-.ql-editor ul > li::before,
-.ql-editor li[data-list="bullet"]::before {
-  content: '\2022' !important;
-}
-
-/* 3. 체크 리스트 (우선순위 높음) */
-.ql-editor ul[data-checked="false"] > li::before,
-.ql-editor li[data-list="check"]::before {
-  content: '\2610' !important;
-  font-size: 1.2em;
-  vertical-align: middle;
+  vertical-align: text-bottom !important;
   cursor: pointer;
+  background-color: transparent !important;
+  background-image: none !important;
 }
-.ql-editor ul[data-checked="true"] > li::before,
-.ql-editor li[data-list="checked"]::before {
-  content: '\2611' !important;
-  font-size: 1.2em;
-  vertical-align: middle;
+.ql-snow .ql-editor ul[data-checked="true"] > li::before,
+.ql-snow .ql-editor li[data-list="checked"]::before {
+  content: '' !important;
+  display: inline-block !important;
+  width: 15px !important;
+  height: 15px !important;
+  border: 1.5px solid #3b82f6 !important;
+  background-color: #3b82f6 !important;
+  border-radius: 4px !important;
+  margin-right: 0.5em !important;
+  margin-left: -1.5em !important;
+  vertical-align: text-bottom !important;
   cursor: pointer;
-  color: #3b82f6;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-size: 11px 11px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 }
 
 /* 에디터 내 가로줄(hr) 기본 스타일 */
