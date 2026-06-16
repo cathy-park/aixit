@@ -61,6 +61,43 @@ body {
   border: none !important;
 }
 
+/* Tailwind css 리셋(list-style: none)으로 인해 에디터/뷰어에서 리스트(블릿, 숫자)가 사라지는 문제 수정 */
+.ql-editor ol,
+.ql-editor ul {
+  padding-left: 1.5em !important;
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+.ql-editor li {
+  list-style-type: none !important; /* 브라우저 기본 불릿은 숨김 (Quill의 ::before를 사용) */
+  margin-bottom: 0.25em !important;
+  position: relative;
+}
+.ql-editor li::before {
+  display: inline-block !important;
+  white-space: nowrap !important;
+  width: 1.2em !important;
+  margin-left: -1.5em !important;
+  margin-right: 0.3em !important;
+  text-align: right !important;
+}
+/* 불릿 리스트 */
+.ql-editor ul > li::before,
+.ql-editor li[data-list="bullet"]::before {
+  content: '\2022' !important;
+}
+/* 숫자 리스트 */
+.ql-editor ol {
+  counter-reset: ql-list-0;
+}
+.ql-editor ol > li {
+  counter-increment: ql-list-0;
+}
+.ql-editor ol > li::before,
+.ql-editor li[data-list="ordered"]::before {
+  content: counter(ql-list-0, decimal) '. ' !important;
+}
+
 /* 에디터 내 가로줄(hr) 기본 스타일 */
 .ql-editor hr {
   border: none;

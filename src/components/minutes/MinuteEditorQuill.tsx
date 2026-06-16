@@ -9,6 +9,37 @@ const LINE_HEIGHTS = ["1.0", "1.2", "1.5", "1.8", "2.0", "2.5", "3.0"];
 
 let isQuillConfigured = false;
 
+if (typeof window !== "undefined" && ReactQuill.Quill && !isQuillConfigured) {
+  const Quill = ReactQuill.Quill;
+  try {
+    const BlockEmbed = Quill.import('blots/block/embed') as any;
+    class DividerBlot extends BlockEmbed {}
+    DividerBlot.blotName = 'divider';
+    DividerBlot.tagName = 'hr';
+    Quill.register(DividerBlot, true);
+
+    const Parchment = Quill.import("parchment") as any;
+    const StyleAttributor = Parchment.StyleAttributor || (Parchment.Attributor && Parchment.Attributor.Style);
+
+    if (StyleAttributor) {
+      const LineHeightStyle = new StyleAttributor("lineHeight", "line-height", {
+        scope: Parchment.Scope.BLOCK,
+        whitelist: LINE_HEIGHTS,
+      });
+      Quill.register(LineHeightStyle, true);
+
+      const SizeStyle = new StyleAttributor("size", "font-size", {
+        scope: Parchment.Scope.INLINE,
+        whitelist: FONT_SIZES,
+      });
+      Quill.register(SizeStyle, true);
+    }
+    isQuillConfigured = true;
+  } catch (err) {
+    console.error("Quill attribute registration failed", err);
+  }
+}
+
 const quillModules = {
   toolbar: {
     container: [
@@ -44,41 +75,12 @@ export default function MinuteEditorQuill({ value, onChange, placeholder, classN
   const [ready, setReady] = useState(isQuillConfigured);
 
   useEffect(() => {
-    if (isQuillConfigured) return;
-
-    // ReactQuill.Quill 로 접근하여 포맷 등록
-    const Quill = ReactQuill.Quill;
-    if (Quill) {
-      try {
-        const BlockEmbed = Quill.import('blots/block/embed') as any;
-        class DividerBlot extends BlockEmbed {}
-        DividerBlot.blotName = 'divider';
-        DividerBlot.tagName = 'hr';
-        Quill.register(DividerBlot, true);
-
-        const Parchment = Quill.import("parchment") as any;
-        const StyleAttributor = Parchment.StyleAttributor || (Parchment.Attributor && Parchment.Attributor.Style);
-
-        if (StyleAttributor) {
-          const LineHeightStyle = new StyleAttributor("lineHeight", "line-height", {
-            scope: Parchment.Scope.BLOCK,
-            whitelist: LINE_HEIGHTS,
-          });
-          Quill.register(LineHeightStyle, true);
-
-          const SizeStyle = new StyleAttributor("size", "font-size", {
-            scope: Parchment.Scope.INLINE,
-            whitelist: FONT_SIZES,
-          });
-          Quill.register(SizeStyle, true);
-        }
-      } catch (err) {
-        console.error("Quill attribute registration failed", err);
-      }
-
-      isQuillConfigured = true;
+    if (!isQuillConfigured) {
+      // 혹시라도 서버사이드 렌더링 등의 이유로 아직 등록 안 된 경우를 대비
       setReady(true);
+      return;
     }
+    setReady(true);
   }, []);
 
   if (!ready) return <div className="p-4 text-sm text-zinc-400">에디터를 불러오는 중...</div>;
