@@ -34,6 +34,12 @@ if (typeof window !== "undefined" && ReactQuill.Quill && !isQuillConfigured) {
       });
       Quill.register(SizeStyle, true);
     }
+
+    const icons = Quill.import('ui/icons') as any;
+    if (icons) {
+      icons['divider'] = '<svg viewBox="0 0 18 18"><line class="ql-stroke" x1="3" x2="15" y1="9" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg>';
+    }
+
     isQuillConfigured = true;
   } catch (err) {
     console.error("Quill attribute registration failed", err);
@@ -114,15 +120,6 @@ export default function MinuteEditorQuill({ value, onChange, placeholder, classN
         .ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before {
           content: '글자 크기';
-        }
-        .ql-snow .ql-toolbar button.ql-divider::after {
-          content: '—';
-          font-weight: bold;
-          font-size: 16px;
-          line-height: 18px;
-        }
-        .ql-snow .ql-toolbar button.ql-divider {
-          width: 28px;
         }
       `}} />
       <ReactQuill
