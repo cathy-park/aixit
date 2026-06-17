@@ -534,11 +534,14 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
               <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
                 <PaperclipIcon className="w-4 h-4 text-zinc-500" />
                 <span>관련 링크 및 계약서 첨부</span>
-                {(links.length + attachments.length) > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-zinc-100 text-zinc-500 text-xs flex items-center justify-center font-medium shrink-0">
-                    {links.length + attachments.length}
-                  </span>
-                )}
+                <span className={cn(
+                  "w-5 h-5 rounded-full text-xs flex items-center justify-center font-medium shrink-0 transition-colors duration-200",
+                  (links.length + attachments.length) > 0 
+                    ? "bg-blue-50 text-blue-600 border border-blue-100/50" 
+                    : "bg-zinc-100 text-zinc-500"
+                )}>
+                  {links.length + attachments.length}
+                </span>
               </h3>
             </div>
             <div className="flex items-center gap-4">
