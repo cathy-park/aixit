@@ -356,23 +356,24 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0 flex-wrap w-full sm:w-auto mt-2 sm:mt-0">
+          <>
             {!isNew && !isEditing && (
-              <>
-                <div className="flex items-center gap-1.5 text-sm text-zinc-500 mr-2 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200 whitespace-nowrap shrink-0">
-                  <CalendarIcon className="w-4 h-4 shrink-0" />
-                  <span>{date}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
+                <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto">
+                  <div className="flex items-center gap-1.5 text-sm text-zinc-500 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200 whitespace-nowrap shrink-0">
+                    <CalendarIcon className="w-4 h-4 shrink-0" />
+                    <span>{date}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 복사">
+                      <CopyIcon className="w-5 h-5" />
+                    </button>
+                    <button onClick={handleDownloadMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 다운로드">
+                      <DownloadIcon className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition shrink-0" title="마크다운 복사">
-                    <CopyIcon className="w-5 h-5" />
-                  </button>
-                  <button onClick={handleDownloadMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition shrink-0" title="마크다운 다운로드">
-                    <DownloadIcon className="w-5 h-5" />
-                  </button>
-                </div>
-                
-                <div className="flex items-center gap-2 ml-auto sm:ml-2 shrink-0">
+                <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
                   <button onClick={async () => {
                     if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
                       await deleteMeetingMinute(minute.id);
@@ -385,32 +386,34 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                     <PencilIcon className="w-4 h-4 shrink-0" />수정
                   </button>
                 </div>
-              </>
+              </div>
             )}
             {isEditing && (
-              <>
-                <div className="flex items-center gap-1.5 mr-2 shrink-0">
-                  <CalendarIcon className="w-4 h-4 text-zinc-500 shrink-0" />
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-[130px] shrink-0"
-                  />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
+                <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center gap-1.5 shrink-0 flex-1 sm:flex-none">
+                    <CalendarIcon className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-[130px] shrink-0"
+                    />
+                  </div>
+                  <div className="flex items-center shrink-0 flex-1 sm:flex-none">
+                    <select
+                      value={categoryId || ""}
+                      onChange={(e) => setCategoryId(e.target.value || undefined)}
+                      className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full sm:min-w-[120px] shrink-0"
+                    >
+                      <option value="">카테고리 선택...</option>
+                      {(folder.categories || []).map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="flex items-center mr-2 shrink-0">
-                  <select
-                    value={categoryId || ""}
-                    onChange={(e) => setCategoryId(e.target.value || undefined)}
-                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none min-w-[120px] shrink-0"
-                  >
-                    <option value="">카테고리 선택...</option>
-                    {(folder.categories || []).map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center gap-2 ml-auto sm:ml-0 shrink-0">
+                <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => {
                       if (isNew) {
@@ -434,9 +437,9 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                     <SaveIcon className="w-4 h-4 shrink-0" />저장
                   </button>
                 </div>
-              </>
+              </div>
             )}
-          </div>
+          </>
         </div>
 
                 {/* Links & Contracts Box */}
