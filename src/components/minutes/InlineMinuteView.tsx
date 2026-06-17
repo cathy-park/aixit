@@ -327,15 +327,15 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
             <>
               {/* Mobile: icon+badge row / Desktop: inline with title */}
               <div className="flex items-center gap-2 shrink-0">
-                {iconType === "meet" && <VideoIcon className="w-4 h-4 shrink-0 text-emerald-500" />}
-                {iconType === "email" && <MailIcon className="w-4 h-4 shrink-0 text-amber-500" />}
-                {iconType === "chat" && <MessageSquareIcon className="w-4 h-4 shrink-0 text-blue-500" />}
-                {(!iconType || iconType === "default") && <FileTextIcon className="w-4 h-4 shrink-0 text-zinc-400" />}
+                {iconType === "meet" && <VideoIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0 text-emerald-500" />}
+                {iconType === "email" && <MailIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0 text-amber-500" />}
+                {iconType === "chat" && <MessageSquareIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0 text-blue-500" />}
+                {(!iconType || iconType === "default") && <FileTextIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0 text-zinc-400" />}
                 {categoryId && (() => {
                   const cat = folder.categories?.find(c => c.id === categoryId);
                   if (!cat) return null;
                   return (
-                    <span className={cn("px-2 py-1 rounded-md text-sm font-bold border shrink-0", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
+                    <span className={cn("px-2 flex items-center rounded-md text-[11px] md:text-sm font-bold border shrink-0 h-5 md:h-6", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
                       {cat.name}
                     </span>
                   );
