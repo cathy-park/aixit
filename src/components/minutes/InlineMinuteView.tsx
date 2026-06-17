@@ -48,6 +48,23 @@ function FaviconImage({ url }: { url: string }) {
   return <img src={favUrl} alt="" className="w-4 h-4 shrink-0 rounded-sm bg-white" onError={() => setError(true)} />;
 }
 
+function Chevron({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("h-4 w-4 text-zinc-500 transition-transform duration-200 shrink-0", expanded ? "rotate-180" : "rotate-0")}
+      aria-hidden
+    >
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
 
 import "react-quill-new/dist/quill.snow.css";
 
@@ -70,6 +87,13 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
   const [links, setLinks] = useState<MinuteLink[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isLinksOpen, setIsLinksOpen] = useState(false);
+
+  useEffect(() => {
+    if (isEditing) {
+      setIsLinksOpen(true);
+    }
+  }, [isEditing]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -501,13 +525,19 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
         </div>
 
                 {/* Links & Contracts Box */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 mb-8">
-          <div className="flex items-center justify-between mb-4 border-b border-zinc-100 pb-3">
-            <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
-              <PaperclipIcon className="w-4 h-4" /> 관련 링크 및 계약서 첨부
-            </h3>
+        <div className={cn("rounded-xl border border-zinc-200 bg-white transition-all duration-200 mb-8", isLinksOpen ? "p-5" : "py-3 px-5")}>
+          <div 
+            onClick={() => setIsLinksOpen(!isLinksOpen)}
+            className={cn("flex items-center justify-between cursor-pointer select-none", isLinksOpen ? "mb-4 border-b border-zinc-100 pb-3" : "")}
+          >
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                <PaperclipIcon className="w-4 h-4" /> 관련 링크 및 계약서 첨부
+              </h3>
+              <Chevron expanded={isLinksOpen} />
+            </div>
             {isEditing && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                 <button onClick={handleAddLink} className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition px-2.5 py-1.5 rounded-md">
                   <PlusIcon className="w-3 h-3" /> 링크 추가
                 </button>
@@ -519,48 +549,50 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
             )}
           </div>
           
-          <div className="flex flex-col gap-3">
-            {links.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {links.map((link) => (
-                  <div key={link.id} className="flex items-center justify-between group rounded-lg bg-indigo-50/40 px-3 py-2 text-sm border border-indigo-100/50">
-                    <a href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-700 hover:text-indigo-900 hover:underline min-w-0 flex-1">
-                      <FaviconImage url={link.url} />
-                      <span className="truncate">{link.title}</span>
-                    </a>
-                    {isEditing && (
-                      <button onClick={() => handleDeleteLink(link.id)} className="text-indigo-300 hover:text-red-600 transition ml-2 shrink-0" title="삭제">
-                        <XIcon className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+          {isLinksOpen && (
+            <div className="flex flex-col gap-3">
+              {links.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {links.map((link) => (
+                    <div key={link.id} className="flex items-center justify-between group rounded-lg bg-indigo-50/40 px-3 py-2 text-sm border border-indigo-100/50">
+                      <a href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-700 hover:text-indigo-900 hover:underline min-w-0 flex-1">
+                        <FaviconImage url={link.url} />
+                        <span className="truncate">{link.title}</span>
+                      </a>
+                      {isEditing && (
+                        <button onClick={() => handleDeleteLink(link.id)} className="text-indigo-300 hover:text-red-600 transition ml-2 shrink-0" title="삭제">
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {attachments.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {attachments.map((att) => (
-                  <div key={att.id} className="flex items-center justify-between group rounded-lg bg-zinc-50 px-3 py-2 text-sm border border-zinc-200">
-                    <button onClick={() => handleDownloadAttachment(att.storagePath)} className="flex items-center gap-2 text-zinc-700 hover:text-zinc-900 hover:underline truncate max-w-[80%]">
-                      <FileTextIcon className="w-4 h-4 shrink-0 text-zinc-400" />
-                      <span className="truncate">{att.name}</span>
-                      <span className="text-xs text-zinc-400 ml-1 shrink-0">({Math.round(att.size / 1024)} KB)</span>
-                    </button>
-                    {isEditing && (
-                      <button onClick={() => handleDeleteAttachment(att.id, att.storagePath)} className="text-zinc-400 hover:text-red-600 transition shrink-0 ml-2" title="삭제">
-                        <XIcon className="w-4 h-4" />
+              {attachments.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {attachments.map((att) => (
+                    <div key={att.id} className="flex items-center justify-between group rounded-lg bg-zinc-50 px-3 py-2 text-sm border border-zinc-200">
+                      <button onClick={() => handleDownloadAttachment(att.storagePath)} className="flex items-center gap-2 text-zinc-700 hover:text-zinc-900 hover:underline truncate max-w-[80%]">
+                        <FileTextIcon className="w-4 h-4 shrink-0 text-zinc-400" />
+                        <span className="truncate">{att.name}</span>
+                        <span className="text-xs text-zinc-400 ml-1 shrink-0">({Math.round(att.size / 1024)} KB)</span>
                       </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+                      {isEditing && (
+                        <button onClick={() => handleDeleteAttachment(att.id, att.storagePath)} className="text-zinc-400 hover:text-red-600 transition shrink-0 ml-2" title="삭제">
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {links.length === 0 && attachments.length === 0 && (
-              <p className="text-sm text-zinc-400 py-2">첨부된 파일이나 링크가 없습니다.</p>
-            )}
-          </div>
+              {links.length === 0 && attachments.length === 0 && (
+                <p className="text-sm text-zinc-400 py-2">첨부된 파일이나 링크가 없습니다.</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content Box */}
