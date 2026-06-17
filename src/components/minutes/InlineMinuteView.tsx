@@ -296,12 +296,12 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
         
 
         {/* Title + Actions */}
-        <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
 
           {/* View Mode: Icon + Badge + Title */}
           {!isEditing && (
-            <>
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-2 flex-1 min-w-0">
+              <div className="flex items-center gap-2">
                 {iconType === "meet" && <VideoIcon className="w-4 h-4 shrink-0 text-emerald-500" />}
                 {iconType === "email" && <MailIcon className="w-4 h-4 shrink-0 text-amber-500" />}
                 {iconType === "chat" && <MessageSquareIcon className="w-4 h-4 shrink-0 text-blue-500" />}
@@ -319,7 +319,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
               <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight">
                 {title || "제목 없음"}
               </h1>
-            </>
+            </div>
           )}
 
           {/* Edit Mode: Icon Picker + Title Input */}
@@ -364,23 +364,23 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
 
           {/* View Mode Actions */}
           {!isNew && !isEditing && (
-            <div className="flex flex-col gap-2">
-              {/* Row 1: Unified pill — Date | Copy | Download */}
-              <div className="flex items-stretch text-sm text-zinc-500 font-medium bg-zinc-100/50 border border-zinc-200 rounded-lg overflow-hidden w-fit">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap">
+            <div className="flex flex-col gap-2 shrink-0">
+              {/* Unified pill — Date | Copy | Download */}
+              <div className="flex items-stretch text-sm text-zinc-500 font-medium bg-zinc-100/50 border border-zinc-200 rounded-lg overflow-hidden w-full sm:w-fit">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap flex-1 sm:flex-none">
                   <CalendarIcon className="w-4 h-4 shrink-0" />
                   <span>{date}</span>
                 </div>
                 <div className="w-px bg-zinc-200 self-stretch" />
-                <button onClick={handleCopyMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition" title="마크다운 복사">
+                <button onClick={handleCopyMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition flex-1 sm:flex-none flex items-center justify-center" title="마크다운 복사">
                   <CopyIcon className="w-4 h-4" />
                 </button>
                 <div className="w-px bg-zinc-200 self-stretch" />
-                <button onClick={handleDownloadMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition" title="마크다운 다운로드">
+                <button onClick={handleDownloadMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition flex-1 sm:flex-none flex items-center justify-center" title="마크다운 다운로드">
                   <DownloadIcon className="w-4 h-4" />
                 </button>
               </div>
-              {/* Row 2: Delete + Edit (each 50% width) */}
+              {/* Delete + Edit: full-width on mobile, normal on desktop */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={async () => {
@@ -389,13 +389,13 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                       onClose();
                     }
                   }}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2.5 text-sm font-semibold hover:bg-red-100 transition shadow-sm"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm"
                 >
                   <XIcon className="w-4 h-4 shrink-0" />삭제
                 </button>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
                 >
                   <PencilIcon className="w-4 h-4 shrink-0" />수정
                 </button>
@@ -405,7 +405,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
 
           {/* Edit Mode Actions */}
           {isEditing && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 shrink-0">
               {/* Row 1: Date + Category */}
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 flex-1">
@@ -430,7 +430,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                   </select>
                 </div>
               </div>
-              {/* Row 2: Cancel + Save (each 50% width) */}
+              {/* Cancel + Save: full-width on mobile, normal on desktop */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -447,13 +447,13 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                       setIsEditing(false);
                     }
                   }}
-                  className="flex-1 flex items-center justify-center px-4 py-2.5 text-sm font-medium text-zinc-600 border border-zinc-200 hover:bg-zinc-100 rounded-lg transition"
+                  className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 text-sm font-medium text-zinc-600 border border-zinc-200 hover:bg-zinc-100 rounded-lg transition"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
                 >
                   <SaveIcon className="w-4 h-4 shrink-0" />저장
                 </button>
