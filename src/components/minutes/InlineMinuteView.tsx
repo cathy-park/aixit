@@ -296,7 +296,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
         
 
         {/* Title + Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
 
           {/* View Mode: Icon + Badge + Title */}
           {!isEditing && (
@@ -366,17 +366,17 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           {!isNew && !isEditing && (
             <div className="flex flex-col gap-2 shrink-0">
               {/* Unified pill — Date | Copy | Download */}
-              <div className="flex items-stretch text-sm text-zinc-500 font-medium bg-zinc-100/50 border border-zinc-200 rounded-lg overflow-hidden w-full sm:w-fit">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap flex-1 sm:flex-none">
+              <div className="flex items-stretch text-sm text-zinc-500 font-medium bg-zinc-100/50 border border-zinc-200 rounded-lg overflow-hidden w-full md:w-fit">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap flex-1 md:flex-none">
                   <CalendarIcon className="w-4 h-4 shrink-0" />
                   <span>{date}</span>
                 </div>
                 <div className="w-px bg-zinc-200 self-stretch" />
-                <button onClick={handleCopyMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition flex-1 sm:flex-none flex items-center justify-center" title="마크다운 복사">
+                <button onClick={handleCopyMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition flex-1 md:flex-none flex items-center justify-center" title="마크다운 복사">
                   <CopyIcon className="w-4 h-4" />
                 </button>
                 <div className="w-px bg-zinc-200 self-stretch" />
-                <button onClick={handleDownloadMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition flex-1 sm:flex-none flex items-center justify-center" title="마크다운 다운로드">
+                <button onClick={handleDownloadMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition flex-1 md:flex-none flex items-center justify-center" title="마크다운 다운로드">
                   <DownloadIcon className="w-4 h-4" />
                 </button>
               </div>
@@ -389,13 +389,13 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                       onClose();
                     }
                   }}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm"
                 >
                   <XIcon className="w-4 h-4 shrink-0" />삭제
                 </button>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
                 >
                   <PencilIcon className="w-4 h-4 shrink-0" />수정
                 </button>
@@ -447,13 +447,13 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                       setIsEditing(false);
                     }
                   }}
-                  className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 text-sm font-medium text-zinc-600 border border-zinc-200 hover:bg-zinc-100 rounded-lg transition"
+                  className="flex-1 md:flex-none flex items-center justify-center px-4 py-2 text-sm font-medium text-zinc-600 border border-zinc-200 hover:bg-zinc-100 rounded-lg transition"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
                 >
                   <SaveIcon className="w-4 h-4 shrink-0" />저장
                 </button>
