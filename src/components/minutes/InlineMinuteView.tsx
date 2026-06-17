@@ -296,12 +296,13 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
         
 
         {/* Title + Actions */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+        <div className="flex flex-col md:flex-row md:items-center md:gap-3 gap-3 mb-4">
 
           {/* View Mode: Icon + Badge + Title */}
           {!isEditing && (
-            <div className="flex flex-col gap-2 flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+            <>
+              {/* Mobile: icon+badge row / Desktop: inline with title */}
+              <div className="flex items-center gap-2 shrink-0">
                 {iconType === "meet" && <VideoIcon className="w-4 h-4 shrink-0 text-emerald-500" />}
                 {iconType === "email" && <MailIcon className="w-4 h-4 shrink-0 text-amber-500" />}
                 {iconType === "chat" && <MessageSquareIcon className="w-4 h-4 shrink-0 text-blue-500" />}
@@ -316,10 +317,11 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                   );
                 })()}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight">
+              {/* Title: block on mobile, flex-1 on desktop */}
+              <h1 className="text-2xl md:text-xl font-extrabold text-zinc-900 break-words leading-tight flex-1 min-w-0">
                 {title || "제목 없음"}
               </h1>
-            </div>
+            </>
           )}
 
           {/* Edit Mode: Icon Picker + Title Input */}
@@ -364,7 +366,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
 
           {/* View Mode Actions */}
           {!isNew && !isEditing && (
-            <div className="flex flex-col gap-2 shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 shrink-0">
               {/* Unified pill — Date | Copy | Download */}
               <div className="flex items-stretch text-sm text-zinc-500 font-medium bg-zinc-100/50 border border-zinc-200 rounded-lg overflow-hidden w-full md:w-fit">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap flex-1 md:flex-none">
@@ -380,26 +382,24 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                   <DownloadIcon className="w-4 h-4" />
                 </button>
               </div>
-              {/* Delete + Edit: full-width on mobile, normal on desktop */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={async () => {
-                    if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
-                      await deleteMeetingMinute(minute.id);
-                      onClose();
-                    }
-                  }}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm"
-                >
-                  <XIcon className="w-4 h-4 shrink-0" />삭제
-                </button>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
-                >
-                  <PencilIcon className="w-4 h-4 shrink-0" />수정
-                </button>
-              </div>
+              {/* Delete + Edit: full-width on mobile, inline on desktop */}
+              <button
+                onClick={async () => {
+                  if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
+                    await deleteMeetingMinute(minute.id);
+                    onClose();
+                  }
+                }}
+                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm"
+              >
+                <XIcon className="w-4 h-4 shrink-0" />삭제
+              </button>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
+              >
+                <PencilIcon className="w-4 h-4 shrink-0" />수정
+              </button>
             </div>
           )}
 
