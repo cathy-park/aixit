@@ -530,11 +530,17 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
             onClick={() => setIsLinksOpen(!isLinksOpen)}
             className={cn("flex items-center justify-between cursor-pointer select-none", isLinksOpen ? "mb-4 border-b border-zinc-100 pb-3" : "")}
           >
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
-                <PaperclipIcon className="w-4 h-4" /> 관련 링크 및 계약서 첨부
-              </h3>
+            <div className="flex items-center gap-2.5">
               <Chevron expanded={isLinksOpen} />
+              <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                <PaperclipIcon className="w-4 h-4 text-zinc-500" />
+                <span>관련 링크 및 계약서 첨부</span>
+                {(links.length + attachments.length) > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-zinc-100 text-zinc-500 text-xs flex items-center justify-center font-medium shrink-0">
+                    {links.length + attachments.length}
+                  </span>
+                )}
+              </h3>
             </div>
             {isEditing && (
               <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
