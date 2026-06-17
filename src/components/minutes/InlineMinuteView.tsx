@@ -525,7 +525,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
         </div>
 
                 {/* Links & Contracts Box */}
-        <div className={cn("rounded-xl border border-zinc-200 bg-white transition-all duration-200 mb-8", isLinksOpen ? "p-5" : "py-3 px-5")}>
+        <div className={cn("rounded-xl border border-zinc-200 bg-white transition-all duration-200 mb-4", isLinksOpen ? "p-5" : "py-3 px-5")}>
           <div 
             onClick={() => setIsLinksOpen(!isLinksOpen)}
             className={cn("flex items-center justify-between cursor-pointer select-none", isLinksOpen ? "mb-4 border-b border-zinc-100 pb-3" : "")}
