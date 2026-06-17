@@ -295,153 +295,169 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
         {/* Back Link */}
         
 
-        {/* Title Row */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
-          <div className="flex-1 flex items-start gap-3">
-            {isEditing ? (
-              <div className="flex items-center gap-3 w-full">
-                <div className="relative">
-                  <button
-                    onClick={() => setIsIconDropdownOpen(!isIconDropdownOpen)}
-                    className="bg-white border border-zinc-200 rounded-lg px-3 py-2 flex items-center justify-center hover:bg-zinc-50 transition min-w-[44px] h-[44px]"
-                  >
-                    {iconType === "meet" && <VideoIcon className="w-5 h-5 text-emerald-500" />}
-                    {iconType === "email" && <MailIcon className="w-5 h-5 text-amber-500" />}
-                    {iconType === "chat" && <MessageSquareIcon className="w-5 h-5 text-blue-500" />}
-                    {(!iconType || iconType === "default") && <FileTextIcon className="w-5 h-5 text-zinc-400" />}
-                  </button>
-                  {isIconDropdownOpen && (
-                    <div className="absolute top-full mt-1 left-0 bg-white border border-zinc-200 shadow-lg rounded-xl z-50 overflow-hidden w-40 flex flex-col">
-                      <button onClick={() => { setIconType("default"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
-                        <FileTextIcon className="w-4 h-4 text-zinc-400" /> 기본
-                      </button>
-                      <button onClick={() => { setIconType("meet"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
-                        <VideoIcon className="w-4 h-4 text-emerald-500" /> 화상
-                      </button>
-                      <button onClick={() => { setIconType("email"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
-                        <MailIcon className="w-4 h-4 text-amber-500" /> 이메일
-                      </button>
-                      <button onClick={() => { setIconType("chat"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
-                        <MessageSquareIcon className="w-4 h-4 text-blue-500" /> 챗봇(말풍선)
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="회의 제목을 입력하세요"
-                  className="text-2xl sm:text-3xl font-extrabold border-none outline-none focus:ring-0 px-0 bg-transparent placeholder-zinc-300 w-full"
-                />
+        {/* Title + Actions */}
+        <div className="flex flex-col gap-3 mb-4">
+
+          {/* View Mode: Icon + Badge + Title */}
+          {!isEditing && (
+            <>
+              <div className="flex items-center gap-3">
+                {iconType === "meet" && <VideoIcon className="w-8 h-8 shrink-0 text-emerald-500" />}
+                {iconType === "email" && <MailIcon className="w-8 h-8 shrink-0 text-amber-500" />}
+                {iconType === "chat" && <MessageSquareIcon className="w-8 h-8 shrink-0 text-blue-500" />}
+                {(!iconType || iconType === "default") && <FileTextIcon className="w-8 h-8 shrink-0 text-zinc-400" />}
+                {categoryId && (() => {
+                  const cat = folder.categories?.find(c => c.id === categoryId);
+                  if (!cat) return null;
+                  return (
+                    <span className={cn("px-2 py-1 rounded-md text-sm font-bold border shrink-0", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
+                      {cat.name}
+                    </span>
+                  );
+                })()}
               </div>
-            ) : (
-              <div className="flex flex-col gap-2 mt-1">
-                <div className="flex items-center gap-3">
-                  {iconType === "meet" && <VideoIcon className="w-8 h-8 shrink-0 text-emerald-500" />}
-                  {iconType === "email" && <MailIcon className="w-8 h-8 shrink-0 text-amber-500" />}
-                  {iconType === "chat" && <MessageSquareIcon className="w-8 h-8 shrink-0 text-blue-500" />}
-                  {(!iconType || iconType === "default") && <FileTextIcon className="w-8 h-8 shrink-0 text-zinc-400" />}
-                  {categoryId && (() => {
-                    const cat = folder.categories?.find(c => c.id === categoryId);
-                    if (!cat) return null;
-                    return (
-                      <span className={cn("px-2 py-1 rounded-md text-sm font-bold border shrink-0", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
-                        {cat.name}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight">
-                  {title || "제목 없음"}
-                </h1>
-              </div>
-            )}
-          </div>
-          <>
-            {!isNew && !isEditing && (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 shrink-0 w-full sm:w-auto mt-4 sm:mt-0">
-                <div className="flex items-center justify-start w-full sm:w-auto">
-                  <div className="flex items-center gap-1.5 text-sm text-zinc-500 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200 whitespace-nowrap shrink-0">
-                    <CalendarIcon className="w-4 h-4 shrink-0" />
-                    <span>{date}</span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 복사">
-                      <CopyIcon className="w-5 h-5" />
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight">
+                {title || "제목 없음"}
+              </h1>
+            </>
+          )}
+
+          {/* Edit Mode: Icon Picker + Title Input */}
+          {isEditing && (
+            <div className="flex items-center gap-3 w-full">
+              <div className="relative">
+                <button
+                  onClick={() => setIsIconDropdownOpen(!isIconDropdownOpen)}
+                  className="bg-white border border-zinc-200 rounded-lg px-3 py-2 flex items-center justify-center hover:bg-zinc-50 transition min-w-[44px] h-[44px]"
+                >
+                  {iconType === "meet" && <VideoIcon className="w-5 h-5 text-emerald-500" />}
+                  {iconType === "email" && <MailIcon className="w-5 h-5 text-amber-500" />}
+                  {iconType === "chat" && <MessageSquareIcon className="w-5 h-5 text-blue-500" />}
+                  {(!iconType || iconType === "default") && <FileTextIcon className="w-5 h-5 text-zinc-400" />}
+                </button>
+                {isIconDropdownOpen && (
+                  <div className="absolute top-full mt-1 left-0 bg-white border border-zinc-200 shadow-lg rounded-xl z-50 overflow-hidden w-40 flex flex-col">
+                    <button onClick={() => { setIconType("default"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                      <FileTextIcon className="w-4 h-4 text-zinc-400" /> 기본
                     </button>
-                    <button onClick={handleDownloadMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 다운로드">
-                      <DownloadIcon className="w-5 h-5" />
+                    <button onClick={() => { setIconType("meet"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                      <VideoIcon className="w-4 h-4 text-emerald-500" /> 화상
+                    </button>
+                    <button onClick={() => { setIconType("email"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                      <MailIcon className="w-4 h-4 text-amber-500" /> 이메일
+                    </button>
+                    <button onClick={() => { setIconType("chat"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                      <MessageSquareIcon className="w-4 h-4 text-blue-500" /> 챗봇(말풍선)
                     </button>
                   </div>
+                )}
+              </div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="회의 제목을 입력하세요"
+                className="text-2xl sm:text-3xl font-extrabold border-none outline-none focus:ring-0 px-0 bg-transparent placeholder-zinc-300 w-full"
+              />
+            </div>
+          )}
+
+          {/* View Mode Actions */}
+          {!isNew && !isEditing && (
+            <div className="flex flex-col gap-2">
+              {/* Row 1: Date + Copy/Download (left-aligned, tight) */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 text-sm text-zinc-500 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200 whitespace-nowrap">
+                  <CalendarIcon className="w-4 h-4 shrink-0" />
+                  <span>{date}</span>
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
-                  <button onClick={async () => {
+                <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 복사">
+                  <CopyIcon className="w-5 h-5" />
+                </button>
+                <button onClick={handleDownloadMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 다운로드">
+                  <DownloadIcon className="w-5 h-5" />
+                </button>
+              </div>
+              {/* Row 2: Delete + Edit (each 50% width) */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
                     if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
                       await deleteMeetingMinute(minute.id);
                       onClose();
                     }
-                  }} className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm whitespace-nowrap shrink-0">
-                    <XIcon className="w-4 h-4 shrink-0" />삭제
-                  </button>
-                  <button onClick={() => setIsEditing(true)} className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm whitespace-nowrap shrink-0">
-                    <PencilIcon className="w-4 h-4 shrink-0" />수정
-                  </button>
-                </div>
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2.5 text-sm font-semibold hover:bg-red-100 transition shadow-sm"
+                >
+                  <XIcon className="w-4 h-4 shrink-0" />삭제
+                </button>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
+                >
+                  <PencilIcon className="w-4 h-4 shrink-0" />수정
+                </button>
               </div>
-            )}
-            {isEditing && (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 shrink-0 w-full sm:w-auto mt-4 sm:mt-0">
-                <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
-                  <div className="flex items-center gap-1.5 shrink-0 flex-1 sm:flex-none">
-                    <CalendarIcon className="w-4 h-4 text-zinc-500 shrink-0" />
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-[130px] shrink-0"
-                    />
-                  </div>
-                  <div className="flex items-center shrink-0 flex-1 sm:flex-none">
-                    <select
-                      value={categoryId || ""}
-                      onChange={(e) => setCategoryId(e.target.value || undefined)}
-                      className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full sm:min-w-[120px] shrink-0"
-                    >
-                      <option value="">카테고리 선택...</option>
-                      {(folder.categories || []).map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
+            </div>
+          )}
+
+          {/* Edit Mode Actions */}
+          {isEditing && (
+            <div className="flex flex-col gap-2">
+              {/* Row 1: Date + Category */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-1">
+                  <CalendarIcon className="w-4 h-4 text-zinc-500 shrink-0" />
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full"
+                  />
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
-                  <button
-                    onClick={() => {
-                      if (isNew) {
-                        onClose();
-                      } else {
-                        if (minute) {
-                          setTitle(minute.title);
-                          setDate(minute.date);
-                          setContent(minute.content);
-                          setCategoryId(minute.categoryId);
-                          setAttachments(minute.attachments || []);
-                        }
-                        setIsEditing(false);
-                      }
-                    }}
-                    className="flex-1 sm:flex-none justify-center px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg transition whitespace-nowrap shrink-0"
+                <div className="flex-1">
+                  <select
+                    value={categoryId || ""}
+                    onChange={(e) => setCategoryId(e.target.value || undefined)}
+                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full"
                   >
-                    취소
-                  </button>
-                  <button onClick={handleSave} className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm whitespace-nowrap shrink-0">
-                    <SaveIcon className="w-4 h-4 shrink-0" />저장
-                  </button>
+                    <option value="">카테고리 선택...</option>
+                    {(folder.categories || []).map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            )}
-          </>
+              {/* Row 2: Cancel + Save (each 50% width) */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (isNew) {
+                      onClose();
+                    } else {
+                      if (minute) {
+                        setTitle(minute.title);
+                        setDate(minute.date);
+                        setContent(minute.content);
+                        setCategoryId(minute.categoryId);
+                        setAttachments(minute.attachments || []);
+                      }
+                      setIsEditing(false);
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-center px-4 py-2.5 text-sm font-medium text-zinc-600 border border-zinc-200 hover:bg-zinc-100 rounded-lg transition"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
+                >
+                  <SaveIcon className="w-4 h-4 shrink-0" />저장
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
                 {/* Links & Contracts Box */}
