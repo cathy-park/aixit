@@ -302,10 +302,10 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           {!isEditing && (
             <>
               <div className="flex items-center gap-3">
-                {iconType === "meet" && <VideoIcon className="w-8 h-8 shrink-0 text-emerald-500" />}
-                {iconType === "email" && <MailIcon className="w-8 h-8 shrink-0 text-amber-500" />}
-                {iconType === "chat" && <MessageSquareIcon className="w-8 h-8 shrink-0 text-blue-500" />}
-                {(!iconType || iconType === "default") && <FileTextIcon className="w-8 h-8 shrink-0 text-zinc-400" />}
+                {iconType === "meet" && <VideoIcon className="w-6 h-6 shrink-0 text-emerald-500" />}
+                {iconType === "email" && <MailIcon className="w-6 h-6 shrink-0 text-amber-500" />}
+                {iconType === "chat" && <MessageSquareIcon className="w-6 h-6 shrink-0 text-blue-500" />}
+                {(!iconType || iconType === "default") && <FileTextIcon className="w-6 h-6 shrink-0 text-zinc-400" />}
                 {categoryId && (() => {
                   const cat = folder.categories?.find(c => c.id === categoryId);
                   if (!cat) return null;
