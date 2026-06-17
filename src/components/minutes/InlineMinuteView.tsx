@@ -356,49 +356,53 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap w-full sm:w-auto mt-2 sm:mt-0">
             {!isNew && !isEditing && (
               <>
-                <div className="flex items-center gap-1.5 text-sm text-zinc-500 mr-2 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200">
-                  <CalendarIcon className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 text-sm text-zinc-500 mr-2 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200 whitespace-nowrap shrink-0">
+                  <CalendarIcon className="w-4 h-4 shrink-0" />
                   <span>{date}</span>
                 </div>
-                <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 복사">
-                  <CopyIcon className="w-5 h-5" />
-                </button>
-                <button onClick={handleDownloadMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 다운로드">
-                  <DownloadIcon className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition shrink-0" title="마크다운 복사">
+                    <CopyIcon className="w-5 h-5" />
+                  </button>
+                  <button onClick={handleDownloadMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition shrink-0" title="마크다운 다운로드">
+                    <DownloadIcon className="w-5 h-5" />
+                  </button>
+                </div>
                 
-                <button onClick={async () => {
-                  if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
-                    await deleteMeetingMinute(minute.id);
-                    onClose();
-                  }
-                }} className="flex items-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm ml-2">
-                  <XIcon className="w-4 h-4" />삭제
-                </button>
-<button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm">
-                  <PencilIcon className="w-4 h-4" />수정
-                </button>
+                <div className="flex items-center gap-2 ml-auto sm:ml-2 shrink-0">
+                  <button onClick={async () => {
+                    if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
+                      await deleteMeetingMinute(minute.id);
+                      onClose();
+                    }
+                  }} className="flex items-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm whitespace-nowrap shrink-0">
+                    <XIcon className="w-4 h-4 shrink-0" />삭제
+                  </button>
+                  <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm whitespace-nowrap shrink-0">
+                    <PencilIcon className="w-4 h-4 shrink-0" />수정
+                  </button>
+                </div>
               </>
             )}
             {isEditing && (
               <>
-<div className="flex items-center gap-1.5 mr-2">
-                  <CalendarIcon className="w-4 h-4 text-zinc-500" />
+                <div className="flex items-center gap-1.5 mr-2 shrink-0">
+                  <CalendarIcon className="w-4 h-4 text-zinc-500 shrink-0" />
                   <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-[130px]"
+                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-[130px] shrink-0"
                   />
                 </div>
-                <div className="flex items-center mr-2">
+                <div className="flex items-center mr-2 shrink-0">
                   <select
                     value={categoryId || ""}
                     onChange={(e) => setCategoryId(e.target.value || undefined)}
-                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none min-w-[120px]"
+                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none min-w-[120px] shrink-0"
                   >
                     <option value="">카테고리 선택...</option>
                     {(folder.categories || []).map(cat => (
@@ -406,28 +410,30 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                     ))}
                   </select>
                 </div>
-                <button
-                  onClick={() => {
-                    if (isNew) {
-                      onClose();
-                    } else {
-                      if (minute) {
-                        setTitle(minute.title);
-                        setDate(minute.date);
-                        setContent(minute.content);
-                        setCategoryId(minute.categoryId);
-                        setAttachments(minute.attachments || []);
+                <div className="flex items-center gap-2 ml-auto sm:ml-0 shrink-0">
+                  <button
+                    onClick={() => {
+                      if (isNew) {
+                        onClose();
+                      } else {
+                        if (minute) {
+                          setTitle(minute.title);
+                          setDate(minute.date);
+                          setContent(minute.content);
+                          setCategoryId(minute.categoryId);
+                          setAttachments(minute.attachments || []);
+                        }
+                        setIsEditing(false);
                       }
-                      setIsEditing(false);
-                    }
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg transition"
-                >
-                  취소
-                </button>
-                <button onClick={handleSave} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm">
-                  <SaveIcon className="w-4 h-4" />저장
-                </button>
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg transition whitespace-nowrap shrink-0"
+                  >
+                    취소
+                  </button>
+                  <button onClick={handleSave} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm whitespace-nowrap shrink-0">
+                    <SaveIcon className="w-4 h-4 shrink-0" />저장
+                  </button>
+                </div>
               </>
             )}
           </div>
