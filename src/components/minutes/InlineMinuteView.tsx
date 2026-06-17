@@ -302,10 +302,10 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           {!isEditing && (
             <>
               <div className="flex items-center gap-3">
-                {iconType === "meet" && <VideoIcon className="w-6 h-6 shrink-0 text-emerald-500" />}
-                {iconType === "email" && <MailIcon className="w-6 h-6 shrink-0 text-amber-500" />}
-                {iconType === "chat" && <MessageSquareIcon className="w-6 h-6 shrink-0 text-blue-500" />}
-                {(!iconType || iconType === "default") && <FileTextIcon className="w-6 h-6 shrink-0 text-zinc-400" />}
+                {iconType === "meet" && <VideoIcon className="w-4 h-4 shrink-0 text-emerald-500" />}
+                {iconType === "email" && <MailIcon className="w-4 h-4 shrink-0 text-amber-500" />}
+                {iconType === "chat" && <MessageSquareIcon className="w-4 h-4 shrink-0 text-blue-500" />}
+                {(!iconType || iconType === "default") && <FileTextIcon className="w-4 h-4 shrink-0 text-zinc-400" />}
                 {categoryId && (() => {
                   const cat = folder.categories?.find(c => c.id === categoryId);
                   if (!cat) return null;
@@ -365,17 +365,19 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           {/* View Mode Actions */}
           {!isNew && !isEditing && (
             <div className="flex flex-col gap-2">
-              {/* Row 1: Date + Copy/Download (left-aligned, tight) */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 text-sm text-zinc-500 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200 whitespace-nowrap">
+              {/* Row 1: Unified pill — Date | Copy | Download */}
+              <div className="flex items-stretch text-sm text-zinc-500 font-medium bg-zinc-100/50 border border-zinc-200 rounded-lg overflow-hidden w-fit">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap">
                   <CalendarIcon className="w-4 h-4 shrink-0" />
                   <span>{date}</span>
                 </div>
-                <button onClick={handleCopyMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 복사">
-                  <CopyIcon className="w-5 h-5" />
+                <div className="w-px bg-zinc-200 self-stretch" />
+                <button onClick={handleCopyMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition" title="마크다운 복사">
+                  <CopyIcon className="w-4 h-4" />
                 </button>
-                <button onClick={handleDownloadMarkdown} className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition" title="마크다운 다운로드">
-                  <DownloadIcon className="w-5 h-5" />
+                <div className="w-px bg-zinc-200 self-stretch" />
+                <button onClick={handleDownloadMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition" title="마크다운 다운로드">
+                  <DownloadIcon className="w-4 h-4" />
                 </button>
               </div>
               {/* Row 2: Delete + Edit (each 50% width) */}
