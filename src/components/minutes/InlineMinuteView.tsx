@@ -336,21 +336,23 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                 />
               </div>
             ) : (
-              <div className="flex items-start gap-3 mt-1">
-                {iconType === "meet" && <VideoIcon className="w-8 h-8 shrink-0 text-emerald-500 mt-1" />}
-                {iconType === "email" && <MailIcon className="w-8 h-8 shrink-0 text-amber-500 mt-1" />}
-                {iconType === "chat" && <MessageSquareIcon className="w-8 h-8 shrink-0 text-blue-500 mt-1" />}
-                {(!iconType || iconType === "default") && <FileTextIcon className="w-8 h-8 shrink-0 text-zinc-400 mt-1" />}
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight flex items-center gap-3 flex-wrap">
+              <div className="flex flex-col gap-2 mt-1">
+                <div className="flex items-center gap-3">
+                  {iconType === "meet" && <VideoIcon className="w-8 h-8 shrink-0 text-emerald-500" />}
+                  {iconType === "email" && <MailIcon className="w-8 h-8 shrink-0 text-amber-500" />}
+                  {iconType === "chat" && <MessageSquareIcon className="w-8 h-8 shrink-0 text-blue-500" />}
+                  {(!iconType || iconType === "default") && <FileTextIcon className="w-8 h-8 shrink-0 text-zinc-400" />}
                   {categoryId && (() => {
                     const cat = folder.categories?.find(c => c.id === categoryId);
                     if (!cat) return null;
                     return (
-                      <span className={cn("px-2 py-1 rounded-md text-sm font-bold border shrink-0 -mt-1", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
+                      <span className={cn("px-2 py-1 rounded-md text-sm font-bold border shrink-0", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
                         {cat.name}
                       </span>
                     );
                   })()}
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 break-words leading-tight">
                   {title || "제목 없음"}
                 </h1>
               </div>
@@ -358,8 +360,8 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           </div>
           <>
             {!isNew && !isEditing && (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
-                <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 shrink-0 w-full sm:w-auto mt-4 sm:mt-0">
+                <div className="flex items-center justify-start w-full sm:w-auto">
                   <div className="flex items-center gap-1.5 text-sm text-zinc-500 font-medium bg-zinc-100/50 px-2.5 py-1.5 rounded-lg border border-zinc-200 whitespace-nowrap shrink-0">
                     <CalendarIcon className="w-4 h-4 shrink-0" />
                     <span>{date}</span>
@@ -373,23 +375,23 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
                   <button onClick={async () => {
                     if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
                       await deleteMeetingMinute(minute.id);
                       onClose();
                     }
-                  }} className="flex items-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm whitespace-nowrap shrink-0">
+                  }} className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm whitespace-nowrap shrink-0">
                     <XIcon className="w-4 h-4 shrink-0" />삭제
                   </button>
-                  <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm whitespace-nowrap shrink-0">
+                  <button onClick={() => setIsEditing(true)} className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm whitespace-nowrap shrink-0">
                     <PencilIcon className="w-4 h-4 shrink-0" />수정
                   </button>
                 </div>
               </div>
             )}
             {isEditing && (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 shrink-0 w-full sm:w-auto mt-4 sm:mt-0">
                 <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
                   <div className="flex items-center gap-1.5 shrink-0 flex-1 sm:flex-none">
                     <CalendarIcon className="w-4 h-4 text-zinc-500 shrink-0" />
@@ -413,7 +415,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                     </select>
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
                   <button
                     onClick={() => {
                       if (isNew) {
@@ -429,11 +431,11 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                         setIsEditing(false);
                       }
                     }}
-                    className="px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg transition whitespace-nowrap shrink-0"
+                    className="flex-1 sm:flex-none justify-center px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg transition whitespace-nowrap shrink-0"
                   >
                     취소
                   </button>
-                  <button onClick={handleSave} className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm whitespace-nowrap shrink-0">
+                  <button onClick={handleSave} className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm whitespace-nowrap shrink-0">
                     <SaveIcon className="w-4 h-4 shrink-0" />저장
                   </button>
                 </div>
