@@ -530,8 +530,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
             onClick={() => setIsLinksOpen(!isLinksOpen)}
             className={cn("flex items-center justify-between cursor-pointer select-none", isLinksOpen ? "mb-4 border-b border-zinc-100 pb-3" : "")}
           >
-            <div className="flex items-center gap-2.5">
-              <Chevron expanded={isLinksOpen} />
+            <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
                 <PaperclipIcon className="w-4 h-4 text-zinc-500" />
                 <span>관련 링크 및 계약서 첨부</span>
@@ -542,17 +541,20 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                 )}
               </h3>
             </div>
-            {isEditing && (
-              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                <button onClick={handleAddLink} className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition px-2.5 py-1.5 rounded-md">
-                  <PlusIcon className="w-3 h-3" /> 링크 추가
-                </button>
-                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 transition px-2.5 py-1.5 rounded-md disabled:opacity-50">
-                  <PlusIcon className="w-3 h-3" /> {uploading ? "업로드 중..." : "파일 추가"}
-                </button>
-                <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-              </div>
-            )}
+            <div className="flex items-center gap-4">
+              {isEditing && (
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={handleAddLink} className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition px-2.5 py-1.5 rounded-md">
+                    <PlusIcon className="w-3 h-3" /> 링크 추가
+                  </button>
+                  <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 transition px-2.5 py-1.5 rounded-md disabled:opacity-50">
+                    <PlusIcon className="w-3 h-3" /> {uploading ? "업로드 중..." : "파일 추가"}
+                  </button>
+                  <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                </div>
+              )}
+              <Chevron expanded={isLinksOpen} />
+            </div>
           </div>
           
           {isLinksOpen && (
