@@ -21,6 +21,7 @@ import dynamic from "next/dynamic";
 import { formatMinuteToMarkdown, copyMarkdownToClipboard, downloadMarkdownFile } from "@/lib/export-md";
 import { cn } from "@/components/ui/cn";
 import { AppMainColumn } from "@/components/layout/AppMainColumn";
+import { MinuteLinkFormModal } from "@/components/minutes/MinuteLinkFormModal";
 
 function FaviconImage({ url }: { url: string }) {
   const [error, setError] = useState(false);
@@ -88,6 +89,7 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
   const [links, setLinks] = useState<MinuteLink[]>([]);
   const [uploading, setUploading] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
+  const [isLinkFormOpen, setIsLinkFormOpen] = useState(false);
 
   useEffect(() => {
     if (isEditing) {
@@ -139,10 +141,18 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
   };
 
   const handleAddLink = () => {
-    const url = prompt("링크 주소를 입력하세요 (http://...)");
-    if (!url) return;
-    const linkTitle = prompt("링크 제목을 입력하세요") || url;
-    setLinks([...links, { id: Math.random().toString(36).slice(2), url, title: linkTitle }]);
+    setIsLinkFormOpen(true);
+  };
+
+  const handleSaveLink = (payload: { url: string; title: string; customIcon?: string }) => {
+    const newLink: MinuteLink = {
+      id: Math.random().toString(36).slice(2),
+      url: payload.url,
+      title: payload.title,
+      customIcon: payload.customIcon,
+    };
+    setLinks([...links, newLink]);
+    setIsLinkFormOpen(false);
   };
 
   const handleDeleteLink = (id: string) => {
@@ -554,7 +564,13 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
                   {links.map((link) => (
                     <div key={link.id} className="flex items-center justify-between group rounded-lg bg-indigo-50/40 px-3 py-2 text-sm border border-indigo-100/50">
                       <a href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-700 hover:text-indigo-900 hover:underline min-w-0 flex-1">
-                        <FaviconImage url={link.url} />
+                        {link.customIcon && !link.customIcon.startsWith("http") && !link.customIcon.startsWith("data:") ? (
+                          <span className="text-base shrink-0 select-none">{link.customIcon}</span>
+                        ) : link.customIcon ? (
+                          <img src={link.customIcon} alt="" draggable={false} className="w-4 h-4 shrink-0 rounded-sm bg-white object-contain select-none" />
+                        ) : (
+                          <FaviconImage url={link.url} />
+                        )}
                         <span className="truncate">{link.title}</span>
                       </a>
                       {isEditing && (
@@ -615,6 +631,11 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
           )}
         </div>
       </div>
+      <MinuteLinkFormModal
+        open={isLinkFormOpen}
+        onClose={() => setIsLinkFormOpen(false)}
+        onSave={handleSaveLink}
+      />
     </div>
   );
 }
