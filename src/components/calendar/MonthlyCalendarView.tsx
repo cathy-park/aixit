@@ -570,7 +570,7 @@ export function MonthlyCalendarView() {
                 </button>
               </div>
             </div>
-            <div className="max-h-[min(65vh,30rem)] overflow-y-auto px-5 pt-4 pb-12">
+            <div className="max-h-[min(65vh,30rem)] overflow-y-auto px-5 pt-4 pb-20">
               <section aria-labelledby="cal-popup-planned" className="border-b border-zinc-100 pb-5">
                 <h3 id="cal-popup-planned" className="text-xs font-bold uppercase tracking-wide text-sky-700">
                   예정 할 일 (홈 이번 주와 연동)
@@ -654,6 +654,7 @@ export function MonthlyCalendarView() {
                   </section>
                 ) : null}
               </div>
+              <div className="h-10" />
             </div>
           </div>
         </div>
