@@ -48,6 +48,7 @@ import {
 } from "@/lib/home-greeting-store";
 import { HeroCharacterIllustration } from "@/components/home/HeroCharacterIllustration";
 import { TitleCountChip } from "@/components/ui/TitleCountChip";
+import { loadTodoCategories, type TodoCategory } from "@/lib/todo-categories-store";
 
 function newTodoId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -60,6 +61,9 @@ export function HomeTodayDashboard() {
   const [pinnedKeys, setPinnedKeys] = useState<Set<string>>(() => new Set());
   const [todos, setTodos] = useState<TodayTodo[]>([]);
   const [todoDraft, setTodoDraft] = useState("");
+  const [categories, setCategories] = useState<TodoCategory[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
   const [ready, setReady] = useState(false);
   const [greetName, setGreetName] = useState(DEFAULT_HOME_GREETING_NAME);
   const [greetEdit, setGreetEdit] = useState(false);
@@ -84,6 +88,7 @@ export function HomeTodayDashboard() {
     const day = getTodayIsoLocal();
     migrateLegacyHomeTodosDailySheet(day);
     setGreetName(loadHomeGreetingName());
+    setCategories(loadTodoCategories());
     setReady(true);
   }, [refreshLayout]);
 
@@ -97,16 +102,19 @@ export function HomeTodayDashboard() {
     const onTodos = () => setTodos(loadTodosForHomeTodaySheet(selectedSheetRef.current));
     const onFolders = () => refreshLayout();
     const onGreeting = () => setGreetName(loadHomeGreetingName());
+    const onCategories = () => setCategories(loadTodoCategories());
     window.addEventListener("aixit-workflows-updated", onWorkflows);
     window.addEventListener("aixit-dashboard-layout-updated", onWorkflows);
     window.addEventListener("aixit-dashboard-folders-updated", onFolders);
     window.addEventListener("aixit-today-todos-updated", onTodos);
+    window.addEventListener("aixit-todo-categories-updated", onCategories);
     window.addEventListener(HOME_GREETING_UPDATED_EVENT, onGreeting);
     return () => {
       window.removeEventListener("aixit-workflows-updated", onWorkflows);
       window.removeEventListener("aixit-dashboard-layout-updated", onWorkflows);
       window.removeEventListener("aixit-dashboard-folders-updated", onFolders);
       window.removeEventListener("aixit-today-todos-updated", onTodos);
+      window.removeEventListener("aixit-todo-categories-updated", onCategories);
       window.removeEventListener(HOME_GREETING_UPDATED_EVENT, onGreeting);
     };
   }, [refreshLayout]);
@@ -196,10 +204,22 @@ export function HomeTodayDashboard() {
     const ws = getLocalSundayWeekStartIso();
     const newId = newTodoId();
     // scheduledDate를 추가하여 캘린더에도 즉시 표시되도록 함
-    const next = [...todos, { id: newId, text, done: false, weekStartIso: ws, dailySheetDate: sheet, scheduledDate: sheet }];
+    const next = [
+      ...todos,
+      {
+        id: newId,
+        text,
+        done: false,
+        weekStartIso: ws,
+        dailySheetDate: sheet,
+        scheduledDate: sheet,
+        categoryId: selectedCategoryId || undefined,
+      },
+    ];
     setTodos(next);
     saveHomeTodaySheet(sheet, next);
     setTodoDraft("");
+    setSelectedCategoryId("");
 
     if (isKakaoConnected()) {
       createKakaoCalendarEvent({ title: text, dateIso: sheet })
@@ -514,8 +534,19 @@ export function HomeTodayDashboard() {
                     )}
                   />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-                    <span className={cn("min-w-0 text-sm font-medium text-zinc-900", t.done && "text-zinc-600 line-through")}>
-                      {t.text}
+                    <span className="flex items-center gap-1.5 min-w-0 flex-1">
+                      {(() => {
+                        const cat = t.categoryId ? categoryMap.get(t.categoryId) : undefined;
+                        if (!cat) return null;
+                        return (
+                          <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 leading-none", cat.colorClass)}>
+                            {cat.name}
+                          </span>
+                        );
+                      })()}
+                      <span className={cn("min-w-0 text-sm font-medium text-zinc-900 truncate", t.done && "text-zinc-600 line-through")}>
+                        {t.text}
+                      </span>
                     </span>
                     {t.scheduledDate && !t.done ? (
                       <span className="shrink-0 text-[11px] font-semibold text-sky-700 tabular-nums sm:text-xs">
@@ -544,17 +575,31 @@ export function HomeTodayDashboard() {
         </ul>
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input
-            value={todoDraft}
-            onChange={(e) => setTodoDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (!shouldCommitTagOnEnter(e)) return;
-              e.preventDefault();
-              addTodo();
-            }}
-            placeholder="할 일을 입력하세요"
-            className="min-h-12 h-12 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-4 text-base leading-normal text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 sm:h-11 sm:min-h-0 sm:text-sm"
-          />
+          <div className="flex gap-2 flex-1 sm:flex-none sm:w-auto w-full">
+            <select
+              value={selectedCategoryId}
+              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              className="h-12 w-28 shrink-0 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 sm:h-11"
+            >
+              <option value="">카테고리</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <input
+              value={todoDraft}
+              onChange={(e) => setTodoDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (!shouldCommitTagOnEnter(e)) return;
+                e.preventDefault();
+                addTodo();
+              }}
+              placeholder="할 일을 입력하세요"
+              className="min-h-12 h-12 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-4 text-base leading-normal text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 sm:h-11 sm:min-h-0 sm:text-sm"
+            />
+          </div>
           <button
             type="button"
             onClick={addTodo}
