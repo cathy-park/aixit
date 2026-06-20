@@ -1033,7 +1033,10 @@ function TodoItem({
             onClick={(e) => { 
               e.stopPropagation(); 
               const dateIso = todo.scheduledDate || new Date().toISOString().split("T")[0];
-              addPlannedTodoForDate(todo.text + " (복사본)", dateIso);
+              const newTodo = addPlannedTodoForDate(todo.text, dateIso);
+              if (newTodo && todo.categoryId) {
+                setTodoCategory(newTodo.id, todo.categoryId);
+              }
             }}
             title="복사"
             className={cn(actionIconButtonClass, "h-7 w-7 text-current/50 hover:text-indigo-600")}
