@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/components/ui/cn";
-import { actionIconButtonClass, IconTrash, IconEdit } from "@/components/ui/action-icons";
+import { actionIconButtonClass, IconTrash, IconEdit, IconCopy } from "@/components/ui/action-icons";
 import { formatKoreanShortDateWithWeekday, getTodayIsoLocal } from "@/lib/today-project-filter";
 import { shouldCommitTagOnEnter } from "@/lib/tag-input-keydown";
 import {
@@ -165,6 +165,7 @@ export function MonthlyCalendarView() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [dayPopupIso, setDayPopupIso] = useState<string | null>(null);
   const [planDraft, setPlanDraft] = useState("");
+  const [recurrence, setRecurrence] = useState("none");
   const [calDropTargetIso, setCalDropTargetIso] = useState<string | null>(null);
   const calItemDraggingRef = useRef(false);
 
@@ -269,7 +270,7 @@ export function MonthlyCalendarView() {
         })
         .catch(() => {});
     }
-  }, [dayPopupIso, planDraft]);
+  }, [dayPopupIso, planDraft, recurrence]);
 
   const onCalDragOver = useCallback((e: DragEvent, iso: string) => {
     if (!calItemDraggingRef.current) return;
@@ -478,6 +479,7 @@ export function MonthlyCalendarView() {
                 onClick={() => {
                   setDayPopupIso(iso);
                   setPlanDraft("");
+                  setRecurrence("none");
                 }}
                 className="w-full text-left outline-none transition hover:bg-zinc-50/80 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-0"
                 aria-label={`${formatKoreanShortDateWithWeekday(iso)}, 기록 ${total}건`}
@@ -577,17 +579,31 @@ export function MonthlyCalendarView() {
                 </h3>
                 <p className="mt-1 text-[11px] text-zinc-500">예정일이 이번 주이면, 그날이 되면 홈「이번주 할 일」에 자동으로 나타납니다.</p>
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <input
-                    value={planDraft}
-                    onChange={(e) => setPlanDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (!shouldCommitTagOnEnter(e)) return;
-                      e.preventDefault();
-                      addPlanned();
-                    }}
-                    placeholder="할 일을 입력하세요"
-                    className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-                  />
+                  <div className="flex flex-1 items-center gap-2 relative">
+                    <select
+                      value={recurrence}
+                      onChange={(e) => setRecurrence(e.target.value)}
+                      className="h-10 w-28 shrink-0 appearance-none rounded-xl border border-zinc-200 bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[position:calc(100%-8px)_center] bg-no-repeat px-3 py-0 pr-8 text-sm text-zinc-700 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                    >
+                      <option value="none">반복 안함</option>
+                      <option value="daily">매일</option>
+                      <option value="weekly">매주</option>
+                      <option value="monthly">매월</option>
+                      <option value="yearly">매년</option>
+                      <option value="custom">맞춤 설정...</option>
+                    </select>
+                    <input
+                      value={planDraft}
+                      onChange={(e) => setPlanDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (!shouldCommitTagOnEnter(e)) return;
+                        e.preventDefault();
+                        addPlanned();
+                      }}
+                      placeholder="할 일을 입력하세요"
+                      className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={addPlanned}
@@ -1012,6 +1028,18 @@ function TodoItem({
             currentId={todo.categoryId}
             onSelect={(catId) => setTodoCategory(todo.id, catId)}
           />
+          <button
+            type="button"
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              const dateIso = todo.scheduledDate || new Date().toISOString().split("T")[0];
+              addPlannedTodoForDate(todo.text + " (복사본)", dateIso);
+            }}
+            title="복사"
+            className={cn(actionIconButtonClass, "h-7 w-7 text-current/50 hover:text-indigo-600")}
+          >
+            <IconCopy />
+          </button>
           <button
             type="button"
             onClick={(e) => { 
