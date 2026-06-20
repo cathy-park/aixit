@@ -539,7 +539,7 @@ export function HomeTodayDashboard() {
                         const cat = t.categoryId ? categoryMap.get(t.categoryId) : undefined;
                         if (!cat) return null;
                         return (
-                          <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 leading-none", cat.colorClass)}>
+                          <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold ring-1 ring-inset shrink-0 leading-none", cat.colorClass)}>
                             {cat.name}
                           </span>
                         );
@@ -574,36 +574,34 @@ export function HomeTodayDashboard() {
           )}
         </ul>
 
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex gap-2 flex-1 sm:flex-none sm:w-auto w-full">
-            <select
-              value={selectedCategoryId}
-              onChange={(e) => setSelectedCategoryId(e.target.value)}
-              className="h-12 w-28 shrink-0 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 sm:h-11"
-            >
-              <option value="">카테고리</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-            <input
-              value={todoDraft}
-              onChange={(e) => setTodoDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (!shouldCommitTagOnEnter(e)) return;
-                e.preventDefault();
-                addTodo();
-              }}
-              placeholder="할 일을 입력하세요"
-              className="min-h-12 h-12 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-4 text-base leading-normal text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 sm:h-11 sm:min-h-0 sm:text-sm"
-            />
-          </div>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center w-full">
+          <select
+            value={selectedCategoryId}
+            onChange={(e) => setSelectedCategoryId(e.target.value)}
+            className="h-12 w-full sm:w-28 shrink-0 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 sm:h-11"
+          >
+            <option value="">카테고리</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          <input
+            value={todoDraft}
+            onChange={(e) => setTodoDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (!shouldCommitTagOnEnter(e)) return;
+              e.preventDefault();
+              addTodo();
+            }}
+            placeholder="할 일을 입력하세요"
+            className="min-h-12 h-12 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-4 text-base leading-normal text-zinc-900 outline-none focus:border-zinc-300 focus:ring-4 focus:ring-zinc-100 sm:h-11 sm:min-h-0 sm:text-sm w-full"
+          />
           <button
             type="button"
             onClick={addTodo}
-            className="min-h-12 h-12 shrink-0 rounded-full bg-zinc-900 px-6 text-sm font-bold text-white hover:bg-zinc-800 sm:h-11 sm:min-h-0"
+            className="min-h-12 h-12 shrink-0 rounded-full bg-zinc-900 px-6 text-sm font-bold text-white hover:bg-zinc-800 sm:h-11 sm:min-h-0 w-full sm:w-auto"
           >
             추가
           </button>
