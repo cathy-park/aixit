@@ -622,6 +622,7 @@ export function MonthlyCalendarView() {
                         todo={t}
                         categories={categories}
                         isPlanned
+                        currentDateIso={dayPopupIso}
                         onDragStart={(e) => onCalItemDragStart(e, "planned", t.id)}
                         onDragEnd={onCalItemDragEnd}
                       />
@@ -643,6 +644,7 @@ export function MonthlyCalendarView() {
                           todo={t}
                           categories={categories}
                           isPlanned={false}
+                          currentDateIso={dayPopupIso}
                           onDragStart={(e) => onCalItemDragStart(e, "todo", t.id)}
                           onDragEnd={onCalItemDragEnd}
                         />
@@ -925,12 +927,14 @@ function TodoItem({
   todo,
   categories,
   isPlanned,
+  currentDateIso,
   onDragStart,
   onDragEnd,
 }: {
   todo: TodayTodo;
   categories: TodoCategory[];
   isPlanned: boolean;
+  currentDateIso?: string | null;
   onDragStart: (e: DragEvent) => void;
   onDragEnd: () => void;
 }) {
@@ -1032,7 +1036,7 @@ function TodoItem({
             type="button"
             onClick={(e) => { 
               e.stopPropagation(); 
-              const dateIso = todo.scheduledDate || new Date().toISOString().split("T")[0];
+              const dateIso = currentDateIso || todo.scheduledDate || new Date().toISOString().split("T")[0];
               const newTodo = addPlannedTodoForDate(todo.text, dateIso);
               if (newTodo && todo.categoryId) {
                 setTodoCategory(newTodo.id, todo.categoryId);
