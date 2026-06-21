@@ -97,6 +97,7 @@ export function MinutesView() {
   const [draggingMinuteId, setDraggingMinuteId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [draggingCategoryId, setDraggingCategoryId] = useState<string | null>(null);
+  const [draggingSubFolderId, setDraggingSubFolderId] = useState<string | null>(null);
   const [draggingLinkId, setDraggingLinkId] = useState<string | null>(null);
 
   // 폴더 링크 모달 상태
@@ -871,8 +872,20 @@ export function MinutesView() {
                                 {currentCatSubFolders.map(sub => (
                                   <div 
                                     key={sub.id} 
-                                    className="relative group/sub flex items-center shrink-0"
+                                    className={cn("relative group/sub flex items-center shrink-0 transition-opacity", draggingSubFolderId === sub.id ? "opacity-40" : "")}
+                                    draggable
+                                    onDragStart={(e) => {
+                                      e.dataTransfer.effectAllowed = "move";
+                                      e.dataTransfer.setData("text/subfolder-id", sub.id);
+                                      e.dataTransfer.setData("text/category-id", sub.categoryId);
+                                      e.dataTransfer.setData("text/folder-id", folder.id);
+                                      setDraggingSubFolderId(sub.id);
+                                    }}
+                                    onDragEnd={() => setDraggingSubFolderId(null)}
                                     onDragOver={(e) => {
+                                      if (draggingSubFolderId && draggingSubFolderId !== sub.id) {
+                                        e.preventDefault();
+                                      }
                                       if (draggingMinuteId) e.preventDefault();
                                     }}
                                     onDrop={(e) => {
@@ -882,7 +895,24 @@ export function MinutesView() {
                                         updateMeetingMinute(minuteId, { categoryId: sub.categoryId, subFolderId: sub.id });
                                         setDraggingMinuteId(null);
                                         refreshData();
+                                        return;
                                       }
+
+                                      const dragSubId = e.dataTransfer.getData("text/subfolder-id");
+                                      const dragCatId = e.dataTransfer.getData("text/category-id");
+                                      const folderId = e.dataTransfer.getData("text/folder-id");
+                                      if (folderId === folder.id && dragCatId === sub.categoryId && dragSubId && dragSubId !== sub.id) {
+                                        const newSubs = [...(folder.subFolders || [])];
+                                        const fromIndex = newSubs.findIndex(s => s.id === dragSubId);
+                                        const toIndex = newSubs.findIndex(s => s.id === sub.id);
+                                        if (fromIndex > -1 && toIndex > -1) {
+                                          const [moved] = newSubs.splice(fromIndex, 1);
+                                          newSubs.splice(toIndex, 0, moved);
+                                          updateMinutesFolder(folder.id, { subFolders: newSubs });
+                                          refreshData();
+                                        }
+                                      }
+                                      setDraggingSubFolderId(null);
                                     }}
                                   >
                                     <button
