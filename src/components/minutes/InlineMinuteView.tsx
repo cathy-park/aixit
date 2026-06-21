@@ -344,10 +344,10 @@ export function InlineMinuteView({
         
 
         {/* Title + Actions */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-3 gap-3 mb-4 w-full">
+        <div className="flex flex-col mb-4 w-full">
           {isEditing ? (
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
-              {/* 좌측정렬 : [아이콘][제목] */}
+            <div className="flex flex-col gap-4 w-full">
+              {/* 상단 : [아이콘][제목] */}
               <div className="flex items-center gap-3 flex-1 min-w-0 w-full">
                 <div className="relative shrink-0">
                   <button
@@ -385,9 +385,9 @@ export function InlineMinuteView({
                 />
               </div>
 
-              {/* 우측정렬 : [캘린더][카테고리][취소][저장] */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2 shrink-0 w-full md:w-auto">
-                <div className="flex items-center gap-2 w-full md:w-auto">
+              {/* 하단 : [캘린더][카테고리][세부폴더][취소][저장] */}
+              <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+                <div className="flex flex-wrap items-center gap-2">
                   <input
                     type="date"
                     value={date}
@@ -421,7 +421,7 @@ export function InlineMinuteView({
                     ))}
                   </select>
                 </div>
-                <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                   <button
                     onClick={() => {
                       if (isNew) {
