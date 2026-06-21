@@ -344,7 +344,7 @@ export function InlineMinuteView({
         
 
         {/* Title + Actions */}
-        <div className="flex flex-col mb-4 w-full">
+        <div className="mb-4 w-full">
           {isEditing ? (
             <div className="flex flex-col gap-4 w-full">
               {/* 상단 : [아이콘][제목] */}
@@ -452,7 +452,7 @@ export function InlineMinuteView({
               </div>
             </div>
           ) : (
-            <>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-3 gap-3 w-full">
               {/* Mobile: icon+badge row / Desktop: inline with title */}
               <div className="flex items-center gap-2 shrink-0">
                 {iconType === "meet" && <VideoIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0 text-emerald-500" />}
@@ -548,7 +548,7 @@ export function InlineMinuteView({
                   </button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
 
