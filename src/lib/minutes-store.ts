@@ -175,7 +175,8 @@ export function updateMeetingMinute(
   if (updates.attachments !== undefined) minute.attachments = updates.attachments;
   if (updates.iconType !== undefined) minute.iconType = updates.iconType;
   if (updates.links !== undefined) minute.links = updates.links;
-  if (updates.categoryId !== undefined) minute.categoryId = updates.categoryId;
+  if ("categoryId" in updates) minute.categoryId = updates.categoryId;
+  if ("subFolderId" in updates) minute.subFolderId = updates.subFolderId;
   minute.updatedAt = new Date().toISOString();
   saveMinutesStore(store);
   return minute;
