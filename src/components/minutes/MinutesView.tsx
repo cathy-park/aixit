@@ -719,7 +719,7 @@ export function MinutesView() {
                         let catFilteredMinutes = selectedCatId === "all" ? fMinutes : fMinutes.filter(m => m.categoryId === selectedCatId);
                         
                         const selectedSubId = selectedSubFolderByFolder[folder.id] || "all";
-                        if (selectedCatId !== "all" && selectedSubId !== "all") {
+                        if (selectedSubId !== "all") {
                           catFilteredMinutes = catFilteredMinutes.filter(m => m.subFolderId === selectedSubId);
                         }
 

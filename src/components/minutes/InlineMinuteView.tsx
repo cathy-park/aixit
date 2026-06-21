@@ -413,7 +413,7 @@ export function InlineMinuteView({
                     disabled={!categoryId}
                     className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-36 h-[38px] min-w-0 disabled:opacity-50 disabled:bg-zinc-50"
                   >
-                    <option value="">전체 (세부 폴더 없음)</option>
+                    <option value="">전체</option>
                     {(folder.subFolders || [])
                       .filter(s => s.categoryId === categoryId)
                       .map(sub => (
