@@ -722,7 +722,7 @@ export function MinutesView() {
                           catFilteredMinutes = catFilteredMinutes.filter(m => m.subFolderId === selectedSubId);
                         }
 
-                        const currentCatSubFolders = selectedCatId !== "all" ? (folder.subFolders || []).filter(sf => sf.categoryId === selectedCatId) : [];
+                        const currentCatSubFolders = selectedCatId !== "all" ? (folder.subFolders || []).filter(sf => sf.categoryId === selectedCatId) : (folder.subFolders || []);
 
                         return (
                           <>
@@ -845,8 +845,8 @@ export function MinutesView() {
                               </div>
                             </div>
 
-                            {/* 서브 폴더 탭 영역 (카테고리가 선택되었을 때만 표시) */}
-                            {selectedCatId !== "all" && (
+                            {/* 서브 폴더 탭 영역 */}
+                            {(currentCatSubFolders.length > 0 || selectedCatId !== "all") && (
                               <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide flex-1 pl-2">
                                 <span className="text-xs font-semibold text-zinc-400 mr-1">↳</span>
                                 <button
