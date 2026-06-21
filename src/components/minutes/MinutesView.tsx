@@ -10,6 +10,7 @@ import {
   updateMinutesFolder, 
   deleteMeetingMinute,
   moveMeetingMinuteToFolder,
+  updateMeetingMinute,
   type MinutesFolder,
   type MeetingMinute,
   type MinuteIconType
@@ -763,12 +764,19 @@ export function MinutesView() {
                                       }
                                     }}
                                     onDrop={(e) => {
-                                      e.preventDefault();
-                                      const catId = e.dataTransfer.getData("text/category-id");
+                                      const minuteId = e.dataTransfer.getData("text/plain");
+                                      if (minuteId) {
+                                        updateMeetingMinute(minuteId, { categoryId: cat.id, subFolderId: undefined });
+                                        setDraggingMinuteId(null);
+                                        refreshData();
+                                        return;
+                                      }
+
+                                      const dragCatId = e.dataTransfer.getData("text/category-id");
                                       const folderId = e.dataTransfer.getData("text/folder-id");
-                                      if (folderId === folder.id && catId && catId !== cat.id) {
+                                      if (folderId === folder.id && dragCatId && dragCatId !== cat.id) {
                                         const newCats = [...(folder.categories || [])];
-                                        const fromIndex = newCats.findIndex(c => c.id === catId);
+                                        const fromIndex = newCats.findIndex(c => c.id === dragCatId);
                                         const toIndex = newCats.findIndex(c => c.id === cat.id);
                                         if (fromIndex > -1 && toIndex > -1) {
                                           const [moved] = newCats.splice(fromIndex, 1);
@@ -861,7 +869,22 @@ export function MinutesView() {
                                   전체
                                 </button>
                                 {currentCatSubFolders.map(sub => (
-                                  <div key={sub.id} className="relative group/sub flex items-center shrink-0">
+                                  <div 
+                                    key={sub.id} 
+                                    className="relative group/sub flex items-center shrink-0"
+                                    onDragOver={(e) => {
+                                      if (draggingMinuteId) e.preventDefault();
+                                    }}
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      const minuteId = e.dataTransfer.getData("text/plain");
+                                      if (minuteId) {
+                                        updateMeetingMinute(minuteId, { categoryId: sub.categoryId, subFolderId: sub.id });
+                                        setDraggingMinuteId(null);
+                                        refreshData();
+                                      }
+                                    }}
+                                  >
                                     <button
                                       onClick={() => setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: sub.id }))}
                                       className={cn(
