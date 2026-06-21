@@ -489,6 +489,14 @@ export function InlineMinuteView({
                     </button>
                     <div className="w-px bg-zinc-200 self-stretch" />
                     <button
+                      onClick={() => setIsEditing(true)}
+                      className="px-3 py-2 hover:bg-zinc-200/60 transition flex items-center justify-center flex-1"
+                      title="수정"
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                    </button>
+                    <div className="w-px bg-zinc-200 self-stretch" />
+                    <button
                       onClick={async () => {
                         if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
                           await deleteMeetingMinute(minute.id);
@@ -499,14 +507,6 @@ export function InlineMinuteView({
                       title="삭제"
                     >
                       <XIcon className="w-4 h-4" />
-                    </button>
-                    <div className="w-px bg-zinc-200 self-stretch" />
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="px-3 py-2 hover:bg-zinc-200/60 transition flex items-center justify-center flex-1"
-                      title="수정"
-                    >
-                      <PencilIcon className="w-4 h-4" />
                     </button>
                   </div>
 
@@ -526,6 +526,12 @@ export function InlineMinuteView({
                     </button>
                   </div>
                   <button
+                    onClick={() => setIsEditing(true)}
+                    className="hidden md:flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
+                  >
+                    <PencilIcon className="w-4 h-4 shrink-0" />수정
+                  </button>
+                  <button
                     onClick={async () => {
                       if (minute && confirm("정말 이 회의록을 삭제하시겠습니까?")) {
                         await deleteMeetingMinute(minute.id);
@@ -535,12 +541,6 @@ export function InlineMinuteView({
                     className="hidden md:flex items-center justify-center gap-1.5 rounded-lg bg-red-50 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition shadow-sm"
                   >
                     <XIcon className="w-4 h-4 shrink-0" />삭제
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="hidden md:flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition shadow-sm"
-                  >
-                    <PencilIcon className="w-4 h-4 shrink-0" />수정
                   </button>
                 </div>
               )}
