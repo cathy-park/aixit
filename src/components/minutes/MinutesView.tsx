@@ -896,22 +896,27 @@ export function MinutesView() {
                                     >
                                       {sub.name}
                                     </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if(!confirm(`'${sub.name}' 추가 폴더를 삭제하시겠습니까? (속해있던 회의록은 '전체'에서 볼 수 있습니다)`)) return;
-                                        const newSubs = folder.subFolders!.filter(s => s.id !== sub.id);
-                                        updateMinutesFolder(folder.id, { subFolders: newSubs });
-                                        if (selectedSubFolderByFolder[folder.id] === sub.id) {
-                                          setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: "all" }));
-                                        }
-                                        refreshData();
-                                      }}
-                                      className="absolute right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center transition text-zinc-400 hover:bg-zinc-200 hover:text-red-600 opacity-0 group-hover/sub:opacity-100"
-                                    >
-                                      <XIcon className="w-2.5 h-2.5" />
-                                    </button>
-                                  </div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if(!confirm(`'${sub.name}' 추가 폴더를 삭제하시겠습니까? (속해있던 회의록은 '전체'에서 볼 수 있습니다)`)) return;
+                                          const newSubs = folder.subFolders!.filter(s => s.id !== sub.id);
+                                          updateMinutesFolder(folder.id, { subFolders: newSubs });
+                                          if (selectedSubFolderByFolder[folder.id] === sub.id) {
+                                            setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: "all" }));
+                                          }
+                                          refreshData();
+                                        }}
+                                        className={cn(
+                                          "absolute right-1 w-4 h-4 rounded-full flex items-center justify-center transition",
+                                          selectedSubId === sub.id
+                                            ? "text-indigo-400 hover:bg-indigo-200 hover:text-indigo-700"
+                                            : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
+                                        )}
+                                      >
+                                        <XIcon className="w-3 h-3" />
+                                      </button>
+                                    </div>
                                 ))}
                                 <button
                                   onClick={() => setSubFolderModal({ folderId: folder.id, categoryId: selectedCatId })}
