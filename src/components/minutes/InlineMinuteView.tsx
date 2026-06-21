@@ -398,7 +398,6 @@ export function InlineMinuteView({
                     value={categoryId || ""}
                     onChange={(e) => {
                       setCategoryId(e.target.value || undefined);
-                      setSubFolderId(undefined); // 카테고리가 변경되면 세부 폴더는 초기화
                     }}
                     className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-36 h-[38px] min-w-0"
                   >
@@ -410,13 +409,10 @@ export function InlineMinuteView({
                   <select
                     value={subFolderId || ""}
                     onChange={(e) => setSubFolderId(e.target.value || undefined)}
-                    disabled={!categoryId}
-                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-36 h-[38px] min-w-0 disabled:opacity-50 disabled:bg-zinc-50"
+                    className="text-sm text-zinc-700 border border-zinc-200 rounded-lg px-2.5 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-36 h-[38px] min-w-0"
                   >
                     <option value="">전체</option>
-                    {(folder.subFolders || [])
-                      .filter(s => s.categoryId === categoryId)
-                      .map(sub => (
+                    {(folder.subFolders || []).map(sub => (
                       <option key={sub.id} value={sub.id}>{sub.name}</option>
                     ))}
                   </select>

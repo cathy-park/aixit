@@ -724,7 +724,7 @@ export function MinutesView() {
                           catFilteredMinutes = catFilteredMinutes.filter(m => m.subFolderId === selectedSubId);
                         }
 
-                        const currentCatSubFolders = selectedCatId !== "all" ? (folder.subFolders || []).filter(sf => sf.categoryId === selectedCatId) : (folder.subFolders || []);
+                        const currentCatSubFolders = folder.subFolders || [];
 
                         return (
                           <>
@@ -899,9 +899,8 @@ export function MinutesView() {
                                       }
 
                                       const dragSubId = e.dataTransfer.getData("text/subfolder-id");
-                                      const dragCatId = e.dataTransfer.getData("text/category-id");
                                       const folderId = e.dataTransfer.getData("text/folder-id");
-                                      if (folderId === folder.id && dragCatId === sub.categoryId && dragSubId && dragSubId !== sub.id) {
+                                      if (folderId === folder.id && dragSubId && dragSubId !== sub.id) {
                                         const newSubs = [...(folder.subFolders || [])];
                                         const fromIndex = newSubs.findIndex(s => s.id === dragSubId);
                                         const toIndex = newSubs.findIndex(s => s.id === sub.id);
