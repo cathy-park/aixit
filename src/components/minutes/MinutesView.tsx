@@ -114,6 +114,8 @@ export function MinutesView() {
 
   // 선택된 폴더 카테고리 상태
   const [selectedCategoryByFolder, setSelectedCategoryByFolder] = useState<Record<string, string>>({});
+  // 폴더별 표시할 회의록 개수 한도 (기본 10)
+  const [pageLimitByFolder, setPageLimitByFolder] = useState<Record<string, number>>({});
   // 선택된 서브 폴더 상태
   const [selectedSubFolderByFolder, setSelectedSubFolderByFolder] = useState<Record<string, string>>({});
   // 서브 폴더 추가 모달 상태
@@ -900,74 +902,93 @@ export function MinutesView() {
                                   {selectedCatId === "all" ? "이 폴더에 회의록이 없습니다." : selectedSubId === "all" ? "이 카테고리에 회의록이 없습니다." : "이 추가 폴더에 회의록이 없습니다."}
                                 </div>
                               ) : (
-                                catFilteredMinutes.map((minute) => (
-                            <div
-                              key={minute.id}
-                              className={["flex flex-col gap-2 transition-opacity duration-150", draggingMinuteId === minute.id ? "opacity-40" : ""].join(" ")}
-                              draggable
-                              onDragStart={(e) => handleMinuteDragStart(e, minute.id)}
-                              onDragEnd={handleMinuteDragEnd}
-                            >
-                              <button
-                                onClick={() => setExpandedMinuteId(expandedMinuteId === minute.id ? null : minute.id)}
-                                className={`group flex items-center justify-between bg-white border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition cursor-grab active:cursor-grabbing ${expandedMinuteId === minute.id ? "border-blue-300 shadow-sm" : "border-zinc-200"}`}
-                              >
-                                <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
-                                  {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
-                                  {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
-                                  {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
-                                  {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
-                                  
-                                  <span className="font-medium text-zinc-900 truncate flex items-center gap-2">
-                                    {minute.categoryId && (() => {
-                                      const cat = folder.categories?.find(c => c.id === minute.categoryId);
-                                      if (!cat) return null;
-                                      return (
-                                        <span className={cn("shrink-0 px-2 py-0.5 rounded-md text-[11px] font-bold border", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
-                                          {cat.name}
-                                        </span>
-                                      );
-                                    })()}
-                                    <span className="truncate">{minute.title.trim() || "제목 없음"}</span>
-                                  </span>
+                                (() => {
+                                  const limit = pageLimitByFolder[folder.id] || 10;
+                                  const paginatedMinutes = catFilteredMinutes.slice(0, limit);
+                                  const hasMore = catFilteredMinutes.length > limit;
+                                  return (
+                                    <>
+                                      {paginatedMinutes.map((minute) => (
+                                        <div
+                                          key={minute.id}
+                                          className={["flex flex-col gap-2 transition-opacity duration-150", draggingMinuteId === minute.id ? "opacity-40" : ""].join(" ")}
+                                          draggable
+                                          onDragStart={(e) => handleMinuteDragStart(e, minute.id)}
+                                          onDragEnd={handleMinuteDragEnd}
+                                        >
+                                          <button
+                                            onClick={() => setExpandedMinuteId(expandedMinuteId === minute.id ? null : minute.id)}
+                                            className={`group flex items-center justify-between bg-white border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition cursor-grab active:cursor-grabbing ${expandedMinuteId === minute.id ? "border-blue-300 shadow-sm" : "border-zinc-200"}`}
+                                          >
+                                            <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
+                                              {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
+                                              {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
+                                              {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
+                                              {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
+                                              
+                                              <span className="font-medium text-zinc-900 truncate flex items-center gap-2">
+                                                {minute.categoryId && (() => {
+                                                  const cat = folder.categories?.find(c => c.id === minute.categoryId);
+                                                  if (!cat) return null;
+                                                  return (
+                                                    <span className={cn("shrink-0 px-2 py-0.5 rounded-md text-[11px] font-bold border", cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200")}>
+                                                      {cat.name}
+                                                    </span>
+                                                  );
+                                                })()}
+                                                <span className="truncate">{minute.title.trim() || "제목 없음"}</span>
+                                              </span>
 
-                                  <div className="hidden sm:flex items-center gap-2 ml-4 shrink-0">
-                                    {minute.attachments && minute.attachments.length > 0 && (
-                                      <span className="flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">
-                                        <PaperclipIcon className="w-3 h-3" /> {minute.attachments.length}
-                                      </span>
-                                    )}
-                                    {minute.links && minute.links.length > 0 && (
-                                      <span className="flex items-center gap-1 text-[11px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                                        <LinkIcon className="w-3 h-3" /> {minute.links.length}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center gap-4 shrink-0 ml-4">
-                                  <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium group-hover:text-blue-500 transition">
-                                    <CalendarIcon className="w-3.5 h-3.5" />
-                                    {minute.date}
-                                  </div>
-                                </div>
-                              </button>
-                              
-                              {expandedMinuteId === minute.id && (
-                                  <div className="rounded-xl border border-zinc-200 overflow-hidden mb-2">
-                                    <InlineMinuteView 
-                                      folderId={folder.id} 
-                                      minuteId={minute.id} 
-                                      onClose={() => {
-                                        setExpandedMinuteId(null);
-                                        refreshData();
-                                      }} 
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            ))
-                          )}
+                                              <div className="hidden sm:flex items-center gap-2 ml-4 shrink-0">
+                                                {minute.attachments && minute.attachments.length > 0 && (
+                                                  <span className="flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">
+                                                    <PaperclipIcon className="w-3 h-3" /> {minute.attachments.length}
+                                                  </span>
+                                                )}
+                                                {minute.links && minute.links.length > 0 && (
+                                                  <span className="flex items-center gap-1 text-[11px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                                                    <LinkIcon className="w-3 h-3" /> {minute.links.length}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-4 shrink-0 ml-4">
+                                              <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium group-hover:text-blue-500 transition">
+                                                <CalendarIcon className="w-3.5 h-3.5" />
+                                                {minute.date}
+                                              </div>
+                                            </div>
+                                          </button>
+                                          
+                                          {expandedMinuteId === minute.id && (
+                                              <div className="rounded-xl border border-zinc-200 overflow-hidden mb-2">
+                                                <InlineMinuteView 
+                                                  folderId={folder.id} 
+                                                  minuteId={minute.id} 
+                                                  onClose={() => {
+                                                    setExpandedMinuteId(null);
+                                                    refreshData();
+                                                  }} 
+                                                />
+                                              </div>
+                                            )}
+                                          </div>
+                                      ))}
+                                      {hasMore && (
+                                        <div className="flex justify-center mt-2 mb-4">
+                                          <button
+                                            onClick={() => setPageLimitByFolder(prev => ({ ...prev, [folder.id]: limit + 10 }))}
+                                            className="px-5 py-2.5 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-xl transition shadow-sm"
+                                          >
+                                            더보기 ({limit} / {catFilteredMinutes.length})
+                                          </button>
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()
+                              )}
                         </div>
                       </>
                         );
