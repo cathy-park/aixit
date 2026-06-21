@@ -552,9 +552,9 @@ export function InlineMinuteView({
         <div className={cn("rounded-xl border border-zinc-200 bg-white transition-all duration-200 mb-4", isLinksOpen ? "p-5" : "py-3 px-5")}>
           <div 
             onClick={() => setIsLinksOpen(!isLinksOpen)}
-            className={cn("flex items-center justify-between cursor-pointer select-none", isLinksOpen ? "mb-4 border-b border-zinc-100 pb-3" : "")}
+            className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none", isLinksOpen ? "mb-4 border-b border-zinc-100 pb-3" : "")}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
                 <PaperclipIcon className="w-4 h-4 text-zinc-500" />
                 <span>관련 링크 및 계약서 첨부</span>
@@ -567,8 +567,12 @@ export function InlineMinuteView({
                   {links.length + attachments.length}
                 </span>
               </h3>
+              <div className="sm:hidden flex shrink-0">
+                <Chevron expanded={isLinksOpen} />
+              </div>
             </div>
-            <div className="flex items-center gap-4">
+            
+            <div className={cn("items-center gap-4", isEditing ? "flex justify-start sm:justify-end" : "hidden sm:flex justify-end")}>
               {isEditing && (
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <button onClick={handleAddLink} className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition px-2.5 py-1.5 rounded-md">
@@ -580,7 +584,9 @@ export function InlineMinuteView({
                   <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileChange} />
                 </div>
               )}
-              <Chevron expanded={isLinksOpen} />
+              <div className="hidden sm:flex shrink-0">
+                <Chevron expanded={isLinksOpen} />
+              </div>
             </div>
           </div>
           

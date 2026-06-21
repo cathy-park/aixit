@@ -504,11 +504,16 @@ export function MinutesView() {
                     <div className="flex flex-col gap-3 pl-2 sm:pl-4 mb-4">
                       {/* 폴더 공통 자료 영역 */}
                       <details className="group rounded-xl border border-zinc-200 bg-zinc-50/50 mb-2">
-                        <summary className="flex items-center justify-between p-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
-                          <h4 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
-                            <PaperclipIcon className="w-4 h-4 text-zinc-500" /> 관련 링크 및 계약서
-                          </h4>
-                          <div className="flex items-center gap-3">
+                        <summary className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
+                              <PaperclipIcon className="w-4 h-4 text-zinc-500" /> 관련 링크 및 계약서
+                            </h4>
+                            <div className="sm:hidden flex shrink-0">
+                              <svg className="w-4 h-4 text-zinc-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                          </div>
+                          <div className="flex justify-start sm:justify-end items-center gap-4">
                             <div className="flex items-center gap-2" onClick={(e) => e.preventDefault()}>
                               <button
                                 onClick={(e) => {
@@ -531,7 +536,9 @@ export function MinutesView() {
                                 + 파일
                               </button>
                             </div>
-                            <svg className="w-4 h-4 text-zinc-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                            <div className="hidden sm:flex shrink-0">
+                              <svg className="w-4 h-4 text-zinc-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                            </div>
                           </div>
                         </summary>
                         
