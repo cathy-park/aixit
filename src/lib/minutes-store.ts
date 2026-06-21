@@ -30,6 +30,7 @@ export type MinutesFolder = {
   links?: MinuteLink[];
   summary?: string; // 폴더 요약(마크다운 등)
   categories?: { id: string; name: string; color?: string }[]; // 카테고리 목록
+  subFolders?: { id: string; name: string; categoryId: string; }[]; // 카테고리 내 서브 폴더 목록
 };
 
 export type MinuteIconType = "meet" | "email" | "chat" | "default";
@@ -44,6 +45,7 @@ export type MeetingMinute = {
   attachments: AttachmentMeta[];
   links?: MinuteLink[];
   categoryId?: string; // 소속 카테고리 ID
+  subFolderId?: string; // 소속 서브 폴더 ID
   createdAt: string;
   updatedAt: string;
 };
@@ -101,7 +103,10 @@ export function createMinutesFolder(name: string): MinutesFolder {
   return folder;
 }
 
-export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFolder, "name" | "order" | "iconUrl" | "hidden" | "attachments" | "links" | "summary" | "categories" | "iconType" | "lucideIcon" | "emoji" | "color">>): boolean {
+export function updateMinutesFolder(
+  id: string,
+  updates: Partial<Pick<MinutesFolder, "name" | "iconType" | "lucideIcon" | "emoji" | "color" | "iconUrl" | "order" | "hidden" | "attachments" | "links" | "summary" | "categories" | "subFolders">>
+): boolean {
   const store = loadMinutesStore();
   const folder = store.folders.find((f) => f.id === id);
   if (!folder) return false;
@@ -113,6 +118,7 @@ export function updateMinutesFolder(id: string, updates: Partial<Pick<MinutesFol
   if (updates.links !== undefined) folder.links = updates.links;
   if (updates.summary !== undefined) folder.summary = updates.summary;
   if (updates.categories !== undefined) folder.categories = updates.categories;
+  if (updates.subFolders !== undefined) folder.subFolders = updates.subFolders;
   if (updates.iconType !== undefined) folder.iconType = updates.iconType;
   if (updates.lucideIcon !== undefined) folder.lucideIcon = updates.lucideIcon;
   if (updates.emoji !== undefined) folder.emoji = updates.emoji;
@@ -157,7 +163,7 @@ export function createMeetingMinute(folderId: string, title: string, date: strin
 
 export function updateMeetingMinute(
   id: string,
-  updates: Partial<Pick<MeetingMinute, "title" | "date" | "content" | "attachments" | "iconType" | "links" | "categoryId">>
+  updates: Partial<Pick<MeetingMinute, "title" | "iconType" | "date" | "content" | "attachments" | "links" | "categoryId" | "subFolderId">>
 ): MeetingMinute | null {
   const store = loadMinutesStore();
   const minute = store.minutes.find((m) => m.id === id);

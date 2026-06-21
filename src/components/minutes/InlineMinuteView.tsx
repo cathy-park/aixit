@@ -71,7 +71,19 @@ import "react-quill-new/dist/quill.snow.css";
 
 const MinuteEditorQuill = dynamic(() => import("@/components/minutes/MinuteEditorQuill"), { ssr: false });
 
-export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: string, minuteId: string, onClose: () => void }) {
+export function InlineMinuteView({ 
+  folderId, 
+  minuteId, 
+  onClose,
+  defaultCategoryId,
+  defaultSubFolderId
+}: { 
+  folderId: string; 
+  minuteId: string; 
+  onClose: () => void;
+  defaultCategoryId?: string;
+  defaultSubFolderId?: string;
+}) {
   const isNew = minuteId === "new";
 
   const [isEditing, setIsEditing] = useState(isNew);
@@ -80,13 +92,14 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
   const [minute, setMinute] = useState<MeetingMinute | null>(null);
 
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [content, setContent] = useState("");
-  const [iconType, setIconType] = useState<MinuteIconType>("default");
-  const [isIconDropdownOpen, setIsIconDropdownOpen] = useState(false);
-  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([]);
   const [links, setLinks] = useState<MinuteLink[]>([]);
+  const [iconType, setIconType] = useState<MinuteIconType>("default");
+  const [isIconDropdownOpen, setIsIconDropdownOpen] = useState(false);
+  const [categoryId, setCategoryId] = useState<string | undefined>(defaultCategoryId !== "all" ? defaultCategoryId : undefined);
+  const [subFolderId, setSubFolderId] = useState<string | undefined>(defaultSubFolderId !== "all" ? defaultSubFolderId : undefined);
   const [uploading, setUploading] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
   const [isLinkFormOpen, setIsLinkFormOpen] = useState(false);
@@ -132,10 +145,10 @@ export function InlineMinuteView({ folderId, minuteId, onClose }: { folderId: st
     }
     if (isNew) {
       const m = createMeetingMinute(folderId, title, date, iconType, categoryId);
-      updateMeetingMinute(m.id, { content, attachments, links });
+      updateMeetingMinute(m.id, { content, attachments, links, subFolderId });
       onClose(); // router.replace(`/minutes/${folderId}/${m.id}`);
     } else {
-      updateMeetingMinute(minuteId, { title, date, content, attachments, iconType, links, categoryId });
+      updateMeetingMinute(minuteId, { title, date, content, attachments, iconType, links, categoryId, subFolderId });
       setIsEditing(false);
     }
   };

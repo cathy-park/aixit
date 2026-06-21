@@ -46,6 +46,7 @@ function getInvertedColor(colorStr: string) {
 
 import { MinuteLinkFormModal, type MinuteLinkFormPayload } from "./MinuteLinkFormModal";
 import { MinuteCategoryFormModal } from "./MinuteCategoryFormModal";
+import { MinuteSubFolderFormModal } from "./MinuteSubFolderFormModal";
 function FaviconImage({ url }: { url: string }) {
   const [error, setError] = useState(false);
   const getFaviconUrl = (u: string) => {
@@ -111,6 +112,14 @@ export function MinutesView() {
 
   // 선택된 폴더 카테고리 상태
   const [selectedCategoryByFolder, setSelectedCategoryByFolder] = useState<Record<string, string>>({});
+  // 선택된 서브 폴더 상태
+  const [selectedSubFolderByFolder, setSelectedSubFolderByFolder] = useState<Record<string, string>>({});
+  // 서브 폴더 추가 모달 상태
+  const [subFolderModal, setSubFolderModal] = useState<{
+    folderId: string;
+    categoryId: string;
+    initial?: { id: string; name: string; };
+  } | null>(null);
 
   const refreshData = useCallback(() => {
     const store = loadMinutesStore();
@@ -433,8 +442,85 @@ export function MinutesView() {
           </div>
         ) : (
           <div className="flex flex-col gap-6 w-full">
-            {visibleFolders.map((folder) => {
-              if (activeFolderId && activeFolderId !== "all" && folder.id !== activeFolderId) return null;
+            {activeFolderId === "all" ? (
+              <div className="flex flex-col gap-2">
+                {displayMinutes.length === 0 ? (
+                  <div className="py-6 text-center text-zinc-400 bg-white rounded-xl border border-zinc-200 border-dashed">
+                    작성된 회의록이 없습니다.
+                  </div>
+                ) : (
+                  displayMinutes.map(minute => {
+                    const folder = folders.find(f => f.id === minute.folderId);
+                    if (!folder) return null;
+                    const cat = minute.categoryId ? folder.categories?.find(c => c.id === minute.categoryId) : null;
+                    const sub = minute.subFolderId ? folder.subFolders?.find(s => s.id === minute.subFolderId) : null;
+                    return (
+                      <div key={minute.id} className="flex flex-col gap-2">
+                        <button
+                          onClick={() => setExpandedMinuteId(expandedMinuteId === minute.id ? null : minute.id)}
+                          className={`group flex items-center justify-between bg-white border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition cursor-pointer ${expandedMinuteId === minute.id ? "border-blue-300 shadow-sm" : "border-zinc-200"}`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
+                            {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
+                            {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
+                            {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
+                            {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
+                            
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="font-medium text-zinc-900 truncate flex items-center gap-2">
+                                <span className="truncate">{minute.title.trim() || "제목 없음"}</span>
+                              </span>
+                              <div className="flex flex-wrap items-center gap-1 mt-0.5 text-[11px]">
+                                <span className="px-1.5 py-0.5 rounded-md border bg-zinc-50 text-zinc-500 border-zinc-200 flex items-center gap-1 font-semibold">
+                                  {folder.name}
+                                  {cat && <><span className="opacity-40">›</span> {cat.name}</>}
+                                  {sub && <><span className="opacity-40">›</span> {sub.name}</>}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="hidden sm:flex items-center gap-2 ml-4 shrink-0">
+                              {minute.attachments && minute.attachments.length > 0 && (
+                                <span className="flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">
+                                  <PaperclipIcon className="w-3 h-3" /> {minute.attachments.length}
+                                </span>
+                              )}
+                              {minute.links && minute.links.length > 0 && (
+                                <span className="flex items-center gap-1 text-[11px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
+                                  <LinkIcon className="w-3 h-3" /> {minute.links.length}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 shrink-0 ml-4">
+                            <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium group-hover:text-blue-500 transition">
+                              <CalendarIcon className="w-3.5 h-3.5" />
+                              {minute.date}
+                            </div>
+                          </div>
+                        </button>
+                        
+                        {expandedMinuteId === minute.id && (
+                          <div className="rounded-xl border border-zinc-200 overflow-hidden mb-2">
+                            <InlineMinuteView 
+                              folderId={folder.id} 
+                              minuteId={minute.id} 
+                              onClose={() => {
+                                setExpandedMinuteId(null);
+                                refreshData();
+                              }} 
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ) : (
+              visibleFolders.map((folder) => {
+                if (activeFolderId && activeFolderId !== "all" && folder.id !== activeFolderId) return null;
               const fMinutes = displayMinutes.filter(m => m.folderId === folder.id);
               const isExpanded = expandedFolders[folder.id];
               
@@ -629,8 +715,15 @@ export function MinutesView() {
 
                       {(() => {
                         const selectedCatId = selectedCategoryByFolder[folder.id] || "all";
-                        const catFilteredMinutes = selectedCatId === "all" ? fMinutes : fMinutes.filter(m => m.categoryId === selectedCatId);
+                        let catFilteredMinutes = selectedCatId === "all" ? fMinutes : fMinutes.filter(m => m.categoryId === selectedCatId);
                         
+                        const selectedSubId = selectedSubFolderByFolder[folder.id] || "all";
+                        if (selectedCatId !== "all" && selectedSubId !== "all") {
+                          catFilteredMinutes = catFilteredMinutes.filter(m => m.subFolderId === selectedSubId);
+                        }
+
+                        const currentCatSubFolders = selectedCatId !== "all" ? (folder.subFolders || []).filter(sf => sf.categoryId === selectedCatId) : [];
+
                         return (
                           <>
                             {/* 카테고리 탭 및 컨트롤 버튼 (한 줄에 배치) */}
@@ -639,7 +732,10 @@ export function MinutesView() {
                               {/* 카테고리 탭 영역 */}
                               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide flex-1">
                                 <button
-                                  onClick={() => setSelectedCategoryByFolder(prev => ({ ...prev, [folder.id]: "all" }))}
+                                  onClick={() => {
+                                    setSelectedCategoryByFolder(prev => ({ ...prev, [folder.id]: "all" }));
+                                    setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: "all" }));
+                                  }}
                                   className={cn(
                                     "shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition",
                                     selectedCatId === "all"
@@ -685,7 +781,10 @@ export function MinutesView() {
                                     }}
                                   >
                                     <button
-                                      onClick={() => setSelectedCategoryByFolder(prev => ({ ...prev, [folder.id]: cat.id }))}
+                                      onClick={() => {
+                                        setSelectedCategoryByFolder(prev => ({ ...prev, [folder.id]: cat.id }));
+                                        setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: "all" }));
+                                      }}
                                       className={cn(
                                         "px-3 py-1.5 rounded-full text-xs font-semibold transition pr-6 border",
                                         selectedCatId === cat.id
@@ -746,6 +845,60 @@ export function MinutesView() {
                               </div>
                             </div>
 
+                            {/* 서브 폴더 탭 영역 (카테고리가 선택되었을 때만 표시) */}
+                            {selectedCatId !== "all" && (
+                              <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide flex-1 pl-2">
+                                <span className="text-xs font-semibold text-zinc-400 mr-1">↳</span>
+                                <button
+                                  onClick={() => setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: "all" }))}
+                                  className={cn(
+                                    "shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold transition",
+                                    selectedSubId === "all"
+                                      ? "bg-zinc-700 text-white"
+                                      : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                  )}
+                                >
+                                  전체
+                                </button>
+                                {currentCatSubFolders.map(sub => (
+                                  <div key={sub.id} className="relative group/sub flex items-center shrink-0">
+                                    <button
+                                      onClick={() => setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: sub.id }))}
+                                      className={cn(
+                                        "px-3 py-1 rounded-full text-[11px] font-semibold transition pr-5 border",
+                                        selectedSubId === sub.id
+                                          ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                          : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+                                      )}
+                                    >
+                                      {sub.name}
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if(!confirm(`'${sub.name}' 추가 폴더를 삭제하시겠습니까? (속해있던 회의록은 '전체'에서 볼 수 있습니다)`)) return;
+                                        const newSubs = folder.subFolders!.filter(s => s.id !== sub.id);
+                                        updateMinutesFolder(folder.id, { subFolders: newSubs });
+                                        if (selectedSubFolderByFolder[folder.id] === sub.id) {
+                                          setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: "all" }));
+                                        }
+                                        refreshData();
+                                      }}
+                                      className="absolute right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center transition text-zinc-400 hover:bg-zinc-200 hover:text-red-600 opacity-0 group-hover/sub:opacity-100"
+                                    >
+                                      <XIcon className="w-2.5 h-2.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={() => setSubFolderModal({ folderId: folder.id, categoryId: selectedCatId })}
+                                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition border border-dashed border-zinc-300"
+                                >
+                                  <PlusIcon className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            )}
+
                             {/* 회의록 리스트 (세로형) */}
                             <div className="flex flex-col gap-2">
                               {expandedMinuteId === "new" && (
@@ -753,6 +906,8 @@ export function MinutesView() {
                                   <InlineMinuteView 
                                     folderId={folder.id} 
                                     minuteId="new" 
+                                    defaultCategoryId={selectedCatId}
+                                    defaultSubFolderId={selectedSubId}
                                     onClose={() => {
                                       setExpandedMinuteId(null);
                                       refreshData();
@@ -762,7 +917,7 @@ export function MinutesView() {
                               )}
                               {catFilteredMinutes.length === 0 && expandedMinuteId !== "new" ? (
                                 <div className="py-6 text-center text-zinc-400 bg-white rounded-xl border border-zinc-200 border-dashed">
-                                  {selectedCatId === "all" ? "이 폴더에 회의록이 없습니다." : "이 카테고리에 회의록이 없습니다."}
+                                  {selectedCatId === "all" ? "이 폴더에 회의록이 없습니다." : selectedSubId === "all" ? "이 카테고리에 회의록이 없습니다." : "이 추가 폴더에 회의록이 없습니다."}
                                 </div>
                               ) : (
                                 catFilteredMinutes.map((minute) => (
@@ -841,7 +996,8 @@ export function MinutesView() {
                   )}
                 </div>
               );
-            })}
+            })
+            )}
           </div>
         )}
       </AppMainColumn>
@@ -891,6 +1047,32 @@ export function MinutesView() {
             }
             updateMinutesFolder(folder.id, { categories: newCats });
             setCategoryModal(null);
+            refreshData();
+          }}
+        />
+      )}
+      {/* 서브 폴더 추가 레이어 팝업 */}
+      {subFolderModal && (
+        <MinuteSubFolderFormModal
+          open={true}
+          initial={subFolderModal.initial}
+          onClose={() => setSubFolderModal(null)}
+          onSave={(name) => {
+            const folder = folders.find(f => f.id === subFolderModal.folderId);
+            if (!folder) return;
+            const newSub = { 
+              id: subFolderModal.initial?.id || Math.random().toString(36).slice(2), 
+              name, 
+              categoryId: subFolderModal.categoryId 
+            };
+            let newSubs = folder.subFolders || [];
+            if (subFolderModal.initial) {
+              newSubs = newSubs.map(s => s.id === newSub.id ? newSub : s);
+            } else {
+              newSubs = [...newSubs, newSub];
+            }
+            updateMinutesFolder(folder.id, { subFolders: newSubs });
+            setSubFolderModal(null);
             refreshData();
           }}
         />
