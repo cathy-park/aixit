@@ -444,84 +444,7 @@ export function MinutesView() {
           </div>
         ) : (
           <div className="flex flex-col gap-6 w-full">
-            {activeFolderId === "all" ? (
-              <div className="flex flex-col gap-2">
-                {displayMinutes.length === 0 ? (
-                  <div className="py-6 text-center text-zinc-400 bg-white rounded-xl border border-zinc-200 border-dashed">
-                    작성된 회의록이 없습니다.
-                  </div>
-                ) : (
-                  displayMinutes.map(minute => {
-                    const folder = folders.find(f => f.id === minute.folderId);
-                    if (!folder) return null;
-                    const cat = minute.categoryId ? folder.categories?.find(c => c.id === minute.categoryId) : null;
-                    const sub = minute.subFolderId ? folder.subFolders?.find(s => s.id === minute.subFolderId) : null;
-                    return (
-                      <div key={minute.id} className="flex flex-col gap-2">
-                        <button
-                          onClick={() => setExpandedMinuteId(expandedMinuteId === minute.id ? null : minute.id)}
-                          className={`group flex items-center justify-between bg-white border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition cursor-pointer ${expandedMinuteId === minute.id ? "border-blue-300 shadow-sm" : "border-zinc-200"}`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
-                            {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
-                            {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
-                            {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
-                            {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}
-                            
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="font-medium text-zinc-900 truncate flex items-center gap-2">
-                                <span className="truncate">{minute.title.trim() || "제목 없음"}</span>
-                              </span>
-                              <div className="flex flex-wrap items-center gap-1 mt-0.5 text-[11px]">
-                                <span className="px-1.5 py-0.5 rounded-md border bg-zinc-50 text-zinc-500 border-zinc-200 flex items-center gap-1 font-semibold">
-                                  {folder.name}
-                                  {cat && <><span className="opacity-40">›</span> {cat.name}</>}
-                                  {sub && <><span className="opacity-40">›</span> {sub.name}</>}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="hidden sm:flex items-center gap-2 ml-4 shrink-0">
-                              {minute.attachments && minute.attachments.length > 0 && (
-                                <span className="flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">
-                                  <PaperclipIcon className="w-3 h-3" /> {minute.attachments.length}
-                                </span>
-                              )}
-                              {minute.links && minute.links.length > 0 && (
-                                <span className="flex items-center gap-1 text-[11px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                                  <LinkIcon className="w-3 h-3" /> {minute.links.length}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-4 shrink-0 ml-4">
-                            <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium group-hover:text-blue-500 transition">
-                              <CalendarIcon className="w-3.5 h-3.5" />
-                              {minute.date}
-                            </div>
-                          </div>
-                        </button>
-                        
-                        {expandedMinuteId === minute.id && (
-                          <div className="rounded-xl border border-zinc-200 overflow-hidden mb-2">
-                            <InlineMinuteView 
-                              folderId={folder.id} 
-                              minuteId={minute.id} 
-                              onClose={() => {
-                                setExpandedMinuteId(null);
-                                refreshData();
-                              }} 
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            ) : (
-              visibleFolders.map((folder) => {
+            {visibleFolders.map((folder) => {
                 if (activeFolderId && activeFolderId !== "all" && folder.id !== activeFolderId) return null;
               const fMinutes = displayMinutes.filter(m => m.folderId === folder.id);
               const isExpanded = expandedFolders[folder.id];
@@ -1053,8 +976,7 @@ export function MinutesView() {
                   )}
                 </div>
               );
-            })
-            )}
+            })}
           </div>
         )}
       </AppMainColumn>
