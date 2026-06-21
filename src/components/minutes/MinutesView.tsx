@@ -28,7 +28,7 @@ import { InlineMinuteView } from "./InlineMinuteView";
 import { formatFolderToMarkdown, copyMarkdownToClipboard } from "@/lib/export-md";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
-import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon } from "lucide-react";
+import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
 
 function getInvertedColor(colorStr: string) {
@@ -114,8 +114,8 @@ export function MinutesView() {
 
   // 선택된 폴더 카테고리 상태
   const [selectedCategoryByFolder, setSelectedCategoryByFolder] = useState<Record<string, string>>({});
-  // 폴더별 표시할 회의록 개수 한도 (기본 10)
-  const [pageLimitByFolder, setPageLimitByFolder] = useState<Record<string, number>>({});
+  // 폴더별 현재 페이지 번호 (기본 1)
+  const [currentPageByFolder, setCurrentPageByFolder] = useState<Record<string, number>>({});
   // 선택된 서브 폴더 상태
   const [selectedSubFolderByFolder, setSelectedSubFolderByFolder] = useState<Record<string, string>>({});
   // 서브 폴더 추가 모달 상태
@@ -903,15 +903,22 @@ export function MinutesView() {
                                 </div>
                               ) : (
                                 (() => {
-                                  const limit = pageLimitByFolder[folder.id] || 10;
-                                  const paginatedMinutes = catFilteredMinutes.slice(0, limit);
-                                  const hasMore = catFilteredMinutes.length > limit;
+                                  const currentPage = currentPageByFolder[folder.id] || 1;
+                                  const ITEMS_PER_PAGE = 10;
+                                  const totalPages = Math.ceil(catFilteredMinutes.length / ITEMS_PER_PAGE);
+                                  
+                                  const mobileLimit = currentPage * ITEMS_PER_PAGE;
+                                  const paginatedMinutes = catFilteredMinutes.slice(0, mobileLimit);
+                                  const hasMoreForMobile = catFilteredMinutes.length > mobileLimit;
+
                                   return (
                                     <>
-                                      {paginatedMinutes.map((minute) => (
+                                      {paginatedMinutes.map((minute, index) => {
+                                        const isDesktopVisible = index >= (currentPage - 1) * ITEMS_PER_PAGE;
+                                        return (
                                         <div
                                           key={minute.id}
-                                          className={["flex flex-col gap-2 transition-opacity duration-150", draggingMinuteId === minute.id ? "opacity-40" : ""].join(" ")}
+                                          className={["flex flex-col gap-2 transition-opacity duration-150", draggingMinuteId === minute.id ? "opacity-40" : "", !isDesktopVisible ? "md:hidden" : ""].join(" ")}
                                           draggable
                                           onDragStart={(e) => handleMinuteDragStart(e, minute.id)}
                                           onDragEnd={handleMinuteDragEnd}
@@ -974,14 +981,45 @@ export function MinutesView() {
                                               </div>
                                             )}
                                           </div>
-                                      ))}
-                                      {hasMore && (
-                                        <div className="flex justify-center mt-2 mb-4">
+                                        );
+                                      })}
+                                      {hasMoreForMobile && (
+                                        <div className="flex md:hidden justify-center mt-2 mb-4">
                                           <button
-                                            onClick={() => setPageLimitByFolder(prev => ({ ...prev, [folder.id]: limit + 10 }))}
+                                            onClick={() => setCurrentPageByFolder(prev => ({ ...prev, [folder.id]: currentPage + 1 }))}
                                             className="px-5 py-2.5 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-xl transition shadow-sm"
                                           >
-                                            더보기 ({limit} / {catFilteredMinutes.length})
+                                            더보기 ({mobileLimit} / {catFilteredMinutes.length})
+                                          </button>
+                                        </div>
+                                      )}
+
+                                      {totalPages > 1 && (
+                                        <div className="hidden md:flex justify-center items-center gap-1 mt-4 mb-2">
+                                          <button
+                                            onClick={() => setCurrentPageByFolder(prev => ({ ...prev, [folder.id]: Math.max(1, currentPage - 1) }))}
+                                            disabled={currentPage === 1}
+                                            className="p-1.5 rounded-lg hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                          >
+                                            <ChevronLeftIcon className="w-4 h-4 text-zinc-500" />
+                                          </button>
+                                          
+                                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                            <button
+                                              key={page}
+                                              onClick={() => setCurrentPageByFolder(prev => ({ ...prev, [folder.id]: page }))}
+                                              className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-semibold transition ${currentPage === page ? 'bg-indigo-50 text-indigo-600' : 'text-zinc-500 hover:bg-zinc-100'}`}
+                                            >
+                                              {page}
+                                            </button>
+                                          ))}
+                                          
+                                          <button
+                                            onClick={() => setCurrentPageByFolder(prev => ({ ...prev, [folder.id]: Math.min(totalPages, currentPage + 1) }))}
+                                            disabled={currentPage === totalPages}
+                                            className="p-1.5 rounded-lg hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                          >
+                                            <ChevronRightIcon className="w-4 h-4 text-zinc-500" />
                                           </button>
                                         </div>
                                       )}
