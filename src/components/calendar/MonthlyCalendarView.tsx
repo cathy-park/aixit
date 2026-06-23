@@ -121,6 +121,23 @@ type CalCellLine =
   | { kind: "todo"; id: string; label: string; suffix?: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" }
   | { kind: "project"; id: string; label: string; suffix?: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" };
 
+function renderLabelWithBoldKeywords(label: string) {
+  const parts = label.split(/(시작|종료)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part === "시작" || part === "종료" ? (
+          <span key={i} className="font-extrabold">
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 function cellPreviewLines(
   iso: string,
   plannedByDate: Record<string, TodayTodo[]>,
@@ -594,7 +611,7 @@ export function MonthlyCalendarView() {
                       title={`${line.label} — 드래그하여 다른 날로 이동`}
                     >
                       <span className={line.barType === "middle" ? "opacity-0" : ""}>
-                        {line.label}
+                        {renderLabelWithBoldKeywords(line.label)}
                         {line.suffix && <span className="font-extrabold ml-1">{line.suffix}</span>}
                       </span>
                     </li>
