@@ -16,6 +16,8 @@ export type TodayTodo = {
   weekStartIso?: string;
   /** 캘린더에서 미리 잡은 예정일(YYYY-MM-DD). 해당 주의 홈「이번주 할 일」에 자동 표시 */
   scheduledDate?: string;
+  /** 예정일의 종료일 (YYYY-MM-DD). 캘린더에서 이어지는 일정으로 표시 */
+  scheduledEndDate?: string;
   /**
    * 홈「오늘 할 일」체크리스트에 붙인 날짜. 자정이 지나면 같은 데이터는 스토리지에 남고
    * 목록에서는 `today === dailySheetDate`로만 보여 필터링됩니다.
@@ -54,6 +56,7 @@ function normalizeTodo(raw: unknown): TodayTodo | null {
   const completedAt = t.done && validCompletedAt(t.completedAt) ? t.completedAt : undefined;
   const weekStartIso = validCompletedAt(t.weekStartIso) ? t.weekStartIso : undefined;
   const scheduledDate = validCompletedAt(t.scheduledDate) ? t.scheduledDate : undefined;
+  const scheduledEndDate = validCompletedAt(t.scheduledEndDate) ? t.scheduledEndDate : undefined;
   const dailySheetDate = validCompletedAt(t.dailySheetDate) ? t.dailySheetDate : undefined;
   return {
     id: t.id,
@@ -62,6 +65,7 @@ function normalizeTodo(raw: unknown): TodayTodo | null {
     ...(completedAt ? { completedAt } : {}),
     ...(weekStartIso ? { weekStartIso } : {}),
     ...(scheduledDate ? { scheduledDate } : {}),
+    ...(scheduledEndDate ? { scheduledEndDate } : {}),
     ...(dailySheetDate ? { dailySheetDate } : {}),
     ...(typeof t.categoryId === "string" ? { categoryId: t.categoryId } : {}),
     ...(typeof t.memo === "string" ? { memo: t.memo } : {}),
@@ -229,9 +233,19 @@ export function getPlannedTodosGroupedByDate(): Record<string, TodayTodo[]> {
   for (const t of loadTodayTodos()) {
     if (t.done) continue;
     if (!t.scheduledDate || !validCompletedAt(t.scheduledDate)) continue;
-    const k = t.scheduledDate;
-    if (!byDate[k]) byDate[k] = [];
-    byDate[k].push(t);
+    
+    const start = t.scheduledDate;
+    const end = t.scheduledEndDate && validCompletedAt(t.scheduledEndDate) && t.scheduledEndDate >= start ? t.scheduledEndDate : start;
+    
+    let currentIso = start;
+    while (currentIso <= end) {
+      if (!byDate[currentIso]) byDate[currentIso] = [];
+      byDate[currentIso].push(t);
+      
+      const d = parseLocalDateFromIso(currentIso);
+      d.setDate(d.getDate() + 1);
+      currentIso = getTodayIsoLocal(d);
+    }
   }
   return byDate;
 }
@@ -256,7 +270,7 @@ export function appendTodayTodos(entries: Array<{ text: string }>): TodayTodo[] 
   return newOnes;
 }
 
-export function addPlannedTodoForDate(text: string, dateIso: string): TodayTodo | null {
+export function addPlannedTodoForDate(text: string, dateIso: string, endDateIso?: string): TodayTodo | null {
   const trimmed = text.trim();
   if (!trimmed || !validCompletedAt(dateIso)) return null;
   const ws = getLocalSundayWeekStartIso(parseLocalDateFromIso(dateIso));
@@ -265,6 +279,7 @@ export function addPlannedTodoForDate(text: string, dateIso: string): TodayTodo 
     text: trimmed,
     done: false,
     scheduledDate: dateIso,
+    scheduledEndDate: endDateIso && validCompletedAt(endDateIso) && endDateIso >= dateIso ? endDateIso : undefined,
     weekStartIso: ws,
   };
   const all = loadTodayTodos();

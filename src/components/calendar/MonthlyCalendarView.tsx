@@ -116,9 +116,9 @@ function monthTitle(year: number, monthIndex: number) {
 }
 
 type CalCellLine =
-  | { kind: "planned"; id: string; label: string; colorClass?: string }
-  | { kind: "todo"; id: string; label: string; colorClass?: string }
-  | { kind: "project"; id: string; label: string; colorClass?: string };
+  | { kind: "planned"; id: string; label: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" }
+  | { kind: "todo"; id: string; label: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" }
+  | { kind: "project"; id: string; label: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" };
 
 function cellPreviewLines(
   iso: string,
@@ -134,24 +134,34 @@ function cellPreviewLines(
 
   const getCatColor = (catId?: string) => categories.find((c) => c.id === catId)?.colorClass;
 
+  const getBarType = (t: TodayTodo): "start" | "middle" | "end" | "single" => {
+    if (!t.scheduledEndDate || t.scheduledEndDate === t.scheduledDate) return "single";
+    if (iso === t.scheduledDate) return "start";
+    if (iso === t.scheduledEndDate) return "end";
+    return "middle";
+  };
+
   const lines: CalCellLine[] = [
     ...planned.map((t) => ({
       kind: "planned" as const,
       id: t.id,
       label: t.text,
       colorClass: getCatColor(t.categoryId),
+      barType: getBarType(t),
     })),
     ...todos.map((t) => ({
       kind: "todo" as const,
       id: t.id,
       label: t.text,
       colorClass: getCatColor(t.categoryId),
+      barType: "single" as const,
     })),
     ...projects.map((p) => ({
       kind: "project" as const,
       id: p.id,
       label: p.name,
       colorClass: getCatColor(p.categoryId),
+      barType: "single" as const,
     })),
   ].slice(0, max);
   return { lines, total: planned.length + todos.length + projects.length };
@@ -165,6 +175,7 @@ export function MonthlyCalendarView() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [dayPopupIso, setDayPopupIso] = useState<string | null>(null);
   const [planDraft, setPlanDraft] = useState("");
+  const [endDateIso, setEndDateIso] = useState("");
   const [recurrence, setRecurrence] = useState("none");
   const [calDropTargetIso, setCalDropTargetIso] = useState<string | null>(null);
   const calItemDraggingRef = useRef(false);
@@ -258,8 +269,9 @@ export function MonthlyCalendarView() {
     if (!dayPopupIso) return;
     const text = planDraft.trim();
     if (!text) return;
-    const newTodo = addPlannedTodoForDate(text, dayPopupIso);
+    const newTodo = addPlannedTodoForDate(text, dayPopupIso, endDateIso);
     setPlanDraft("");
+    setEndDateIso("");
     // 카카오 캘린더 연결된 경우 자동 등록 (백그라운드)
     if (isKakaoConnected() && newTodo) {
       createKakaoCalendarEvent({ title: text, dateIso: dayPopupIso })
@@ -479,6 +491,7 @@ export function MonthlyCalendarView() {
                 onClick={() => {
                   setDayPopupIso(iso);
                   setPlanDraft("");
+                  setEndDateIso("");
                   setRecurrence("none");
                 }}
                 className="w-full text-left outline-none transition hover:bg-zinc-50/80 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-0"
@@ -512,7 +525,11 @@ export function MonthlyCalendarView() {
                       onDragStart={(e) => onCalItemDragStart(e, line.kind, line.id)}
                       onDragEnd={onCalItemDragEnd}
                       className={cn(
-                        "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 ring-inset sm:text-[11px]",
+                        "truncate px-1 py-0.5 text-[10px] font-medium leading-tight ring-1 ring-inset sm:text-[11px] relative",
+                        (!line.barType || line.barType === "single") && "rounded-md mx-0",
+                        line.barType === "start" && "rounded-l-md rounded-r-none ml-0 -mr-[8px] sm:-mr-[10px] z-10",
+                        line.barType === "middle" && "rounded-none -mx-[8px] sm:-mx-[10px] z-10 text-transparent",
+                        line.barType === "end" && "rounded-r-md rounded-l-none -ml-[8px] sm:-ml-[10px] mr-0 z-10 text-transparent",
                         line.colorClass
                           ? `${line.colorClass} ring-opacity-65`
                           : line.kind === "planned"
@@ -602,6 +619,14 @@ export function MonthlyCalendarView() {
                       }}
                       placeholder="할 일을 입력하세요"
                       className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                    />
+                    <input
+                      type="date"
+                      value={endDateIso}
+                      min={dayPopupIso || undefined}
+                      onChange={(e) => setEndDateIso(e.target.value)}
+                      title="종료일 선택 (선택사항)"
+                      className="h-10 w-8 sm:w-36 shrink-0 rounded-xl border border-zinc-200 bg-white px-1 sm:px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
                     />
                   </div>
                   <button
@@ -960,6 +985,13 @@ function TodoItem({
     updateTodoMemo(todo.id, memo);
   };
 
+  const formatShortDateRange = () => {
+    if (!todo.scheduledDate || !todo.scheduledEndDate || todo.scheduledDate === todo.scheduledEndDate) return null;
+    const start = todo.scheduledDate.split("-").slice(1).map(Number).join("/");
+    const end = todo.scheduledEndDate.split("-").slice(1).map(Number).join("/");
+    return `[${start} ~ ${end}]`;
+  };
+
   return (
     <li
       draggable={!isEditing}
@@ -1021,6 +1053,11 @@ function TodoItem({
               onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
               className="min-w-0 flex-1 cursor-text truncate text-sm font-medium leading-snug transition hover:opacity-70"
             >
+              {formatShortDateRange() && (
+                <span className="text-[11px] font-bold opacity-70 mr-1.5 inline-block -translate-y-[1px]">
+                  {formatShortDateRange()}
+                </span>
+              )}
               {todo.text}
             </span>
           </div>
