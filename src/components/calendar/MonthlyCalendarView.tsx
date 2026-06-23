@@ -142,13 +142,20 @@ function cellPreviewLines(
   };
 
   const lines: CalCellLine[] = [
-    ...planned.map((t) => ({
-      kind: "planned" as const,
-      id: t.id,
-      label: t.text,
-      colorClass: getCatColor(t.categoryId),
-      barType: getBarType(t),
-    })),
+    ...planned.map((t) => {
+      const barType = getBarType(t);
+      let label = t.text;
+      if (barType === "start") label += " 시작";
+      else if (barType === "end") label += " 종료";
+
+      return {
+        kind: "planned" as const,
+        id: t.id,
+        label,
+        colorClass: getCatColor(t.categoryId),
+        barType,
+      };
+    }),
     ...todos.map((t) => ({
       kind: "todo" as const,
       id: t.id,
