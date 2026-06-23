@@ -175,6 +175,7 @@ export function MonthlyCalendarView() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [dayPopupIso, setDayPopupIso] = useState<string | null>(null);
   const [planDraft, setPlanDraft] = useState("");
+  const [startDateIso, setStartDateIso] = useState("");
   const [endDateIso, setEndDateIso] = useState("");
   const [recurrence, setRecurrence] = useState("none");
   const [calDropTargetIso, setCalDropTargetIso] = useState<string | null>(null);
@@ -269,12 +270,15 @@ export function MonthlyCalendarView() {
     if (!dayPopupIso) return;
     const text = planDraft.trim();
     if (!text) return;
-    const newTodo = addPlannedTodoForDate(text, dayPopupIso, endDateIso);
+    
+    const actualStartDate = startDateIso || dayPopupIso;
+    const newTodo = addPlannedTodoForDate(text, actualStartDate, endDateIso);
     setPlanDraft("");
+    setStartDateIso("");
     setEndDateIso("");
     // 카카오 캘린더 연결된 경우 자동 등록 (백그라운드)
     if (isKakaoConnected() && newTodo) {
-      createKakaoCalendarEvent({ title: text, dateIso: dayPopupIso })
+      createKakaoCalendarEvent({ title: text, dateIso: actualStartDate })
         .then((eventId) => {
           if (eventId) {
             setTodoKakaoEventId(newTodo.id, eventId);
@@ -282,7 +286,7 @@ export function MonthlyCalendarView() {
         })
         .catch(() => {});
     }
-  }, [dayPopupIso, planDraft, recurrence, endDateIso]);
+  }, [dayPopupIso, planDraft, recurrence, startDateIso, endDateIso]);
 
   const onCalDragOver = useCallback((e: DragEvent, iso: string) => {
     if (!calItemDraggingRef.current) return;
@@ -491,6 +495,7 @@ export function MonthlyCalendarView() {
                 onClick={() => {
                   setDayPopupIso(iso);
                   setPlanDraft("");
+                  setStartDateIso("");
                   setEndDateIso("");
                   setRecurrence("none");
                 }}
@@ -621,16 +626,23 @@ export function MonthlyCalendarView() {
                       className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
                     />
                   </div>
-                  <div className="flex items-center gap-2 justify-end">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-bold text-zinc-400">종료일</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex flex-1 items-center gap-1.5">
+                      <input
+                        type="date"
+                        value={startDateIso || dayPopupIso || ""}
+                        onChange={(e) => setStartDateIso(e.target.value)}
+                        title="시작일"
+                        className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-2 sm:px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                      />
+                      <span className="text-zinc-400 font-medium">~</span>
                       <input
                         type="date"
                         value={endDateIso}
-                        min={dayPopupIso || undefined}
+                        min={startDateIso || dayPopupIso || undefined}
                         onChange={(e) => setEndDateIso(e.target.value)}
-                        title="종료일 선택 (선택사항)"
-                        className="h-10 w-36 shrink-0 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                        title="종료일 (선택사항)"
+                        className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-2 sm:px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
                       />
                     </div>
                     <button
