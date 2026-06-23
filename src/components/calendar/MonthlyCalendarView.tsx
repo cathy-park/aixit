@@ -10,10 +10,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/components/ui/cn";
 import { actionIconButtonClass, IconTrash, IconEdit, IconCopy } from "@/components/ui/action-icons";
-import { formatKoreanShortDateWithWeekday, getTodayIsoLocal } from "@/lib/today-project-filter";
+import { formatKoreanShortDateWithWeekday, getTodayIsoLocal, parseLocalDateFromIso } from "@/lib/today-project-filter";
 import { shouldCommitTagOnEnter } from "@/lib/tag-input-keydown";
 import {
   addPlannedTodoForDate,
+  addPlannedTodosBulk,
   getCompletedTodosGroupedByDate,
   getPlannedTodosGroupedByDate,
   loadTodayTodos,
@@ -280,19 +281,57 @@ export function MonthlyCalendarView() {
     if (!text) return;
     
     const actualStartDate = startDateIso || dayPopupIso;
-    const newTodo = addPlannedTodoForDate(text, actualStartDate, endDateIso);
+    const baseDate = parseLocalDateFromIso(actualStartDate);
+    let durationDays = 0;
+    if (endDateIso) {
+       const end = parseLocalDateFromIso(endDateIso);
+       durationDays = Math.round((end.getTime() - baseDate.getTime()) / 86400000);
+       if (durationDays < 0) durationDays = 0;
+    }
+
+    let iterations = 1;
+    if (recurrence === "daily") iterations = 30; // 30일
+    else if (recurrence === "weekly") iterations = 12; // 12주
+    else if (recurrence === "monthly") iterations = 12; // 12개월
+    else if (recurrence === "yearly") iterations = 5; // 5년
+
+    const entries = [];
+    for (let i = 0; i < iterations; i++) {
+        const d = new Date(baseDate);
+        if (recurrence === "daily") d.setDate(d.getDate() + i);
+        else if (recurrence === "weekly") d.setDate(d.getDate() + i * 7);
+        else if (recurrence === "monthly") d.setMonth(d.getMonth() + i);
+        else if (recurrence === "yearly") d.setFullYear(d.getFullYear() + i);
+
+        const startIso = getTodayIsoLocal(d);
+        let endIso: string | undefined = undefined;
+        if (durationDays > 0) {
+            const ed = new Date(d);
+            ed.setDate(ed.getDate() + durationDays);
+            endIso = getTodayIsoLocal(ed);
+        }
+        entries.push({ text, dateIso: startIso, endDateIso: endIso });
+    }
+
+    const newTodos = addPlannedTodosBulk(entries);
+    
     setPlanDraft("");
     setStartDateIso("");
     setEndDateIso("");
-    // 카카오 캘린더 연결된 경우 자동 등록 (백그라운드)
-    if (isKakaoConnected() && newTodo) {
-      createKakaoCalendarEvent({ title: text, dateIso: actualStartDate })
-        .then((eventId) => {
-          if (eventId) {
-            setTodoKakaoEventId(newTodo.id, eventId);
-          }
-        })
-        .catch(() => {});
+    setRecurrence("none");
+    
+    // 카카오 캘린더 연결된 경우 일괄 등록 (백그라운드)
+    if (isKakaoConnected() && newTodos.length > 0) {
+      newTodos.forEach(newTodo => {
+        if (!newTodo.scheduledDate) return;
+        createKakaoCalendarEvent({ title: text, dateIso: newTodo.scheduledDate })
+          .then((eventId) => {
+            if (eventId) {
+              setTodoKakaoEventId(newTodo.id, eventId);
+            }
+          })
+          .catch(() => {});
+      });
     }
   }, [dayPopupIso, planDraft, recurrence, startDateIso, endDateIso]);
 

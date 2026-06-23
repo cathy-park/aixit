@@ -271,20 +271,34 @@ export function appendTodayTodos(entries: Array<{ text: string }>): TodayTodo[] 
 }
 
 export function addPlannedTodoForDate(text: string, dateIso: string, endDateIso?: string): TodayTodo | null {
-  const trimmed = text.trim();
-  if (!trimmed || !validCompletedAt(dateIso)) return null;
-  const ws = getLocalSundayWeekStartIso(parseLocalDateFromIso(dateIso));
-  const todo: TodayTodo = {
-    id: newTodoId(),
-    text: trimmed,
-    done: false,
-    scheduledDate: dateIso,
-    scheduledEndDate: endDateIso && validCompletedAt(endDateIso) && endDateIso >= dateIso ? endDateIso : undefined,
-    weekStartIso: ws,
-  };
+  const result = addPlannedTodosBulk([{ text, dateIso, endDateIso }]);
+  return result.length > 0 ? result[0] : null;
+}
+
+export function addPlannedTodosBulk(entries: Array<{ text: string; dateIso: string; endDateIso?: string }>): TodayTodo[] {
   const all = loadTodayTodos();
-  saveTodayTodos([...all, todo]);
-  return todo;
+  const newTodos: TodayTodo[] = [];
+
+  for (const entry of entries) {
+    const trimmed = entry.text.trim();
+    if (!trimmed || !validCompletedAt(entry.dateIso)) continue;
+    
+    const ws = getLocalSundayWeekStartIso(parseLocalDateFromIso(entry.dateIso));
+    const todo: TodayTodo = {
+      id: newTodoId(),
+      text: trimmed,
+      done: false,
+      scheduledDate: entry.dateIso,
+      scheduledEndDate: entry.endDateIso && validCompletedAt(entry.endDateIso) && entry.endDateIso >= entry.dateIso ? entry.endDateIso : undefined,
+      weekStartIso: ws,
+    };
+    newTodos.push(todo);
+  }
+
+  if (newTodos.length > 0) {
+    saveTodayTodos([...all, ...newTodos]);
+  }
+  return newTodos;
 }
 
 export function removeTodayTodoById(id: string) {
