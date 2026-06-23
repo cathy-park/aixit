@@ -116,9 +116,9 @@ function monthTitle(year: number, monthIndex: number) {
 }
 
 type CalCellLine =
-  | { kind: "planned"; id: string; label: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" }
-  | { kind: "todo"; id: string; label: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" }
-  | { kind: "project"; id: string; label: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" };
+  | { kind: "planned"; id: string; label: string; suffix?: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" }
+  | { kind: "todo"; id: string; label: string; suffix?: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" }
+  | { kind: "project"; id: string; label: string; suffix?: string; colorClass?: string; barType?: "start" | "middle" | "end" | "single" };
 
 function cellPreviewLines(
   iso: string,
@@ -144,14 +144,15 @@ function cellPreviewLines(
   const lines: CalCellLine[] = [
     ...planned.map((t) => {
       const barType = getBarType(t);
-      let label = t.text;
-      if (barType === "start") label += " 시작";
-      else if (barType === "end") label += " 종료";
+      let suffix: string | undefined;
+      if (barType === "start") suffix = "시작";
+      else if (barType === "end") suffix = "종료";
 
       return {
         kind: "planned" as const,
         id: t.id,
-        label,
+        label: t.text,
+        suffix,
         colorClass: getCatColor(t.categoryId),
         barType,
       };
@@ -554,6 +555,7 @@ export function MonthlyCalendarView() {
                       title={`${line.label} — 드래그하여 다른 날로 이동`}
                     >
                       {line.label}
+                      {line.suffix && <span className="font-extrabold ml-1">{line.suffix}</span>}
                     </li>
                   ))}
                   {total > 3 ? (
