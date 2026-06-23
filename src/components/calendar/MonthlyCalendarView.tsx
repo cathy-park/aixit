@@ -1051,6 +1051,15 @@ function TodoItem({
   const [isExpanded, setIsExpanded] = useState(false);
   const [editText, setEditText] = useState(todo.text);
   const [memo, setMemo] = useState(todo.memo ?? "");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [memo, isExpanded]);
+
   const cat = todo.categoryId ? categories.find((c) => c.id === todo.categoryId) : undefined;
 
   const onSaveName = () => {
@@ -1188,12 +1197,13 @@ function TodoItem({
       {isExpanded && (
         <div className="border-t border-current/10 px-4 py-3">
           <textarea
+            ref={textareaRef}
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             onBlur={onSaveMemo}
             placeholder="메모를 입력하세요..."
-            className="w-full resize-none bg-transparent text-sm text-current/80 placeholder:text-current/40 outline-none focus:ring-1 focus:ring-current/30 rounded p-1"
-            rows={3}
+            className="w-full resize-none bg-transparent text-sm text-current/80 placeholder:text-current/40 outline-none focus:ring-1 focus:ring-current/30 rounded p-1 overflow-hidden min-h-[4rem]"
+            rows={1}
           />
         </div>
       )}
