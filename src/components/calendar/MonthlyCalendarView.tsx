@@ -541,7 +541,7 @@ export function MonthlyCalendarView() {
                         (!line.barType || line.barType === "single") && "rounded-md mx-0",
                         line.barType === "start" && "rounded-l-md rounded-r-none ml-0 -mr-[8px] sm:-mr-[10px] z-10",
                         line.barType === "middle" && "rounded-none -mx-[8px] sm:-mx-[10px] z-10 text-transparent",
-                        line.barType === "end" && "rounded-r-md rounded-l-none -ml-[8px] sm:-ml-[10px] mr-0 z-10 text-transparent",
+                        line.barType === "end" && "rounded-r-md rounded-l-none -ml-[8px] sm:-ml-[10px] mr-0 z-10",
                         line.colorClass
                           ? `${line.colorClass} ring-opacity-65`
                           : line.kind === "planned"
