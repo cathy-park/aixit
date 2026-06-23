@@ -282,7 +282,7 @@ export function MonthlyCalendarView() {
         })
         .catch(() => {});
     }
-  }, [dayPopupIso, planDraft, recurrence]);
+  }, [dayPopupIso, planDraft, recurrence, endDateIso]);
 
   const onCalDragOver = useCallback((e: DragEvent, iso: string) => {
     if (!calItemDraggingRef.current) return;
@@ -595,8 +595,8 @@ export function MonthlyCalendarView() {
                   예정 할 일 (홈 이번 주와 연동)
                 </h3>
                 <p className="mt-1 text-[11px] text-zinc-500">예정일이 이번 주이면, 그날이 되면 홈「이번주 할 일」에 자동으로 나타납니다.</p>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <div className="flex flex-1 items-center gap-2 relative">
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="flex items-center gap-2 relative">
                     <select
                       value={recurrence}
                       onChange={(e) => setRecurrence(e.target.value)}
@@ -620,22 +620,27 @@ export function MonthlyCalendarView() {
                       placeholder="할 일을 입력하세요"
                       className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
                     />
-                    <input
-                      type="date"
-                      value={endDateIso}
-                      min={dayPopupIso || undefined}
-                      onChange={(e) => setEndDateIso(e.target.value)}
-                      title="종료일 선택 (선택사항)"
-                      className="h-10 w-8 sm:w-36 shrink-0 rounded-xl border border-zinc-200 bg-white px-1 sm:px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-                    />
                   </div>
-                  <button
-                    type="button"
-                    onClick={addPlanned}
-                    className="h-10 shrink-0 rounded-full bg-sky-700 px-5 text-sm font-bold text-white hover:bg-sky-800"
-                  >
-                    일정 추가
-                  </button>
+                  <div className="flex items-center gap-2 justify-end">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-zinc-400">종료일</span>
+                      <input
+                        type="date"
+                        value={endDateIso}
+                        min={dayPopupIso || undefined}
+                        onChange={(e) => setEndDateIso(e.target.value)}
+                        title="종료일 선택 (선택사항)"
+                        className="h-10 w-36 shrink-0 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addPlanned}
+                      className="h-10 shrink-0 rounded-full bg-sky-700 px-5 text-sm font-bold text-white hover:bg-sky-800"
+                    >
+                      일정 추가
+                    </button>
+                  </div>
                 </div>
                 {popupPlanned.length === 0 ? (
                   <p className="mt-3 text-sm text-zinc-400">예정된 할 일이 없어요.</p>
