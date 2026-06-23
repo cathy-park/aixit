@@ -28,7 +28,7 @@ import { InlineMinuteView } from "./InlineMinuteView";
 import { formatFolderToMarkdown, copyMarkdownToClipboard } from "@/lib/export-md";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
-import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon, ChevronLeftIcon, ChevronRightIcon, PhoneIcon } from "lucide-react";
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
 
 function getInvertedColor(colorStr: string) {
@@ -936,6 +936,7 @@ export function MinutesView() {
                                           >
                                             <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
                                               {minute.iconType === "meet" && <VideoIcon className="w-5 h-5 shrink-0 text-emerald-500" />}
+                                              {minute.iconType === "phone" && <PhoneIcon className="w-5 h-5 shrink-0 text-indigo-500" />}
                                               {minute.iconType === "email" && <MailIcon className="w-5 h-5 shrink-0 text-amber-500" />}
                                               {minute.iconType === "chat" && <MessageSquareIcon className="w-5 h-5 shrink-0 text-blue-500" />}
                                               {(!minute.iconType || minute.iconType === "default") && <FileTextIcon className="w-5 h-5 shrink-0 text-zinc-400" />}

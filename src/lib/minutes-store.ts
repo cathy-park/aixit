@@ -33,7 +33,7 @@ export type MinutesFolder = {
   subFolders?: { id: string; name: string; categoryId: string; }[]; // 카테고리 내 서브 폴더 목록
 };
 
-export type MinuteIconType = "meet" | "email" | "chat" | "default";
+export type MinuteIconType = "meet" | "email" | "chat" | "default" | "phone";
 
 export type MeetingMinute = {
   id: string;

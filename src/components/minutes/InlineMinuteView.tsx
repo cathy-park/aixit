@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import "react-quill-new/dist/quill.snow.css";
 
 import Link from "next/link";
-import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PlusIcon, MessageSquareIcon } from "lucide-react";
+import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PlusIcon, MessageSquareIcon, PhoneIcon } from "lucide-react";
 import { 
   loadMinutesStore, 
   createMeetingMinute, 
@@ -355,6 +355,7 @@ export function InlineMinuteView({
                     className="bg-white border border-zinc-200 rounded-lg px-3 py-2 flex items-center justify-center hover:bg-zinc-50 transition min-w-[44px] h-[44px]"
                   >
                     {iconType === "meet" && <VideoIcon className="w-5 h-5 text-emerald-500" />}
+                    {iconType === "phone" && <PhoneIcon className="w-5 h-5 text-indigo-500" />}
                     {iconType === "email" && <MailIcon className="w-5 h-5 text-amber-500" />}
                     {iconType === "chat" && <MessageSquareIcon className="w-5 h-5 text-blue-500" />}
                     {(!iconType || iconType === "default") && <FileTextIcon className="w-5 h-5 text-zinc-400" />}
@@ -367,11 +368,14 @@ export function InlineMinuteView({
                       <button onClick={() => { setIconType("meet"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
                         <VideoIcon className="w-4 h-4 text-emerald-500" /> 화상
                       </button>
+                      <button onClick={() => { setIconType("phone"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
+                        <PhoneIcon className="w-4 h-4 text-indigo-500" /> 전화
+                      </button>
                       <button onClick={() => { setIconType("email"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
                         <MailIcon className="w-4 h-4 text-amber-500" /> 이메일
                       </button>
                       <button onClick={() => { setIconType("chat"); setIsIconDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 text-sm text-zinc-700 w-full text-left">
-                        <MessageSquareIcon className="w-4 h-4 text-blue-500" /> 챗봇(말풍선)
+                        <MessageSquareIcon className="w-4 h-4 text-blue-500" /> 챗봇
                       </button>
                     </div>
                   )}
