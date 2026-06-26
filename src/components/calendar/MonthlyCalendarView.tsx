@@ -127,7 +127,7 @@ function renderLabelWithBoldKeywords(label: string) {
     <>
       {parts.map((part, i) =>
         part === "시작" || part === "종료" ? (
-          <span key={i} className="font-extrabold">
+          <span key={i} className="font-bold">
             {part}
           </span>
         ) : (
@@ -612,7 +612,7 @@ export function MonthlyCalendarView() {
                     >
                       <span className={line.barType === "middle" ? "opacity-0" : ""}>
                         {renderLabelWithBoldKeywords(line.label)}
-                        {line.suffix && <span className="font-extrabold ml-1">{line.suffix}</span>}
+                        {line.suffix && <span className="font-bold ml-1">{line.suffix}</span>}
                       </span>
                     </li>
                   ))}
