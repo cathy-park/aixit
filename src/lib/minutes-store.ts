@@ -46,6 +46,7 @@ export type MeetingMinute = {
   links?: MinuteLink[];
   categoryId?: string; // 소속 카테고리 ID
   subFolderId?: string; // 소속 서브 폴더 ID
+  pinned?: boolean; // 상단 고정 여부
   createdAt: string;
   updatedAt: string;
 };
@@ -163,7 +164,7 @@ export function createMeetingMinute(folderId: string, title: string, date: strin
 
 export function updateMeetingMinute(
   id: string,
-  updates: Partial<Pick<MeetingMinute, "title" | "iconType" | "date" | "content" | "attachments" | "links" | "categoryId" | "subFolderId">>
+  updates: Partial<Pick<MeetingMinute, "title" | "iconType" | "date" | "content" | "attachments" | "links" | "categoryId" | "subFolderId" | "pinned">>
 ): MeetingMinute | null {
   const store = loadMinutesStore();
   const minute = store.minutes.find((m) => m.id === id);
@@ -177,6 +178,7 @@ export function updateMeetingMinute(
   if (updates.links !== undefined) minute.links = updates.links;
   if ("categoryId" in updates) minute.categoryId = updates.categoryId;
   if ("subFolderId" in updates) minute.subFolderId = updates.subFolderId;
+  if (updates.pinned !== undefined) minute.pinned = updates.pinned;
   minute.updatedAt = new Date().toISOString();
   saveMinutesStore(store);
   return minute;

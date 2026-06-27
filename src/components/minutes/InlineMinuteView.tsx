@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import "react-quill-new/dist/quill.snow.css";
 
 import Link from "next/link";
-import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PlusIcon, MessageSquareIcon, PhoneIcon } from "lucide-react";
+import { ChevronLeftIcon, PaperclipIcon, XIcon, DownloadIcon, SaveIcon, CopyIcon, PencilIcon, CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PlusIcon, MessageSquareIcon, PhoneIcon, Pin } from "lucide-react";
 import { 
   loadMinutesStore, 
   createMeetingMinute, 
@@ -103,6 +103,7 @@ export function InlineMinuteView({
   const [uploading, setUploading] = useState(false);
   const [isLinksOpen, setIsLinksOpen] = useState(false);
   const [isLinkFormOpen, setIsLinkFormOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
     if (isEditing) {
@@ -133,6 +134,7 @@ export function InlineMinuteView({
         setSubFolderId(m.subFolderId);
         setAttachments(m.attachments || []);
         setLinks(m.links || []);
+        setPinned(m.pinned || false);
       } else {
         onClose(); // router.replace(`/minutes/${folderId}`);
       }
@@ -146,10 +148,10 @@ export function InlineMinuteView({
     }
     if (isNew) {
       const m = createMeetingMinute(folderId, title, date, iconType, categoryId);
-      updateMeetingMinute(m.id, { content, attachments, links, subFolderId });
+      updateMeetingMinute(m.id, { content, attachments, links, subFolderId, pinned });
       onClose(); // router.replace(`/minutes/${folderId}/${m.id}`);
     } else {
-      updateMeetingMinute(minuteId, { title, date, content, attachments, iconType, links, categoryId, subFolderId });
+      updateMeetingMinute(minuteId, { title, date, content, attachments, iconType, links, categoryId, subFolderId, pinned });
       setIsEditing(false);
     }
   };
@@ -420,6 +422,20 @@ export function InlineMinuteView({
                       <option key={sub.id} value={sub.id}>{sub.name}</option>
                     ))}
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => setPinned(!pinned)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-semibold transition h-[38px] shrink-0",
+                      pinned 
+                        ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100" 
+                        : "bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                    )}
+                    title={pinned ? "상단 고정 해제" : "상단 고정"}
+                  >
+                    <Pin className="w-4 h-4 shrink-0" />
+                    <span>상단 고정</span>
+                  </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                   <button
@@ -434,6 +450,7 @@ export function InlineMinuteView({
                           setCategoryId(minute.categoryId);
                           setSubFolderId(minute.subFolderId);
                           setAttachments(minute.attachments || []);
+                          setPinned(minute.pinned || false);
                         }
                         setIsEditing(false);
                       }
@@ -470,8 +487,9 @@ export function InlineMinuteView({
                 })()}
               </div>
               {/* Title: block on mobile, flex-1 on desktop */}
-              <h1 className="text-2xl md:text-xl font-extrabold text-zinc-900 break-words leading-tight flex-1 min-w-0">
+              <h1 className="text-2xl md:text-xl font-extrabold text-zinc-900 break-words leading-tight flex-1 min-w-0 flex items-center gap-2">
                 {title || "제목 없음"}
+                {pinned && <Pin className="w-5 h-5 text-amber-500 shrink-0" />}
               </h1>
 
               {/* View Mode Actions */}
@@ -483,6 +501,18 @@ export function InlineMinuteView({
                       <CalendarIcon className="w-4 h-4 shrink-0" />
                       <span>{date}</span>
                     </div>
+                    <div className="w-px bg-zinc-200 self-stretch" />
+                    <button
+                      onClick={() => {
+                        const newPinned = !pinned;
+                        setPinned(newPinned);
+                        updateMeetingMinute(minuteId, { pinned: newPinned });
+                      }}
+                      className={cn("px-3 py-2 hover:bg-zinc-200/60 transition flex items-center justify-center flex-1", pinned ? "text-amber-500" : "")}
+                      title={pinned ? "상단 고정 해제" : "상단 고정"}
+                    >
+                      <Pin className="w-4 h-4 shrink-0" />
+                    </button>
                     <div className="w-px bg-zinc-200 self-stretch" />
                     <button onClick={handleCopyMarkdown} className="px-3 py-2 hover:bg-zinc-200/60 transition flex items-center justify-center flex-1" title="마크다운 복사">
                       <CopyIcon className="w-4 h-4" />
@@ -520,6 +550,18 @@ export function InlineMinuteView({
                       <CalendarIcon className="w-4 h-4 shrink-0" />
                       <span>{date}</span>
                     </div>
+                    <div className="w-px bg-zinc-200 self-stretch" />
+                    <button
+                      onClick={() => {
+                        const newPinned = !pinned;
+                        setPinned(newPinned);
+                        updateMeetingMinute(minuteId, { pinned: newPinned });
+                      }}
+                      className={cn("px-3 py-1.5 hover:bg-zinc-200/60 transition flex items-center justify-center", pinned ? "text-amber-500" : "")}
+                      title={pinned ? "상단 고정 해제" : "상단 고정"}
+                    >
+                      <Pin className="w-4 h-4 shrink-0" />
+                    </button>
                     <div className="w-px bg-zinc-200 self-stretch" />
                     <button onClick={handleCopyMarkdown} className="px-3 py-1.5 hover:bg-zinc-200/60 transition flex items-center justify-center" title="마크다운 복사">
                       <CopyIcon className="w-4 h-4" />

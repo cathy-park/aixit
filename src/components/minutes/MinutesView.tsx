@@ -28,7 +28,7 @@ import { InlineMinuteView } from "./InlineMinuteView";
 import { formatFolderToMarkdown, copyMarkdownToClipboard } from "@/lib/export-md";
 import type { DashboardFolderRecord } from "@/lib/dashboard-folders-store";
 import { cn } from "@/components/ui/cn";
-import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon, ChevronLeftIcon, ChevronRightIcon, PhoneIcon } from "lucide-react";
+import { CalendarIcon, VideoIcon, MailIcon, FileTextIcon, LinkIcon, PaperclipIcon, PlusIcon, XIcon, MessageSquareIcon, CopyIcon, ChevronLeftIcon, ChevronRightIcon, PhoneIcon, Pin } from "lucide-react";
 import { WORKSPACE_HEADER_ADD_MATCH_BTN } from "@/components/workspace/WorkspaceLinksMemosSections";
 
 function getInvertedColor(colorStr: string) {
@@ -172,8 +172,13 @@ export function MinutesView() {
       });
     }
     
-    // Sort by latest date first, then latest updatedAt
+    // Sort by: pinned first, then latest date first, then latest updatedAt
     return list.sort((a, b) => {
+      const aPinned = a.pinned ? 1 : 0;
+      const bPinned = b.pinned ? 1 : 0;
+      if (aPinned !== bPinned) {
+        return bPinned - aPinned;
+      }
       if (a.date !== b.date) {
         return new Date(b.date).getTime() - new Date(a.date).getTime();
       }
@@ -969,6 +974,23 @@ export function MinutesView() {
                                             </div>
                                             
                                             <div className="flex items-center gap-4 shrink-0 ml-4">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  updateMeetingMinute(minute.id, { pinned: !minute.pinned });
+                                                  refreshData();
+                                                }}
+                                                className={cn(
+                                                  "p-1.5 rounded-lg hover:bg-zinc-100 transition",
+                                                  minute.pinned 
+                                                    ? "text-amber-500 hover:text-amber-600" 
+                                                    : "text-zinc-300 hover:text-zinc-500 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                )}
+                                                title={minute.pinned ? "상단 고정 해제" : "상단 고정"}
+                                              >
+                                                <Pin className="w-4 h-4 shrink-0" />
+                                              </button>
                                               <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium group-hover:text-blue-500 transition">
                                                 <CalendarIcon className="w-3.5 h-3.5" />
                                                 {minute.date}
