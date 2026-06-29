@@ -224,9 +224,12 @@ export function AixitSupabaseSyncProvider() {
             if (!keysSet.has(k)) return;
 
             // 방어 코드: Supabase Realtime은 1MB가 넘는 row의 경우 payload를 잘라내거나 큰 컬럼을 누락할 수 있습니다.
-            // aixit의 v는 항상 JSON 객체 또는 배열 문자열이므로, 비정상적으로 비어있거나 올바른 JSON 형태가 아니면 무시합니다.
-            if (typeof v !== "string" || (!v.trim().startsWith("{") && !v.trim().startsWith("["))) {
-              console.warn(`[Realtime Sync] Ignored invalid or truncated payload for key: ${k}`);
+            // 올바른 JSON 형태가 아니면 무시합니다.
+            if (typeof v !== "string") return;
+            try {
+              JSON.parse(v);
+            } catch {
+              console.warn(`[Realtime Sync] Ignored invalid or truncated JSON payload for key: ${k}`);
               return;
             }
 
