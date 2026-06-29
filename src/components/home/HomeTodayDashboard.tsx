@@ -217,7 +217,11 @@ export function HomeTodayDashboard() {
       },
     ];
     setTodos(next);
-    saveHomeTodaySheet(sheet, next);
+    try {
+      saveHomeTodaySheet(sheet, next);
+    } catch (e: any) {
+      alert("할 일 저장 중 오류 발생: " + (e.message || String(e)));
+    }
     setTodoDraft("");
     setSelectedCategoryId("");
 
