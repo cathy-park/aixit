@@ -59,7 +59,7 @@ export async function createKakaoCalendarEvent(
   if (!res.ok) {
     console.warn("카카오 캘린더 일정 생성 실패:", json);
     if (typeof window !== "undefined") {
-      alert(`카카오 캘린더 전송 실패: ${json.msg ?? json.message ?? JSON.stringify(json)}`);
+      alert(`카카오 캘린더 연동 실패: ${json.msg || '알 수 없는 오류'}\n토큰이 만료되었을 수 있습니다. 다시 로그인해주세요.`);
     }
     return null;
   }
