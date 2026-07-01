@@ -165,8 +165,17 @@ export function AixitSupabaseSyncProvider() {
     (ls as any).setItem = (key: string, value: string) => {
       try {
         originalSetItem(key, value);
-      } catch (e) {
+      } catch (e: any) {
         console.warn(`LocalStorage setItem failed for key "${key}":`, e);
+        const msg = e.message || String(e);
+        if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("exceeded")) {
+          if (confirm("기기 저장 공간(5MB)이 꽉 찼습니다! (회의록의 큰 이미지 등이 원인일 수 있습니다)\n\n저장할 수 없으므로 캐시 데이터를 비우시겠습니까?\n(클라우드 데이터는 안전합니다)")) {
+            originalRemoveItem("aixit.minutes.v1"); // 회의록 강제 삭제
+            localStorage.clear();
+            location.reload();
+          }
+        }
+        throw e; // Rethrow so the caller knows it failed
       }
       if (remoteApplyingRef.current) return;
       if (!keysSet.has(key)) return;
