@@ -223,7 +223,12 @@ export function HomeTodayDashboard() {
       const msg = e.message || String(e);
       if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("exceeded")) {
         if (confirm("기기 저장 공간(5MB)이 꽉 찼습니다! (회의록의 큰 이미지 등이 원인일 수 있습니다)\n\n오류를 해결하기 위해 임시 저장 데이터를 비우시겠습니까?\n(클라우드에 동기화된 데이터는 안전합니다)")) {
-          localStorage.clear();
+          const keysToRemove = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && !k.startsWith("sb-")) keysToRemove.push(k);
+          }
+          for (const k of keysToRemove) localStorage.removeItem(k);
           location.reload();
         }
       } else {
