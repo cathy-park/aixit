@@ -240,6 +240,15 @@ export function AixitSupabaseSyncProvider() {
             remoteApplyingRef.current = true;
             try {
               window.localStorage.setItem(k, v);
+            } catch (e: any) {
+              console.warn("[Realtime Sync] Failed to apply remote payload", e);
+              const msg = e.message || String(e);
+              if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("exceeded")) {
+                if (confirm("기기 저장 공간(5MB)이 꽉 차서 다른 기기의 데이터를 동기화할 수 없습니다.\n\n오류를 해결하기 위해 임시 저장 데이터를 비우시겠습니까?\n(클라우드 데이터는 안전합니다)")) {
+                  localStorage.clear();
+                  location.reload();
+                }
+              }
             } finally {
               remoteApplyingRef.current = false;
             }
@@ -309,6 +318,15 @@ export function AixitSupabaseSyncProvider() {
             if (remoteVal !== undefined && remoteVal !== localVal) {
               window.localStorage.setItem(k, remoteVal);
               changed = true;
+            }
+          }
+        } catch (e: any) {
+          console.warn("[AixitSync] Failed to apply visibilitychange remote payload", e);
+          const msg = e.message || String(e);
+          if (msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("exceeded")) {
+            if (confirm("기기 저장 공간(5MB)이 꽉 차서 최신 데이터를 불러올 수 없습니다.\n\n오류를 해결하기 위해 임시 저장 데이터를 비우시겠습니까?\n(클라우드 데이터는 안전합니다)")) {
+              localStorage.clear();
+              location.reload();
             }
           }
         } finally {
