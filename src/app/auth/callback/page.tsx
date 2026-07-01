@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { supabase, supabaseEnabled } from "@/lib/supabase/supabaseClient";
+import { useRouter } from "next/navigation";
 
 export default function AuthCallbackPage() {
   const [message, setMessage] = useState("로그인 처리 중…");
+  const router = useRouter();
 
   useEffect(() => {
     if (!supabaseEnabled || !supabase) {
@@ -26,14 +28,17 @@ export default function AuthCallbackPage() {
             return;
           }
         }
-        window.location.replace(next);
+        // 약간의 지연을 주어 스토리지 저장이 완료되도록 보장
+        setTimeout(() => {
+          router.replace(next);
+        }, 500);
       } catch {
         setMessage("로그인 처리 중 오류가 발생했어요.");
       }
     }
 
     void run();
-  }, []);
+  }, [router]);
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-8 pb-8 pt-[50px] text-center text-sm text-zinc-600">
