@@ -731,14 +731,32 @@ export function MinutesView() {
                                         setSelectedCategoryByFolder(prev => ({ ...prev, [folder.id]: cat.id }));
                                         setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: "all" }));
                                       }}
+                                      onDoubleClick={() => {
+                                        setCategoryModal({ folderId: folder.id, initial: { id: cat.id, name: cat.name, color: cat.color } });
+                                      }}
                                       className={cn(
-                                        "px-3 py-1.5 rounded-full text-xs font-semibold transition pr-6 border",
+                                        "px-3 py-1.5 rounded-full text-xs font-semibold transition pr-10 border",
                                         selectedCatId === cat.id
                                           ? getInvertedColor(cat.color || "")
                                           : cat.color || "bg-zinc-100 text-zinc-600 border-zinc-200"
                                       )}
                                     >
                                       {cat.name}
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCategoryModal({ folderId: folder.id, initial: { id: cat.id, name: cat.name, color: cat.color } });
+                                      }}
+                                      className={cn(
+                                        "absolute right-5 w-4 h-4 rounded-full flex items-center justify-center transition",
+                                        selectedCatId === cat.id 
+                                          ? "text-white/60 hover:bg-white/20 hover:text-white" 
+                                          : "text-black/40 hover:bg-black/10 hover:text-black"
+                                      )}
+                                      title="수정"
+                                    >
+                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                                     </button>
                                     <button
                                       onClick={(e) => {
@@ -757,6 +775,7 @@ export function MinutesView() {
                                           ? "text-white/60 hover:bg-white/20 hover:text-white" 
                                           : "text-black/40 hover:bg-black/10 hover:text-black"
                                       )}
+                                      title="삭제"
                                     >
                                       <XIcon className="w-3 h-3" />
                                     </button>
@@ -853,8 +872,9 @@ export function MinutesView() {
                                   >
                                     <button
                                       onClick={() => setSelectedSubFolderByFolder(prev => ({ ...prev, [folder.id]: sub.id }))}
+                                      onDoubleClick={() => setSubFolderModal({ folderId: folder.id, categoryId: sub.categoryId, initial: { id: sub.id, name: sub.name } })}
                                       className={cn(
-                                        "px-3 py-1 rounded-full text-[11px] font-semibold transition pr-5 border",
+                                        "px-3 py-1 rounded-full text-[11px] font-semibold transition pr-10 border",
                                         selectedSubId === sub.id
                                           ? "bg-indigo-50 text-indigo-700 border-indigo-200"
                                           : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
@@ -862,6 +882,21 @@ export function MinutesView() {
                                     >
                                       {sub.name}
                                     </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSubFolderModal({ folderId: folder.id, categoryId: sub.categoryId, initial: { id: sub.id, name: sub.name } });
+                                        }}
+                                        className={cn(
+                                          "absolute right-5 w-4 h-4 rounded-full flex items-center justify-center transition",
+                                          selectedSubId === sub.id
+                                            ? "text-indigo-400 hover:bg-indigo-200 hover:text-indigo-700"
+                                            : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
+                                        )}
+                                        title="수정"
+                                      >
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                      </button>
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -879,6 +914,7 @@ export function MinutesView() {
                                             ? "text-indigo-400 hover:bg-indigo-200 hover:text-indigo-700"
                                             : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
                                         )}
+                                        title="삭제"
                                       >
                                         <XIcon className="w-3 h-3" />
                                       </button>
